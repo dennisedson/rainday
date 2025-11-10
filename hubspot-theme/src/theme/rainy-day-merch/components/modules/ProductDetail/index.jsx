@@ -202,11 +202,11 @@ export function Component({ fieldValues }) {
                   <span className="text-xl">−</span>
                 </button>
                 <input
-                  type="number"
+                  type="text"
                   value={quantity}
-                  onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                  min="1"
-                  className="w-16 h-10 text-center border border-gray-300 rounded"
+                  readOnly
+                  className="w-16 h-10 text-center border border-gray-300 rounded font-semibold"
+                  style={{ MozAppearance: 'textfield' }}
                 />
                 <button
                   onClick={handleQuantityIncrease}
