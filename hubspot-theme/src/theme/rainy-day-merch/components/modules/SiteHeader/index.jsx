@@ -1,11 +1,12 @@
-import { ModuleFields, TextField } from '@hubspot/cms-components/fields';
+import { ModuleFields, TextField, ImageField } from '@hubspot/cms-components/fields';
 
-export function Component({ fieldValues }) {
-  const { siteName, logoText } = fieldValues;
+export function Component({ fieldValues, hublData }) {
+  const { siteName, logoText, logoImage } = fieldValues;
   
-  // Use module field or default company name
-  const displayName = siteName || 'Rainy Day Merchandise';
-  const displayLogo = logoText || 'R';
+  // Prioritize: HubSpot settings → Module fields → Defaults
+  const displayName = hublData?.companyName || siteName || 'Rainy Day Merchandise';
+  const displayLogo = logoText || (hublData?.companyName ? hublData.companyName.charAt(0).toUpperCase() : 'R');
+  const displayLogoImage = hublData?.companyLogo || logoImage?.src || null;
 
   const navigationItems = [
     { label: 'New Arrivals', href: '/new-arrivals' },
@@ -20,14 +21,22 @@ export function Component({ fieldValues }) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-              <span className="text-white font-bold text-lg">{displayLogo}</span>
-            </div>
+          <a href="/" className="flex items-center gap-2">
+            {displayLogoImage ? (
+              <img 
+                src={displayLogoImage} 
+                alt={displayName}
+                className="h-10 w-auto object-contain"
+              />
+            ) : (
+              <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-lg">{displayLogo}</span>
+              </div>
+            )}
             <span className="text-xl font-display font-semibold text-gray-900">
               {displayName}
             </span>
-          </div>
+          </a>
 
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center space-x-8">
@@ -65,15 +74,20 @@ export const fields = (
   <ModuleFields>
     <TextField
       name="siteName"
-      label="Site Name"
-      default="Rainy Day Merchandise"
-      helpText="Your company name"
+      label="Site Name (Override)"
+      helpText="Optional: Override HubSpot company name"
+    />
+    <ImageField
+      name="logoImage"
+      label="Logo Image (Override)"
+      helpText="Optional: Override HubSpot logo. Recommended size: 150x150px"
+      resizable={true}
     />
     <TextField
       name="logoText"
-      label="Logo Text"
+      label="Logo Letter (Fallback)"
       default="R"
-      helpText="Letter shown in logo circle"
+      helpText="Letter shown if no logo image is provided"
     />
   </ModuleFields>
 );
@@ -83,4 +97,13 @@ export const meta = {
   description: 'Main navigation header with logo, menu, search, and cart',
   icon: 'menu',
 };
+
+// Fetch company settings from HubSpot
+export const hublDataTemplate = `
+  {% set hublData = {
+    "companyName": site_settings.company_name,
+    "companyLogo": site_settings.company_logo,
+    "companyDomain": site_settings.company_domain
+  } %}
+`;
 

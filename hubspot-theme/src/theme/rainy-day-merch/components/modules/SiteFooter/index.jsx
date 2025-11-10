@@ -1,13 +1,14 @@
-import { ModuleFields, TextField, RichTextField } from '@hubspot/cms-components/fields';
+import { ModuleFields, TextField, ImageField } from '@hubspot/cms-components/fields';
 
-export function Component({ fieldValues }) {
-  const { siteName, tagline } = fieldValues;
+export function Component({ fieldValues, hublData }) {
+  const { siteName, tagline, logoImage } = fieldValues;
   const currentYear = new Date().getFullYear();
   
-  // Use module fields or defaults
-  const displayName = siteName || 'Rainy Day Merchandise';
+  // Prioritize: HubSpot settings → Module fields → Defaults
+  const displayName = hublData?.companyName || siteName || 'Rainy Day Merchandise';
   const displayTagline = tagline || 'Handcrafted with care, designed to inspire';
   const displayLogo = displayName ? displayName.charAt(0).toUpperCase() : 'R';
+  const displayLogoImage = hublData?.companyLogo || logoImage?.src || null;
 
   const footerSections = [
     {
@@ -45,14 +46,22 @@ export function Component({ fieldValues }) {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
           {/* Brand Section */}
           <div className="lg:col-span-2">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-                <span className="text-white font-bold text-lg">{displayLogo}</span>
-              </div>
+            <a href="/" className="flex items-center gap-2 mb-4 inline-flex">
+              {displayLogoImage ? (
+                <img 
+                  src={displayLogoImage} 
+                  alt={displayName}
+                  className="h-10 w-auto object-contain"
+                />
+              ) : (
+                <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-lg">{displayLogo}</span>
+                </div>
+              )}
               <span className="text-xl font-display font-semibold text-white">
                 {displayName}
               </span>
-            </div>
+            </a>
             <p className="text-gray-400 mb-6 max-w-md">
               {displayTagline}
             </p>
@@ -133,9 +142,14 @@ export const fields = (
   <ModuleFields>
     <TextField
       name="siteName"
-      label="Site Name"
-      default="Rainy Day Merchandise"
-      helpText="Your company name"
+      label="Site Name (Override)"
+      helpText="Optional: Override HubSpot company name"
+    />
+    <ImageField
+      name="logoImage"
+      label="Logo Image (Override)"
+      helpText="Optional: Override HubSpot logo"
+      resizable={true}
     />
     <TextField
       name="tagline"
@@ -151,4 +165,13 @@ export const meta = {
   description: 'Site footer with links, social media, and newsletter signup',
   icon: 'menu',
 };
+
+// Fetch company settings from HubSpot
+export const hublDataTemplate = `
+  {% set hublData = {
+    "companyName": site_settings.company_name,
+    "companyLogo": site_settings.company_logo,
+    "companyDomain": site_settings.company_domain
+  } %}
+`;
 
