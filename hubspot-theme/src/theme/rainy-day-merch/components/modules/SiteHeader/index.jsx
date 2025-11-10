@@ -18,6 +18,12 @@ export function Component({ fieldValues, hublData }) {
 
   return (
     <header className="bg-white shadow-sm sticky top-0 z-50">
+      {/* Temporary Debug Info */}
+      {hublData && (
+        <div className="bg-yellow-100 p-2 text-xs">
+          <strong>Debug HubL Data:</strong> {JSON.stringify(hublData, null, 2)}
+        </div>
+      )}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
@@ -99,11 +105,12 @@ export const meta = {
 };
 
 // Fetch company settings from HubSpot
+// Testing different possible HubL variables
 export const hublDataTemplate = `
   {% set hublData = {
-    "companyName": site_settings.company_name,
-    "companyLogo": site_settings.company_logo,
-    "companyDomain": site_settings.company_domain
+    "debug_content_name": content.name|default(""),
+    "debug_domain": content.domain|default(""),
+    "test_simple": "HubL is working!"
   } %}
 `;
 
