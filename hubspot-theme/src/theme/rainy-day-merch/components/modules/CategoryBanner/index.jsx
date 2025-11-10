@@ -1,5 +1,5 @@
 import { Island } from '@hubspot/cms-components';
-import { ModuleFields, RepeatedFieldGroup, TextField, TextAreaField, BooleanField } from '@hubspot/cms-components/fields';
+import { ModuleFields, RepeatedFieldGroup, TextField, BooleanField } from '@hubspot/cms-components/fields';
 import CategoryBannerIsland from '../../islands/CategoryBannerIsland.jsx?island';
 
 export function Component({ fieldValues = {}, ...props }) {
@@ -33,13 +33,14 @@ export const fields = (
         name="categoryName"
         label="Category Name"
         required={true}
+        default=""
         helpText="Must exactly match Square category (e.g., 'Bracelets', 'Necklaces')"
       />
-      <TextAreaField
+      <TextField
         name="customDescription"
         label="Custom Description"
         required={true}
-        rows={4}
+        default=""
         helpText="Custom description text for this category banner"
       />
     </RepeatedFieldGroup>
