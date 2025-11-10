@@ -3,7 +3,6 @@ import {
   TextField,
   RepeatedFieldGroup,
   ImageField,
-  NumberField,
 } from '@hubspot/cms-components/fields';
 
 export function Component({ fieldValues }) {
@@ -53,12 +52,9 @@ export function Component({ fieldValues }) {
 
               {/* Category Info */}
               <div className="p-4 text-center">
-                <h3 className="font-semibold text-gray-900 mb-1 group-hover:text-primary transition-colors duration-200">
+                <h3 className="font-semibold text-gray-900 group-hover:text-primary transition-colors duration-200">
                   {category.categoryName || 'Category'}
                 </h3>
-                <p className="text-sm text-gray-500">
-                  {category.itemCount || 0} items
-                </p>
               </div>
             </a>
           ))}
@@ -107,12 +103,6 @@ export const fields = (
           alt: '',
         }}
         helpText="Upload an image for this category"
-      />
-      <NumberField
-        name="itemCount"
-        label="Number of Items"
-        default={0}
-        helpText="Display how many products are in this category (shown as 'X items' below category name)"
       />
       <TextField
         name="link"
