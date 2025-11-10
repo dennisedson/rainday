@@ -6,14 +6,15 @@ A modern e-commerce storefront built with HubSpot CMS React and Square payments,
 
 ```
 hsecommerce-project/
-├── hubspot-theme/      # HubSpot CMS React Theme
+├── hubspot-theme/      # HubSpot CMS React Theme + App
 │   ├── src/
-│   │   └── theme/
-│   │       └── rainy-day-merch/
-│   │           ├── components/      # Shared React components
-│   │           ├── modules/         # CMS editable modules
-│   │           ├── partials/        # Header, Footer
-│   │           └── templates/       # Page templates
+│   │   ├── theme/      # CMS Theme
+│   │   │   └── rainy-day-merch/
+│   │   │       ├── components/      # Shared React components
+│   │   │       ├── modules/         # CMS editable modules
+│   │   │       └── templates/       # Page templates
+│   │   └── app/        # HubSpot App (API authentication)
+│   │       └── app-hsmeta.json
 │   ├── hsproject.json
 │   └── package.json
 │
