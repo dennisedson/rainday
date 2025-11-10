@@ -4,7 +4,13 @@ import { useState, useEffect } from 'react';
  * CategoryBannerIsland - Dynamic banner that updates based on URL category parameter
  * Shows category-specific content and imagery
  */
-export default function CategoryBannerIsland({ siteName = 'Rainy Day Merchandise' }) {
+export default function CategoryBannerIsland({ 
+  siteName = 'Rainy Day Merchandise',
+  customTitle = '',
+  customDescription = '',
+  showSaleBadge = true,
+  showFeatures = true,
+}) {
   const [category, setCategory] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [categoryImages, setCategoryImages] = useState({});
@@ -48,36 +54,40 @@ export default function CategoryBannerIsland({ siteName = 'Rainy Day Merchandise
     'Bracelets': {
       title: 'Bracelets',
       description: 'Discover our curated collection of handcrafted bracelets. From delicate chains to statement pieces, each bracelet is meticulously designed to elevate your style.',
-      image: 'https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=1200&auto=format&fit=crop&q=80',
+      // image: 'https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=1200&auto=format&fit=crop&q=80',
     },
     'Necklaces': {
       title: 'Necklaces',
       description: 'Discover our curated collection of handcrafted necklaces. From delicate chains to statement pieces, each necklace is meticulously designed to elevate your style.',
-      image: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=1200&auto=format&fit=crop&q=80',
+      // image: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=1200&auto=format&fit=crop&q=80',
     },
     'Earrings': {
       title: 'Earrings',
       description: 'Explore our stunning collection of handcrafted earrings. From subtle studs to bold dangles, each pair is designed to make a statement.',
-      image: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=1200&auto=format&fit=crop&q=80',
+      // image: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=1200&auto=format&fit=crop&q=80',
     },
     'Keychains': {
       title: 'Keychains',
       description: 'Browse our unique collection of handcrafted keychains. Practical meets beautiful with designs that showcase artisan craftsmanship.',
-      image: 'https://images.unsplash.com/photo-1563492065599-3520f775eeed?w=1200&auto=format&fit=crop&q=80',
+      // image: 'https://images.unsplash.com/photo-1563492065599-3520f775eeed?w=1200&auto=format&fit=crop&q=80',
     },
     'Lanyards': {
       title: 'Lanyards',
       description: 'Discover our stylish collection of handcrafted lanyards. Functional accessories that don\'t compromise on style.',
-      image: 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=1200&auto=format&fit=crop&q=80',
+      // image: 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=1200&auto=format&fit=crop&q=80',
     },
     'All Products': {
       title: 'Shop All',
       description: 'Explore our entire collection of handcrafted jewelry and accessories. Each piece is designed with care and attention to detail.',
-      image: 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=1200&auto=format&fit=crop&q=80',
+      // image: 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=1200&auto=format&fit=crop&q=80',
     },
   };
 
   const content = categoryContent[category] || categoryContent['All Products'];
+  
+  // Use custom values if provided, otherwise use defaults
+  const displayTitle = customTitle || content.title;
+  const displayDescription = customDescription || content.description;
   
   // Use Square category image if available, otherwise fallback to hardcoded image
   const imageUrl = categoryImages[category] || content.image;
@@ -101,14 +111,16 @@ export default function CategoryBannerIsland({ siteName = 'Rainy Day Merchandise
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center rounded-3xl overflow-hidden bg-white shadow-2xl">
           {/* Text Content */}
           <div className="px-8 py-16 lg:px-12 lg:py-24">
-            <div className="inline-block px-4 py-1 bg-primary text-white text-sm font-semibold rounded-full mb-6">
-              SALE
-            </div>
+            {showSaleBadge && (
+              <div className="inline-block px-4 py-1 bg-primary text-white text-sm font-semibold rounded-full mb-6">
+                SALE
+              </div>
+            )}
             <h1 className="text-5xl lg:text-6xl font-display font-bold text-gray-900 mb-6">
-              {content.title}
+              {displayTitle}
             </h1>
             <p className="text-lg text-gray-600 mb-8 leading-relaxed">
-              {content.description}
+              {displayDescription}
             </p>
             <button 
               onClick={() => {
@@ -127,7 +139,8 @@ export default function CategoryBannerIsland({ siteName = 'Rainy Day Merchandise
             </button>
 
             {/* Features */}
-            <div className="grid grid-cols-3 gap-6 mt-12">
+            {showFeatures && (
+              <div className="grid grid-cols-3 gap-6 mt-12">
               <div className="text-center">
                 <div className="inline-flex items-center justify-center w-12 h-12 bg-white rounded-full mb-3 shadow-md">
                   <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -156,6 +169,7 @@ export default function CategoryBannerIsland({ siteName = 'Rainy Day Merchandise
                 <p className="text-xs text-gray-600">Luxury packaging</p>
               </div>
             </div>
+            )}
           </div>
 
           {/* Image */}
