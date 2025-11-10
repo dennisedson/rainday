@@ -7,23 +7,26 @@ import { useState, useEffect } from 'react';
 export default function CategoryBannerIsland({ siteName = 'Rainy Day Merchandise' }) {
   const [category, setCategory] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [categoryImages, setCategoryImages] = useState({});
+  const [categoryData, setCategoryData] = useState({}); // Store images AND descriptions
 
-  // Fetch category images from Square
+  // Fetch category data from Square
   useEffect(() => {
     const fetchCategories = async () => {
       try {
         const response = await fetch('https://hsecommerce-api.vercel.app/api/square-categories');
         const data = await response.json();
         
-        // Build map of category name to image
-        const imageMap = {};
+        // Build map of category name to { image, description }
+        const dataMap = {};
         data.categories.forEach(cat => {
-          imageMap[cat.name] = cat.image;
+          dataMap[cat.name] = {
+            image: cat.image,
+            description: cat.description,
+          };
         });
         
-        setCategoryImages(imageMap);
-        console.log('[CategoryBannerIsland] Category images:', imageMap);
+        setCategoryData(dataMap);
+        console.log('[CategoryBannerIsland] Category data:', dataMap);
       } catch (error) {
         console.error('[CategoryBannerIsland] Error fetching categories:', error);
       }
@@ -78,9 +81,12 @@ export default function CategoryBannerIsland({ siteName = 'Rainy Day Merchandise
   };
 
   const content = categoryContent[category] || categoryContent['All Products'];
+  const squareData = categoryData[category] || {};
   
-  // Use Square category image if available, otherwise fallback to hardcoded image
-  const imageUrl = categoryImages[category] || content.image;
+  // Use Square data if available, otherwise fallback to hardcoded content
+  const displayTitle = content.title;
+  const displayDescription = squareData.description || content.description;
+  const imageUrl = squareData.image || content.image;
 
   if (isLoading) {
     return (
@@ -105,10 +111,10 @@ export default function CategoryBannerIsland({ siteName = 'Rainy Day Merchandise
               SALE
             </div>
             <h1 className="text-5xl lg:text-6xl font-display font-bold text-gray-900 mb-6">
-              {content.title}
+              {displayTitle}
             </h1>
             <p className="text-lg text-gray-600 mb-8 leading-relaxed">
-              {content.description}
+              {displayDescription}
             </p>
             <button 
               onClick={() => {
@@ -162,7 +168,7 @@ export default function CategoryBannerIsland({ siteName = 'Rainy Day Merchandise
           <div className="relative h-full min-h-[400px] lg:min-h-[500px] overflow-hidden">
             <img
               src={imageUrl}
-              alt={content.title}
+              alt={displayTitle}
               className="w-full h-full object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>

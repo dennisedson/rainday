@@ -90,6 +90,7 @@ export default async function handler(req, res) {
         return {
           id: category.id,
           name: category.category_data.name,
+          description: category.category_data.description || '', // Include category description
           image: imageUrl, // Use actual image URL, not ID
           // Create URL-friendly slug from name
           slug: category.category_data.name
