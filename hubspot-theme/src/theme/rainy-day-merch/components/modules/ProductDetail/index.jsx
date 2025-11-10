@@ -157,34 +157,30 @@ export function Component({ fieldValues }) {
               </label>
               <div className="flex items-center gap-3">
                 <button
-                  onClick={() => {
-                    const input = document.getElementById('product-quantity');
-                    const val = Math.max(1, parseInt(input.value) - 1);
-                    input.value = val;
-                  }}
-                  className="w-10 h-10 flex items-center justify-center border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+                  type="button"
+                  data-quantity-decrease
+                  className="w-10 h-10 flex items-center justify-center border border-gray-300 rounded hover:bg-gray-50 transition-colors bg-white text-gray-700 font-normal"
                   aria-label="Decrease quantity"
+                  style={{ WebkitAppearance: 'none', MozAppearance: 'none', appearance: 'none' }}
                 >
-                  <span className="text-xl">−</span>
+                  <span className="text-xl leading-none">−</span>
                 </button>
                 <input
                   id="product-quantity"
                   type="text"
                   defaultValue="1"
                   readOnly
-                  className="w-16 h-10 text-center border border-gray-300 rounded font-semibold"
-                  style={{ MozAppearance: 'textfield' }}
+                  className="w-16 h-10 text-center border border-gray-300 rounded font-semibold bg-white text-gray-900"
+                  style={{ MozAppearance: 'textfield', WebkitAppearance: 'none', appearance: 'none', color: '#111827' }}
                 />
                 <button
-                  onClick={() => {
-                    const input = document.getElementById('product-quantity');
-                    const val = parseInt(input.value) + 1;
-                    input.value = val;
-                  }}
-                  className="w-10 h-10 flex items-center justify-center border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+                  type="button"
+                  data-quantity-increase
+                  className="w-10 h-10 flex items-center justify-center border border-gray-300 rounded hover:bg-gray-50 transition-colors bg-white text-gray-700 font-normal"
                   aria-label="Increase quantity"
+                  style={{ WebkitAppearance: 'none', MozAppearance: 'none', appearance: 'none' }}
                 >
-                  <span className="text-xl">+</span>
+                  <span className="text-xl leading-none">+</span>
                 </button>
               </div>
             </div>
@@ -192,10 +188,7 @@ export function Component({ fieldValues }) {
             {/* Action Buttons */}
             <div className="flex gap-3 mb-6">
               <button
-                onClick={() => {
-                  const qty = document.getElementById('product-quantity').value;
-                  alert(`Added ${qty} x ${productName} to cart!`);
-                }}
+                data-add-to-cart
                 className="flex-1 bg-orange-500 text-white py-3 px-6 rounded-lg font-semibold hover:bg-orange-600 transition-colors flex items-center justify-center gap-2"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -205,24 +198,6 @@ export function Component({ fieldValues }) {
               </button>
               <button
                 id="wishlist-btn"
-                onClick={(e) => {
-                  const btn = e.currentTarget;
-                  const svg = btn.querySelector('svg');
-                  const isActive = btn.classList.contains('wishlist-active');
-                  if (isActive) {
-                    btn.classList.remove('wishlist-active', 'bg-red-50', 'border-red-300');
-                    btn.classList.add('hover:bg-gray-50');
-                    svg.classList.remove('text-red-500', 'fill-current');
-                    svg.classList.add('text-gray-600');
-                    svg.setAttribute('fill', 'none');
-                  } else {
-                    btn.classList.add('wishlist-active', 'bg-red-50', 'border-red-300');
-                    btn.classList.remove('hover:bg-gray-50');
-                    svg.classList.add('text-red-500', 'fill-current');
-                    svg.classList.remove('text-gray-600');
-                    svg.setAttribute('fill', 'currentColor');
-                  }
-                }}
                 className="w-12 h-12 flex items-center justify-center border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                 aria-label="Add to wishlist"
               >
@@ -241,13 +216,7 @@ export function Component({ fieldValues }) {
                 </svg>
               </button>
               <button
-                onClick={() => {
-                  const productUrl = window.location.href;
-                  const subject = `Check out ${productName}`;
-                  const body = `I thought you might be interested in this product:\n\n${productName}\nPrice: $${price}\n\n${productUrl}`;
-                  const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-                  window.location.href = mailtoLink;
-                }}
+                data-share
                 className="w-12 h-12 flex items-center justify-center border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                 aria-label="Share via email"
               >
@@ -259,10 +228,7 @@ export function Component({ fieldValues }) {
 
             {/* Buy Now Button */}
             <button
-              onClick={() => {
-                const qty = document.getElementById('product-quantity').value;
-                alert(`Proceeding to checkout with ${qty} x ${productName}`);
-              }}
+              data-buy-now
               className="w-full bg-white border-2 border-gray-900 text-gray-900 py-3 px-6 rounded-lg font-semibold hover:bg-gray-50 transition-colors mb-6"
             >
               Buy Now
@@ -304,49 +270,118 @@ export function Component({ fieldValues }) {
           </div>
         </div>
 
-        {/* Tabs Section */}
-        <div className="mt-16 border-t border-gray-200">
-          {/* Tab Headers */}
-          <div className="flex border-b border-gray-200">
-            <button className="px-6 py-4 text-sm font-semibold text-gray-900 border-b-2 border-orange-500">
-              Description
-            </button>
-            <button className="px-6 py-4 text-sm font-medium text-gray-500 hover:text-gray-900">
-              Specifications
-            </button>
-            <button className="px-6 py-4 text-sm font-medium text-gray-500 hover:text-gray-900">
-              Reviews ({reviewCount || 0})
-            </button>
-          </div>
-
-          {/* Tab Content */}
-          <div className="py-8">
-            <div className="prose max-w-none">
-              {descriptionTab && (
-                <div dangerouslySetInnerHTML={{ __html: descriptionTab }} />
+        {/* Product Details Section - Only show if there's content */}
+        {(features || careInstructions) && (
+          <div className="mt-16 border-t border-gray-200 py-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Product Details</h2>
+            <div className="grid md:grid-cols-2 gap-8">
+              {/* Features */}
+              {features && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Features</h3>
+                  <div className="prose prose-sm max-w-none text-gray-700" dangerouslySetInnerHTML={{ __html: features }} />
+                </div>
               )}
               
-              <div className="grid md:grid-cols-2 gap-8 mt-8">
-                {/* Features */}
-                {features && (
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Features</h3>
-                    <div dangerouslySetInnerHTML={{ __html: features }} />
-                  </div>
-                )}
-                
-                {/* Care Instructions */}
-                {careInstructions && (
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Care Instructions</h3>
-                    <div dangerouslySetInnerHTML={{ __html: careInstructions }} />
-                  </div>
-                )}
-              </div>
+              {/* Care Instructions */}
+              {careInstructions && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Care Instructions</h3>
+                  <div className="prose prose-sm max-w-none text-gray-700" dangerouslySetInnerHTML={{ __html: careInstructions }} />
+                </div>
+              )}
             </div>
           </div>
-        </div>
+        )}
       </div>
+      
+      {/* Client-side script for interactive elements */}
+      <script dangerouslySetInnerHTML={{ __html: `
+        (function() {
+          // Wait for DOM to be ready
+          if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initProductDetail);
+          } else {
+            initProductDetail();
+          }
+          
+          function initProductDetail() {
+            // Quantity controls
+            const quantityInput = document.getElementById('product-quantity');
+            const decreaseBtn = document.querySelector('[data-quantity-decrease]');
+            const increaseBtn = document.querySelector('[data-quantity-increase]');
+            
+            if (decreaseBtn && increaseBtn && quantityInput) {
+              decreaseBtn.addEventListener('click', function() {
+                const currentValue = parseInt(quantityInput.value) || 1;
+                quantityInput.value = Math.max(1, currentValue - 1);
+              });
+              
+              increaseBtn.addEventListener('click', function() {
+                const currentValue = parseInt(quantityInput.value) || 1;
+                quantityInput.value = currentValue + 1;
+              });
+            }
+            
+            // Add to Cart handler
+            const addToCartBtn = document.querySelector('[data-add-to-cart]');
+            if (addToCartBtn && quantityInput) {
+              addToCartBtn.addEventListener('click', function() {
+                const qty = quantityInput.value;
+                const productName = '${productName || 'Product'}';
+                alert('Added ' + qty + ' x ' + productName + ' to cart!');
+              });
+            }
+            
+            // Buy Now handler
+            const buyNowBtn = document.querySelector('[data-buy-now]');
+            if (buyNowBtn && quantityInput) {
+              buyNowBtn.addEventListener('click', function() {
+                const qty = quantityInput.value;
+                const productName = '${productName || 'Product'}';
+                alert('Proceeding to checkout with ' + qty + ' x ' + productName);
+              });
+            }
+            
+            // Wishlist toggle handler
+            const wishlistBtn = document.getElementById('wishlist-btn');
+            if (wishlistBtn) {
+              wishlistBtn.addEventListener('click', function() {
+                const svg = wishlistBtn.querySelector('svg');
+                const isActive = wishlistBtn.classList.contains('wishlist-active');
+                
+                if (isActive) {
+                  wishlistBtn.classList.remove('wishlist-active', 'bg-red-50', 'border-red-300');
+                  wishlistBtn.classList.add('hover:bg-gray-50');
+                  svg.classList.remove('text-red-500', 'fill-current');
+                  svg.classList.add('text-gray-600');
+                  svg.setAttribute('fill', 'none');
+                } else {
+                  wishlistBtn.classList.add('wishlist-active', 'bg-red-50', 'border-red-300');
+                  wishlistBtn.classList.remove('hover:bg-gray-50');
+                  svg.classList.add('text-red-500', 'fill-current');
+                  svg.classList.remove('text-gray-600');
+                  svg.setAttribute('fill', 'currentColor');
+                }
+              });
+            }
+            
+            // Share button handler
+            const shareBtn = document.querySelector('[data-share]');
+            if (shareBtn) {
+              shareBtn.addEventListener('click', function() {
+                const productUrl = window.location.href;
+                const productName = '${productName || 'Product'}';
+                const price = '${price || '0.00'}';
+                const subject = 'Check out ' + productName;
+                const body = 'I thought you might be interested in this product:\\n\\n' + productName + '\\nPrice: $' + price + '\\n\\n' + productUrl;
+                const mailtoLink = 'mailto:?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+                window.location.href = mailtoLink;
+              });
+            }
+          }
+        })();
+      ` }} />
     </div>
   );
 }
