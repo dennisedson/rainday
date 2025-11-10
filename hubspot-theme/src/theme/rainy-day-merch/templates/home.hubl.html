@@ -1,0 +1,48 @@
+<!--
+  templateType: page
+  isAvailableForNewContent: true
+  label: Home - Homepage
+-->
+{% extends "./layouts/base.hubl.html" %}
+
+{% block body %}
+
+  {# Hero Section - Same as category page #}
+  {% module
+    "hero"
+    path="../components/modules/Hero"
+  %}
+
+
+  {# Category Grid - Shop by Category #}
+  {% module
+    "categoryGrid"
+    path="../components/modules/CategoryGrid"
+  %}
+
+  {# Trending Products #}
+  {% module
+    "trendingProducts"
+    path="../components/modules/TrendingProducts"
+  %}
+
+  {# About/Story Section #}
+  {% module
+    "aboutStory"
+    path="../components/modules/AboutStory"
+  %}
+
+  {# Testimonials #}
+  {% module
+    "testimonials"
+    path="../components/modules/Testimonials"
+  %}
+
+  {# Newsletter Signup #}
+  {# {% module
+    "newsletter"
+    path="../components/modules/Newsletter"
+  %} #}
+
+{% endblock body %}
+

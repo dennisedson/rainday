@@ -1,0 +1,9 @@
+{
+  "uid": "artisan-theme",
+  "type": "theme",
+  "config": {
+    "themePath": "rainy-day-merch",
+    "secretNames": []
+  }
+}
+

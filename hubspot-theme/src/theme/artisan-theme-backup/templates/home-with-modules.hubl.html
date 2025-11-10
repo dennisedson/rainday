@@ -1,0 +1,95 @@
+<!--
+  templateType: page
+  label: Home Page (With Editable Modules)
+  screenshotPath: ../assets/home-screenshot.png
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ content.html_title }}</title>
+  {{ require_css(get_asset_url("../styles/globals.css")) }}
+  {{ standard_header_includes }}
+</head>
+<body>
+  {{ standard_header_includes }}
+  
+  <!-- Header (rendered by React) -->
+  <div id="header-root"></div>
+
+
+
+  <!-- Product Grid (rendered by React) -->
+  <div id="products-root"></div>
+
+  <!-- Footer (rendered by React) -->
+  <div id="footer-root"></div>
+
+  <script type="module">
+    import React from 'react';
+    import ReactDOM from 'react-dom/client';
+    import App from '../components/App.jsx';
+    import Header from '../components/Header.jsx';
+    import Footer from '../components/Footer.jsx';
+    import ProductGrid from '../components/ProductGrid.jsx';
+    import Container from '../components/Container.jsx';
+    import { useCart } from '../hooks/useCart.js';
+    import { useWishlist } from '../hooks/useWishlist.js';
+
+    // Header Component
+    const HeaderWrapper = () => {
+      const { getItemCount } = useCart();
+      const { getItemCount: getWishlistCount } = useWishlist();
+
+      return React.createElement(Header, {
+        cartItemCount: getItemCount(),
+        wishlistItemCount: getWishlistCount(),
+        onCartClick: () => window.location.href = '/cart',
+        onWishlistClick: () => window.location.href = '/wishlist',
+      });
+    };
+
+    // Products Section Component
+    const ProductsSection = () => {
+      return React.createElement(Container, { className: 'py-16' },
+        React.createElement('div', { className: 'text-center mb-8' },
+          React.createElement('h2', { className: 'text-3xl font-display font-bold text-gray-900 mb-2' }, 'Featured Products'),
+          React.createElement('p', { className: 'text-gray-600' }, 'Discover our handcrafted collection')
+        ),
+        React.createElement(ProductGrid, {
+          products: [],
+          loading: false,
+          emptyMessage: 'Products will be loaded from Square'
+        })
+      );
+    };
+
+    // Render Header
+    const headerRoot = ReactDOM.createRoot(document.getElementById('header-root'));
+    headerRoot.render(
+      React.createElement(App, null,
+        React.createElement(HeaderWrapper, null)
+      )
+    );
+
+    // Render Products
+    const productsRoot = ReactDOM.createRoot(document.getElementById('products-root'));
+    productsRoot.render(
+      React.createElement(App, null,
+        React.createElement(ProductsSection, null)
+      )
+    );
+
+    // Render Footer
+    const footerRoot = ReactDOM.createRoot(document.getElementById('footer-root'));
+    footerRoot.render(
+      React.createElement(App, null,
+        React.createElement(Footer, null)
+      )
+    );
+  </script>
+
+  {{ standard_footer_includes }}
+</body>
+</html>

@@ -1,0 +1,11 @@
+{
+  "label": "Artisan & Co. Ecommerce Theme",
+  "preview_path": "./templates/home.hubl.html",
+  "screenshot_path": "./assets/theme-preview.png",
+  "enable_domain_stylesheets": false,
+  "author": {
+    "name": "Artisan & Co.",
+    "url": "https://artisan-co.com"
+  }
+}
+

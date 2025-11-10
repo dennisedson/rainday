@@ -1,0 +1,37 @@
+<!--
+  templateType: page
+  label: Home Page
+  screenshotPath: ../assets/home-screenshot.png
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ content.html_title }}</title>
+  {{ require_css(get_asset_url("../styles/globals.css")) }}
+  {{ standard_header_includes }}
+</head>
+<body>
+  {{ standard_header_includes }}
+  
+  <div id="root"></div>
+
+  <script type="module">
+    import React from 'react';
+    import ReactDOM from 'react-dom/client';
+    import App from '../components/App.jsx';
+    import HomePage from '../components/HomePage.jsx';
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(
+      React.createElement(App, null,
+        React.createElement(HomePage, null)
+      )
+    );
+  </script>
+
+  {{ standard_footer_includes }}
+</body>
+</html>
+

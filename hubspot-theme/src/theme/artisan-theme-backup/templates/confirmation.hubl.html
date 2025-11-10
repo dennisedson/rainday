@@ -1,0 +1,60 @@
+<!--
+  templateType: page
+  label: Order Confirmation
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order Confirmation - {{ site_settings.company_name }}</title>
+  {{ require_css(get_asset_url("../styles/globals.css")) }}
+  {{ standard_header_includes }}
+</head>
+<body>
+  {{ standard_header_includes }}
+  
+  <div id="root"></div>
+
+  <script type="module">
+    import React from 'react';
+    import ReactDOM from 'react-dom/client';
+    import App from '../components/App.jsx';
+    import Header from '../components/Header.jsx';
+    import OrderConfirmation from '../components/OrderConfirmation.jsx';
+    import Footer from '../components/Footer.jsx';
+    import { useCart } from '../hooks/useCart.js';
+    import { useWishlist } from '../hooks/useWishlist.js';
+
+    const ConfirmationPage = () => {
+      const { getItemCount } = useCart();
+      const { getItemCount: getWishlistCount } = useWishlist();
+
+      return (
+        <>
+          {React.createElement(Header, {
+            cartItemCount: getItemCount(),
+            wishlistItemCount: getWishlistCount(),
+            onCartClick: () => window.location.href = '/cart',
+            onWishlistClick: () => window.location.href = '/wishlist',
+          })}
+          
+          {React.createElement(OrderConfirmation)}
+          
+          {React.createElement(Footer)}
+        </>
+      );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(
+      React.createElement(App, null,
+        React.createElement(ConfirmationPage, null)
+      )
+    );
+  </script>
+
+  {{ standard_footer_includes }}
+</body>
+</html>
+

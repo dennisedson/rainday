@@ -1,0 +1,29 @@
+{% extends "./layouts/base.hubl.html" %}
+
+{% block body %}
+
+{# Header #}
+{% module "site_header"
+  path="@projects/artisan-ecommerce/rainy-day-merch/components/modules/SiteHeader/index"
+%}
+
+{# Product Detail #}
+{% module "product_detail"
+  path="@projects/artisan-ecommerce/rainy-day-merch/components/modules/ProductDetail/index"
+%}
+
+{# Related Products / You May Also Like #}
+{% module "related_products"
+  path="@projects/artisan-ecommerce/rainy-day-merch/components/modules/TrendingProducts/index"
+  sectionTitle="You May Also Like"
+  subtitle="Explore similar handcrafted pieces"
+  maxProducts=4
+%}
+
+{# Footer #}
+{% module "site_footer"
+  path="@projects/artisan-ecommerce/rainy-day-merch/components/modules/SiteFooter/index"
+%}
+
+{% endblock %}
+

@@ -1,0 +1,39 @@
+{
+  "name": "artisan-ecommerce-theme",
+  "version": "1.0.0",
+  "description": "Artisan & Co. Ecommerce Theme for HubSpot CMS",
+  "main": "index.js",
+  "scripts": {
+    "start": "hs-cms-dev-server .",
+    "deploy": "hs project upload",
+    "dev": "echo 'Development server will be started by HubSpot CLI'",
+    "build": "echo 'Build handled by HubSpot CLI'",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "@hubspot/cms-components": "^1.0.0",
+    "tailwindcss": "^3.4.0",
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.32"
+  },
+  "devDependencies": {
+    "@hubspot/cms-dev-server": "latest",
+    "@storybook/addon-essentials": "^7.6.0",
+    "@storybook/addon-interactions": "^7.6.0",
+    "@storybook/addon-links": "^7.6.0",
+    "@storybook/blocks": "^7.6.0",
+    "@storybook/react": "^7.6.0",
+    "@storybook/react-vite": "^7.6.0",
+    "@storybook/testing-library": "^0.2.2",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "storybook": "^7.6.0",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.0"
+    
+  }
+}
+

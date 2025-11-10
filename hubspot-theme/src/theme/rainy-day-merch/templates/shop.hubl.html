@@ -1,0 +1,21 @@
+<!--
+  templateType: page
+  isAvailableForNewContent: true
+  label: Shop - Product Grid
+-->
+{% extends "./layouts/base.hubl.html" %}
+
+{% block body %}
+
+  {% module
+    "hero"
+    path="../components/modules/Hero"
+  %}
+
+  {% module
+    "productGrid"
+    path="../components/modules/ProductGrid"
+  %}
+
+{% endblock body %}
+

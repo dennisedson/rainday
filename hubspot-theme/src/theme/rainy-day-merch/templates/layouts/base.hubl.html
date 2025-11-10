@@ -1,0 +1,77 @@
+<!--
+  templateType: none
+-->
+<!DOCTYPE html>
+<html lang="{{ html_lang }}" {{ html_lang_dir }}>
+  <head>
+    <meta charset="utf-8" />
+    {% if page_meta.html_title or pageTitle %}
+      <title>{{ page_meta.html_title or pageTitle }}</title>
+    {% endif %}
+    {% if brand_settings.primaryFavicon.src %}
+      <link rel="shortcut icon" href="{{ brand_settings.primaryFavicon.src }}" />
+    {% endif %}
+    <meta name="description" content="{{ page_meta.meta_description }}" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: {
+                DEFAULT: '#FF6B35',
+                50: '#FFF4F1',
+                100: '#FFE8E1',
+                200: '#FFD1C3',
+                300: '#FFBAA5',
+                400: '#FFA387',
+                500: '#FF6B35',
+                600: '#FF5519',
+                700: '#F03F00',
+                800: '#C23300',
+                900: '#942700',
+              },
+              beige: {
+                DEFAULT: '#FAF7F2',
+                50: '#FFFFFF',
+                100: '#FAF7F2',
+                200: '#F5EFE5',
+                300: '#EDE4D4',
+                400: '#E5D9C3',
+                500: '#DDD0B2',
+              },
+            },
+            fontFamily: {
+              sans: ['Inter', 'system-ui', 'sans-serif'],
+              display: ['Playfair Display', 'serif'],
+            },
+            boxShadow: {
+              'card': '0 2px 8px rgba(0, 0, 0, 0.08)',
+            },
+          },
+        },
+      }
+    </script>
+    {# To see a full list of what is included via standard_footer_includes please reference this article: https://developers.hubspot.com/docs/cms/hubl/variables#required-page-template-variables #}
+    {{ standard_header_includes }}
+  </head>
+  <body>
+    {% module "site_header"
+      path="../../components/modules/SiteHeader"
+    %}
+    <div class="body-wrapper {{ builtin_body_classes }}">
+      {% block body %}
+      {% endblock body %}
+    </div>
+    
+    {% module "site_footer"
+      path="../../components/modules/SiteFooter"
+    %}
+    
+    {# To see a full list of what is included via standard_footer_includes please reference this article: https://developers.hubspot.com/docs/cms/hubl/variables#required-page-template-variables #}
+    {{ standard_footer_includes }}
+  </body>
+</html>
