@@ -4,7 +4,12 @@ import { useState, useEffect } from 'react';
  * CategoryBannerIsland - Dynamic banner that updates based on URL category parameter
  * Shows category-specific content and imagery
  */
-export default function CategoryBannerIsland({ siteName = 'Rainy Day Merchandise' }) {
+export default function CategoryBannerIsland({ 
+  siteName = 'Rainy Day Merchandise',
+  categoryOverrides = [],
+  showSaleBadge = true,
+  showFeatures = true,
+}) {
   const [category, setCategory] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [categoryData, setCategoryData] = useState({}); // Store images AND descriptions
@@ -86,10 +91,16 @@ export default function CategoryBannerIsland({ siteName = 'Rainy Day Merchandise
   const content = categoryContent[category] || categoryContent['All Products'];
   const squareData = categoryData[category] || {};
   
-  // Use Square data if available, otherwise fallback to hardcoded content
+  // Find override from HubSpot repeater field (if category name matches)
+  const override = categoryOverrides.find(item => item.categoryName === category);
+  
+  // Priority: HubSpot override > Square description > Hardcoded default
   const displayTitle = content.title;
-  const displayDescription = squareData.description || content.description;
+  const displayDescription = override?.customDescription || squareData.description || content.description;
   const imageUrl = squareData.image || content.image;
+  
+  console.log('[CategoryBannerIsland] Using description from:', 
+    override ? 'HubSpot Override' : squareData.description ? 'Square' : 'Default');
 
   if (isLoading) {
     return (
@@ -110,9 +121,11 @@ export default function CategoryBannerIsland({ siteName = 'Rainy Day Merchandise
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center rounded-3xl overflow-hidden bg-white shadow-2xl">
           {/* Text Content */}
           <div className="px-8 py-16 lg:px-12 lg:py-24">
-            <div className="inline-block px-4 py-1 bg-primary text-white text-sm font-semibold rounded-full mb-6">
-              SALE
-            </div>
+            {showSaleBadge && (
+              <div className="inline-block px-4 py-1 bg-primary text-white text-sm font-semibold rounded-full mb-6">
+                SALE
+              </div>
+            )}
             <h1 className="text-5xl lg:text-6xl font-display font-bold text-gray-900 mb-6">
               {displayTitle}
             </h1>
@@ -136,7 +149,8 @@ export default function CategoryBannerIsland({ siteName = 'Rainy Day Merchandise
             </button>
 
             {/* Features */}
-            <div className="grid grid-cols-3 gap-6 mt-12">
+            {showFeatures && (
+              <div className="grid grid-cols-3 gap-6 mt-12">
                 <div className="text-center">
                 <div className="inline-flex items-center justify-center w-12 h-12 bg-white rounded-full mb-3 shadow-md">
                   <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -164,7 +178,8 @@ export default function CategoryBannerIsland({ siteName = 'Rainy Day Merchandise
                 <h3 className="text-sm font-semibold text-gray-900 mb-1">Gift Ready</h3>
                 <p className="text-xs text-gray-600">Luxury packaging</p>
                 </div>
-            </div>
+              </div>
+            )}
           </div>
 
           {/* Image */}
