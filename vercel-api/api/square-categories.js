@@ -59,20 +59,34 @@ export default async function handler(req, res) {
     }
 
     const data = await response.json();
+    
+    // Build image map: ID -> URL
+    const imageMap = {};
+    (data.objects || [])
+      .filter(obj => obj.type === 'IMAGE')
+      .forEach(image => {
+        const imageData = image.image_data;
+        imageMap[image.id] = imageData?.url || null;
+      });
 
     // Extract and format categories
     const categories = (data.objects || [])
       .filter(obj => obj.type === 'CATEGORY' && obj.category_data)
-      .map(category => ({
-        id: category.id,
-        name: category.category_data.name,
-        image: category.category_data.image_ids?.[0] || null, // Get first category image
-        // Create URL-friendly slug from name
-        slug: category.category_data.name
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/^-|-$/g, ''),
-      }))
+      .map(category => {
+        const imageId = category.category_data.image_ids?.[0];
+        const imageUrl = imageId ? imageMap[imageId] : null;
+        
+        return {
+          id: category.id,
+          name: category.category_data.name,
+          image: imageUrl, // Use actual image URL, not ID
+          // Create URL-friendly slug from name
+          slug: category.category_data.name
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-|-$/g, ''),
+        };
+      })
       .sort((a, b) => a.name.localeCompare(b.name)); // Sort alphabetically
 
     return res.status(200).json({

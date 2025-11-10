@@ -63,15 +63,27 @@ export default async function handler(req, res) {
 
     const data = await response.json();
     
+    // Build image map: ID -> URL
+    const imageMap = {};
+    (data.objects || [])
+      .filter(obj => obj.type === 'IMAGE')
+      .forEach(image => {
+        const imageData = image.image_data;
+        imageMap[image.id] = imageData?.url || null;
+      });
+    
     // Build category map: ID -> { name, image }
     const categoryMap = {};
     (data.objects || [])
       .filter(obj => obj.type === 'CATEGORY')
       .forEach(category => {
         const categoryData = category.category_data;
+        const imageId = categoryData?.image_ids?.[0];
+        const imageUrl = imageId ? imageMap[imageId] : null;
+        
         categoryMap[category.id] = {
           name: categoryData?.name || 'Uncategorized',
-          image: categoryData?.image_ids?.[0] || null, // Get first category image
+          image: imageUrl, // Use actual URL, not ID
         };
       });
     
@@ -91,6 +103,10 @@ export default async function handler(req, res) {
         const categoryName = categoryInfo?.name || 'Uncategorized';
         const categoryImage = categoryInfo?.image || null;
         
+        // Get product image URL from image ID
+        const productImageId = itemData.image_ids?.[0];
+        const productImageUrl = productImageId ? imageMap[productImageId] : null;
+        
         return {
           id: item.id,
           name: itemData.name || 'Untitled Product',
@@ -98,7 +114,7 @@ export default async function handler(req, res) {
           category: categoryName,
           categoryImage: categoryImage,
           price: price / 100, // Convert cents to dollars
-          image: itemData.image_ids?.[0] || DEFAULT_PRODUCT_IMAGE, // Use placeholder if no image
+          image: productImageUrl || DEFAULT_PRODUCT_IMAGE, // Use actual URL or placeholder
           available: !itemData.is_deleted && itemData.available_online,
           variations: itemData.variations || [],
         };
