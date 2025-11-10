@@ -46,37 +46,40 @@ export default function CategoryBannerIsland({ siteName = 'Rainy Day Merchandise
     console.log('[CategoryBannerIsland] Category:', urlCategory);
   }, []);
 
-  // Category-specific content
+  // ========================================
+  // 📝 EDIT CATEGORY DESCRIPTIONS HERE
+  // ========================================
+  // To customize banner text for each category:
+  // 1. Find the category name below
+  // 2. Edit the 'description' field
+  // 3. Save and run: hs project upload
+  // 4. Images come from Square automatically!
+  // ========================================
+  
   const categoryContent = {
     'Bracelets': {
       title: 'Bracelets',
       description: 'Discover our curated collection of handcrafted bracelets. From delicate chains to statement pieces, each bracelet is meticulously designed to elevate your style.',
-      // image: 'https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=1200&auto=format&fit=crop&q=80',
     },
     'Necklaces': {
       title: 'Necklaces',
       description: 'Discover our curated collection of handcrafted necklaces. From delicate chains to statement pieces, each necklace is meticulously designed to elevate your style.',
-      // image: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=1200&auto=format&fit=crop&q=80',
     },
     'Earrings': {
       title: 'Earrings',
       description: 'Explore our stunning collection of handcrafted earrings. From subtle studs to bold dangles, each pair is designed to make a statement.',
-      // image: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=1200&auto=format&fit=crop&q=80',
     },
     'Keychains': {
       title: 'Keychains',
       description: 'Browse our unique collection of handcrafted keychains. Practical meets beautiful with designs that showcase artisan craftsmanship.',
-      // image: 'https://images.unsplash.com/photo-1563492065599-3520f775eeed?w=1200&auto=format&fit=crop&q=80',
     },
     'Lanyards': {
       title: 'Lanyards',
       description: 'Discover our stylish collection of handcrafted lanyards. Functional accessories that don\'t compromise on style.',
-      // image: 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=1200&auto=format&fit=crop&q=80',
     },
     'All Products': {
       title: 'Shop All',
       description: 'Explore our entire collection of handcrafted jewelry and accessories. Each piece is designed with care and attention to detail.',
-      // image: 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=1200&auto=format&fit=crop&q=80',
     },
   };
 
