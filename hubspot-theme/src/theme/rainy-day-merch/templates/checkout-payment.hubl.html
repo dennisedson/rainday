@@ -1,0 +1,18 @@
+<!--
+  templateType: page
+  isAvailableForNewContent: true
+  label: Checkout - Payment
+-->
+{% extends "./layouts/base.hubl.html" %}
+
+{% set pageTitle = "Checkout - Payment - Artisan & Co." %}
+
+{% block body %}
+
+{% module
+  "checkout_payment"
+  path="../components/modules/CheckoutPayment"
+%}
+
+{% endblock body %}
+

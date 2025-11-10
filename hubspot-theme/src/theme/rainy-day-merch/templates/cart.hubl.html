@@ -1,0 +1,23 @@
+<!--
+  templateType: page
+  isAvailableForNewContent: true
+  label: Checkout - Step 1 -Shopping Cart
+-->
+{% extends "./layouts/base.hubl.html" %}
+
+{% set pageTitle = "Shopping Cart - Rainy Day Merchandise" %}
+
+{% block body %}
+{% module
+    "hero"
+    path="../components/modules/Hero"
+  %}
+{% module
+  "shopping_cart"
+  path="../components/modules/ShoppingCart"
+%}
+<script>
+  console.log("Shopping Cart template loaded");
+</script>
+{% endblock body %}
+

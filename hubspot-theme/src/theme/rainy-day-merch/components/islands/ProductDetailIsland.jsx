@@ -254,7 +254,45 @@ export default function ProductDetailIsland({ fallbackData }) {
             {/* Action Buttons */}
             <div className="flex gap-3 mb-6">
               <button
-                onClick={() => alert(`Added ${quantity} x ${product.name} to cart!`)}
+                onClick={() => {
+                  // Get existing cart
+                  let cart = [];
+                  try {
+                    const savedCart = localStorage.getItem('cart');
+                    if (savedCart) {
+                      cart = JSON.parse(savedCart);
+                    }
+                  } catch (e) {
+                    console.error('Failed to parse cart:', e);
+                  }
+
+                  // Check if product already in cart
+                  const existingIndex = cart.findIndex(item => item.id === product.id);
+                  
+                  if (existingIndex > -1) {
+                    // Update quantity
+                    cart[existingIndex].quantity += quantity;
+                  } else {
+                    // Add new item
+                    cart.push({
+                      id: product.id,
+                      name: product.name,
+                      price: product.price,
+                      quantity: quantity,
+                      image: product.mainImage,
+                      category: product.category || 'Products'
+                    });
+                  }
+
+                  // Save cart
+                  localStorage.setItem('cart', JSON.stringify(cart));
+
+                  // Dispatch custom event to update cart count in header
+                  window.dispatchEvent(new Event('cartUpdated'));
+
+                  // Show success message
+                  alert(`Added ${quantity} x ${product.name} to cart!`);
+                }}
                 className="flex-1 bg-orange-500 text-white py-3 px-6 rounded-lg font-semibold hover:bg-orange-600 transition-colors flex items-center justify-center gap-2"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -298,7 +336,39 @@ export default function ProductDetailIsland({ fallbackData }) {
 
             {/* Buy Now Button */}
             <button
-              onClick={() => alert(`Proceeding to checkout with ${quantity} x ${product.name}`)}
+              onClick={() => {
+                // Add to cart
+                let cart = [];
+                try {
+                  const savedCart = localStorage.getItem('cart');
+                  if (savedCart) {
+                    cart = JSON.parse(savedCart);
+                  }
+                } catch (e) {
+                  console.error('Failed to parse cart:', e);
+                }
+
+                const existingIndex = cart.findIndex(item => item.id === product.id);
+                
+                if (existingIndex > -1) {
+                  cart[existingIndex].quantity += quantity;
+                } else {
+                  cart.push({
+                    id: product.id,
+                    name: product.name,
+                    price: product.price,
+                    quantity: quantity,
+                    image: product.mainImage,
+                    category: product.category || 'Products'
+                  });
+                }
+
+                localStorage.setItem('cart', JSON.stringify(cart));
+                window.dispatchEvent(new Event('cartUpdated'));
+
+                // Redirect to cart
+                window.location.href = '/cart';
+              }}
               className="w-full bg-white border-2 border-gray-900 text-gray-900 py-3 px-6 rounded-lg font-semibold hover:bg-gray-50 transition-colors mb-6"
             >
               Buy Now

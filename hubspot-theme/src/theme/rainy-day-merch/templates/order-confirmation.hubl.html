@@ -1,0 +1,18 @@
+<!--
+  templateType: page
+  isAvailableForNewContent: true
+  label: Order Confirmation
+-->
+{% extends "./layouts/base.hubl.html" %}
+
+{% set pageTitle = "Order Confirmation - Artisan & Co." %}
+
+{% block body %}
+
+{% module
+  "order_confirmation"
+  path="../components/modules/OrderConfirmation"
+%}
+
+{% endblock body %}
+
