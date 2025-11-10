@@ -135,18 +135,13 @@ export default function ProductGridIsland({ sectionTitle, category, sortBy, colu
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-      {/* Category Title or Section Title */}
-      {(filterCategory || sectionTitle) && (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16" data-product-grid>
+      {/* Section Title (only show if no active category - banner handles category titles) */}
+      {!activeCategory && sectionTitle && (
         <div className="text-center mb-12">
           <h2 className="text-4xl font-bold text-gray-900">
-            {filterCategory ? `${filterCategory}` : sectionTitle}
+            {sectionTitle}
           </h2>
-          {filterCategory && (
-            <p className="text-gray-600 mt-2">
-              Showing {filteredProducts.length} {filteredProducts.length === 1 ? 'product' : 'products'}
-            </p>
-          )}
         </div>
       )}
       
