@@ -63,6 +63,16 @@ export default async function handler(req, res) {
 
     const data = await response.json();
     
+    // Build a map of category IDs to category names
+    const categoryMap = {};
+    (data.objects || [])
+      .filter(obj => obj.type === 'CATEGORY')
+      .forEach(category => {
+        categoryMap[category.id] = category.category_data?.name || 'Uncategorized';
+      });
+    
+    console.log('Category Map:', categoryMap);
+    
     // Filter for ITEM objects and transform to our format
     const products = (data.objects || [])
       .filter(obj => obj.type === 'ITEM')
@@ -71,11 +81,16 @@ export default async function handler(req, res) {
         const variation = itemData.variations?.[0];
         const price = variation?.item_variation_data?.price_money?.amount || 0;
         
+        // Map category ID to category name
+        const categoryName = itemData.category_id 
+          ? categoryMap[itemData.category_id] || 'Uncategorized'
+          : 'Uncategorized';
+        
         return {
           id: item.id,
           name: itemData.name || 'Untitled Product',
           description: itemData.description || '',
-          category: itemData.category_id || 'uncategorized',
+          category: categoryName,
           price: price / 100, // Convert cents to dollars
           image: itemData.image_ids?.[0] || DEFAULT_PRODUCT_IMAGE, // Use placeholder if no image
           available: !itemData.is_deleted && itemData.available_online,
