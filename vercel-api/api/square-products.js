@@ -63,16 +63,6 @@ export default async function handler(req, res) {
 
     const data = await response.json();
     
-    // Build a map of category IDs to category names
-    const categoryMap = {};
-    (data.objects || [])
-      .filter(obj => obj.type === 'CATEGORY')
-      .forEach(category => {
-        categoryMap[category.id] = category.category_data?.name || 'Uncategorized';
-      });
-    
-    console.log('Category Map:', categoryMap);
-    
     // Filter for ITEM objects and transform to our format
     const products = (data.objects || [])
       .filter(obj => obj.type === 'ITEM')
@@ -81,10 +71,8 @@ export default async function handler(req, res) {
         const variation = itemData.variations?.[0];
         const price = variation?.item_variation_data?.price_money?.amount || 0;
         
-        // Map category ID to category name
-        const categoryName = itemData.category_id 
-          ? categoryMap[itemData.category_id] || 'Uncategorized'
-          : 'Uncategorized';
+        // Use reporting_category for the category name (this is what shows in Square dashboard)
+        const categoryName = itemData.reporting_category?.name || 'Uncategorized';
         
         return {
           id: item.id,
