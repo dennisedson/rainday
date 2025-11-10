@@ -1,12 +1,15 @@
 import {
   ModuleFields,
   TextField,
-  FieldGroup,
+  RepeatedFieldGroup,
+  ImageField,
+  NumberField,
 } from '@hubspot/cms-components/fields';
 
 export function Component({ fieldValues }) {
-  const { sectionTitle, sectionSubtitle, cat1, cat2, cat3, cat4, cat5, cat6 } = fieldValues;
-  const categories = [cat1, cat2, cat3, cat4, cat5, cat6].filter(c => c?.categoryName);
+  const { sectionTitle, sectionSubtitle, categories = [] } = fieldValues;
+  // Filter out empty categories and limit to 4
+  const displayCategories = categories.filter(c => c?.categoryName).slice(0, 4);
 
   return (
     <section className="py-16 bg-white">
@@ -22,8 +25,8 @@ export function Component({ fieldValues }) {
         </div>
 
         {/* Category Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-          {categories && categories.map((category, index) => (
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {displayCategories && displayCategories.map((category, index) => (
             <a
               key={index}
               href={category.link || '#'}
@@ -32,10 +35,10 @@ export function Component({ fieldValues }) {
               {/* Category Image */}
               <div className="relative w-full" style={{ paddingBottom: '100%' }}>
                 <div className="absolute inset-0 bg-gray-100 overflow-hidden">
-                {category.imageUrl ? (
+                {category.image?.src ? (
                   <img
-                    src={category.imageUrl}
-                    alt={category.categoryName}
+                    src={category.image.src}
+                    alt={category.image.alt || category.categoryName}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                   />
                 ) : (
@@ -79,42 +82,45 @@ export const fields = (
       default="Explore our diverse collection of handcrafted jewelry and artisan crafts"
       helpText="Description text below the title"
     />
-    <FieldGroup name="cat1" label="Category 1">
-      <TextField name="categoryName" label="Category Name" />
-      <TextField name="imageUrl" label="Category Image URL" helpText="Full URL to the image" />
-      <TextField name="itemCount" label="Number of Items" default="0" />
-      <TextField name="link" label="Category Link" default="#" />
-    </FieldGroup>
-    <FieldGroup name="cat2" label="Category 2">
-      <TextField name="categoryName" label="Category Name" />
-      <TextField name="imageUrl" label="Category Image URL" helpText="Full URL to the image" />
-      <TextField name="itemCount" label="Number of Items" default="0" />
-      <TextField name="link" label="Category Link" default="#" />
-    </FieldGroup>
-    <FieldGroup name="cat3" label="Category 3">
-      <TextField name="categoryName" label="Category Name" />
-      <TextField name="imageUrl" label="Category Image URL" helpText="Full URL to the image" />
-      <TextField name="itemCount" label="Number of Items" default="0" />
-      <TextField name="link" label="Category Link" default="#" />
-    </FieldGroup>
-    <FieldGroup name="cat4" label="Category 4">
-      <TextField name="categoryName" label="Category Name" />
-      <TextField name="imageUrl" label="Category Image URL" helpText="Full URL to the image" />
-      <TextField name="itemCount" label="Number of Items" default="0" />
-      <TextField name="link" label="Category Link" default="#" />
-    </FieldGroup>
-    <FieldGroup name="cat5" label="Category 5">
-      <TextField name="categoryName" label="Category Name" />
-      <TextField name="imageUrl" label="Category Image URL" helpText="Full URL to the image" />
-      <TextField name="itemCount" label="Number of Items" default="0" />
-      <TextField name="link" label="Category Link" default="#" />
-    </FieldGroup>
-    <FieldGroup name="cat6" label="Category 6">
-      <TextField name="categoryName" label="Category Name" />
-      <TextField name="imageUrl" label="Category Image URL" helpText="Full URL to the image" />
-      <TextField name="itemCount" label="Number of Items" default="0" />
-      <TextField name="link" label="Category Link" default="#" />
-    </FieldGroup>
+    <RepeatedFieldGroup
+      name="categories"
+      label="Categories"
+      occurrence={{
+        min: 0,
+        max: 4,
+        default: 0,
+      }}
+      default={[]}
+    >
+      <TextField
+        name="categoryName"
+        label="Category Name"
+        required={true}
+        default=""
+        helpText="Name of the category (e.g., 'Bracelets', 'Necklaces')"
+      />
+      <ImageField
+        name="image"
+        label="Category Image"
+        default={{
+          src: '',
+          alt: '',
+        }}
+        helpText="Upload an image for this category"
+      />
+      <NumberField
+        name="itemCount"
+        label="Number of Items"
+        default={0}
+        helpText="Display how many products are in this category (shown as 'X items' below category name)"
+      />
+      <TextField
+        name="link"
+        label="Category Link"
+        default="/shop"
+        helpText="URL to the category page (e.g., '/shop?category=Bracelets')"
+      />
+    </RepeatedFieldGroup>
   </ModuleFields>
 );
 
