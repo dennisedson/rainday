@@ -75,12 +75,22 @@ vercel
    - Application ID
    - Location ID
 
-### HubSpot Private App
-1. Go to HubSpot Settings → Integrations → Private Apps
-2. Create a private app with scopes:
-   - `crm.objects.deals.write`
+### HubSpot Authentication
+**Option 1: Personal Access Key (Recommended)**
+1. Go to HubSpot → Development → Keys → Personal Access Key
+2. Generate a new key (if needed)
+3. Select required scopes:
+   - `crm.objects.contacts.read`
+   - `crm.objects.contacts.write`
    - `crm.objects.deals.read`
-3. Copy the Access Token
+   - `crm.objects.deals.write`
+4. Copy the Access Token
+
+**Option 2: HubSpot App (New Platform)**
+1. Create app: `hs project create --project-base app --distribution private --auth static`
+2. Upload: `hs project upload`
+3. Get static token from HubSpot
+4. See `HUBSPOT_AUTH_MIGRATION.md` for details
 
 ## 🛠 Tech Stack
 
