@@ -19,6 +19,7 @@ const ProductCard = ({
   featured = false,
   onWishlistToggle,
   onAddToCart,
+  productUrl,
   className = '',
 }) => {
   const [isWishlisted, setIsWishlisted] = useState(false);
@@ -26,6 +27,7 @@ const ProductCard = ({
 
   const handleWishlistClick = (e) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsWishlisted(!isWishlisted);
     if (onWishlistToggle) {
       onWishlistToggle(id, !isWishlisted);
@@ -34,6 +36,7 @@ const ProductCard = ({
 
   const handleAddToCart = (e) => {
     e.preventDefault();
+    e.stopPropagation();
     if (onAddToCart) {
       onAddToCart(id);
     }
@@ -44,8 +47,11 @@ const ProductCard = ({
     ? Math.round(((originalPrice - price) / originalPrice) * 100)
     : 0;
 
+  // Generate product URL - use provided URL or construct from ID
+  const href = productUrl || `/product?id=${encodeURIComponent(id)}`;
+
   return (
-    <div className={`card group ${className}`}>
+    <a href={href} className={`card group block ${className}`}>
       {/* Image Container */}
       <div className="relative aspect-square overflow-hidden bg-gray-100">
         <img
@@ -137,7 +143,7 @@ const ProductCard = ({
           )}
         </div>
       </div>
-    </div>
+    </a>
   );
 };
 
