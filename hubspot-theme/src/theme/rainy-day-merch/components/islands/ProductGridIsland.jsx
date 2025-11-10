@@ -19,6 +19,7 @@ export default function ProductGridIsland({ sectionTitle, category, sortBy, colu
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const urlCategory = urlParams.get('category');
+    console.log('[ProductGridIsland] URL Category:', urlCategory);
     if (urlCategory) {
       setActiveCategory(urlCategory);
     }
@@ -104,11 +105,21 @@ export default function ProductGridIsland({ sectionTitle, category, sortBy, colu
   // Filter products by category (from URL or prop)
   let filteredProducts = products;
   const filterCategory = activeCategory || category;
+  
+  console.log('[ProductGridIsland] Filter category:', filterCategory);
+  console.log('[ProductGridIsland] Total products:', products.length);
+  console.log('[ProductGridIsland] Products with categories:', products.map(p => ({ name: p.title, category: p.category })));
+  
   if (filterCategory && filterCategory !== 'all') {
-    filteredProducts = filteredProducts.filter(p => 
-      p.category.toLowerCase().includes(filterCategory.toLowerCase())
-    );
+    filteredProducts = filteredProducts.filter(p => {
+      // Exact match comparison (case-insensitive)
+      const match = p.category.toLowerCase() === filterCategory.toLowerCase();
+      console.log(`[ProductGridIsland] Checking "${p.title}" (${p.category}) against "${filterCategory}": ${match}`);
+      return match;
+    });
   }
+  
+  console.log('[ProductGridIsland] Filtered products count:', filteredProducts.length);
   
   // Sort products
   if (sortBy === 'price-low') {
