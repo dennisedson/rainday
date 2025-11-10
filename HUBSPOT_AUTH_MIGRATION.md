@@ -28,34 +28,38 @@ HubSpot is moving away from **Legacy Apps** (Private Apps) and encouraging the n
 - ⚠️ Only one key per account
 - ⚠️ Tied to your user account
 
-## Option 2: HubSpot App with Static Auth (New Platform)
+## Option 2: HubSpot App with Static Auth (New Platform) ✅ RECOMMENDED
 
-**What it is:** A HubSpot App created with `hs project create` using static authentication.
+**What it is:** A HubSpot App created on the new platform (2025.2) with `private` distribution and `static` authentication.
 
 **How to set it up:**
+The app is already created in `hubspot-app/` directory:
+
 ```bash
-cd /path/to/project
-hs project create \
-  --project-base app \
-  --distribution private \
-  --auth static \
-  --name "Your App Name" \
-  --dest hubspot-app
+cd hubspot-app
+hs project upload
 ```
 
 Then:
-1. Upload the app: `cd hubspot-app && hs project upload`
-2. Get the static token from HubSpot
-3. Add to Vercel as `HUBSPOT_ACCESS_TOKEN`
+1. Get the static token: `hs project open` → Auth tab → Copy static token
+2. Add to Vercel as `HUBSPOT_ACCESS_TOKEN`
+3. Install the app in your HubSpot account (one-time)
+
+**Configuration:**
+- **Distribution:** `private` - Single account only
+- **Auth:** `static` - No OAuth flow needed
+- **Scopes:** Contacts & Deals read/write
 
 **Pros:**
 - ✅ Uses new platform (future-proof)
-- ✅ Can be managed as code
+- ✅ Can be managed as code (version controlled)
 - ✅ Better for team collaboration
+- ✅ No OAuth complexity
+- ✅ Single account restriction (secure)
 
 **Cons:**
-- ⚠️ More setup required
-- ⚠️ Requires app installation
+- ⚠️ Requires one-time app installation
+- ⚠️ Slightly more setup than Personal Access Key
 
 ## Option 3: HubSpot App with OAuth (For Multi-Account)
 

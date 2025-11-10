@@ -1,0 +1,30 @@
+{
+  "uid": "rainy_day_merch_api",
+  "type": "app",
+  "config": {
+    "description": "Server-side API integration for Rainy Day Merchandise e-commerce store. Handles favorites sync and order tracking with HubSpot CRM.",
+    "name": "Rainy Day Merch API",
+    "distribution": "private",
+    "auth": {
+      "type": "static",
+      "redirectUrls": [],
+      "requiredScopes": [
+        "crm.objects.contacts.read",
+        "crm.objects.contacts.write",
+        "crm.objects.deals.read",
+        "crm.objects.deals.write"
+      ],
+      "optionalScopes": [],
+      "conditionallyRequiredScopes": []
+    },
+    "permittedUrls": {
+      "fetch": ["https://api.hubapi.com"],
+      "iframe": [],
+      "img": []
+    },
+    "support": {
+      "supportEmail": "support@rainydaymerchandise.com"
+    }
+  }
+}
+

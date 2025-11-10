@@ -86,11 +86,12 @@ vercel
    - `crm.objects.deals.write`
 4. Copy the Access Token
 
-**Option 2: HubSpot App (New Platform)**
-1. Create app: `hs project create --project-base app --distribution private --auth static`
-2. Upload: `hs project upload`
-3. Get static token from HubSpot
-4. See `HUBSPOT_AUTH_MIGRATION.md` for details
+**Option 2: HubSpot App (New Platform) ✅ Recommended**
+1. Upload app: `cd hubspot-app && hs project upload`
+2. Get static token: `hs project open` → Auth tab → Copy token
+3. Install app in your HubSpot account (one-time)
+4. Add token to Vercel as `HUBSPOT_ACCESS_TOKEN`
+5. See `hubspot-app/README.md` for details
 
 ## 🛠 Tech Stack
 
