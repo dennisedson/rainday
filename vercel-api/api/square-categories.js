@@ -60,14 +60,25 @@ export default async function handler(req, res) {
 
     const data = await response.json();
     
+    // Debug: Log all object types
+    const objectTypes = (data.objects || []).reduce((acc, obj) => {
+      acc[obj.type] = (acc[obj.type] || 0) + 1;
+      return acc;
+    }, {});
+    console.log('Object types in response:', objectTypes);
+    
     // Build image map: ID -> URL
     const imageMap = {};
-    (data.objects || [])
-      .filter(obj => obj.type === 'IMAGE')
-      .forEach(image => {
-        const imageData = image.image_data;
-        imageMap[image.id] = imageData?.url || null;
-      });
+    const imageObjects = (data.objects || []).filter(obj => obj.type === 'IMAGE');
+    console.log('Found IMAGE objects:', imageObjects.length);
+    
+    imageObjects.forEach(image => {
+      const imageData = image.image_data;
+      console.log('Processing image:', image.id, 'URL:', imageData?.url);
+      imageMap[image.id] = imageData?.url || null;
+    });
+    
+    console.log('Image Map:', imageMap);
 
     // Extract and format categories
     const categories = (data.objects || [])
