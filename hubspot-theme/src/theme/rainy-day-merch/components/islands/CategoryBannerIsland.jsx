@@ -85,6 +85,7 @@ export default function CategoryBannerIsland({
     'All Products': {
       title: 'Shop All',
       description: 'Explore our entire collection of handcrafted jewelry and accessories. Each piece is designed with care and attention to detail.',
+      image: 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=1200&auto=format&fit=crop&q=80',
     },
   };
 
@@ -94,13 +95,17 @@ export default function CategoryBannerIsland({
   // Find override from HubSpot repeater field (if category name matches)
   const override = categoryOverrides.find(item => item.categoryName === category);
   
-  // Priority: HubSpot override > Square description > Hardcoded default
+  // Priority system:
+  // Description: HubSpot override > Square description > Hardcoded default
+  // Image: HubSpot custom image > Square image > Hardcoded default
   const displayTitle = content.title;
   const displayDescription = override?.customDescription || squareData.description || content.description;
-  const imageUrl = squareData.image || content.image;
+  const imageUrl = override?.customImage?.src || squareData.image || content.image;
   
-  console.log('[CategoryBannerIsland] Using description from:', 
-    override ? 'HubSpot Override' : squareData.description ? 'Square' : 'Default');
+  console.log('[CategoryBannerIsland] Content sources:', {
+    description: override?.customDescription ? 'HubSpot Override' : squareData.description ? 'Square' : 'Default',
+    image: override?.customImage?.src ? 'HubSpot Custom' : squareData.image ? 'Square' : 'Default',
+  });
 
   if (isLoading) {
     return (
@@ -186,7 +191,7 @@ export default function CategoryBannerIsland({
           <div className="relative h-full min-h-[400px] lg:min-h-[500px] overflow-hidden">
             <img
               src={imageUrl}
-              alt={displayTitle}
+              alt={override?.customImage?.alt || displayTitle}
               className="w-full h-full object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
