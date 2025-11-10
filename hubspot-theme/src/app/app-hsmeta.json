@@ -7,7 +7,6 @@
     "distribution": "private",
     "auth": {
       "type": "static",
-      "redirectUrls": [],
       "requiredScopes": [
         "crm.objects.contacts.read",
         "crm.objects.contacts.write",
