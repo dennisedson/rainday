@@ -5,6 +5,7 @@ const API_BASE_URL = 'https://hsecommerce-api.vercel.app/api';
 export default function SiteHeaderIsland({ siteName = 'Artisan & Co.', logoImage = null }) {
   const [cartCount, setCartCount] = useState(0);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [navigationItems, setNavigationItems] = useState([
     // Default fallback items
     { label: 'Shop', href: '/shop' },
@@ -121,11 +122,11 @@ export default function SiteHeaderIsland({ siteName = 'Artisan & Co.', logoImage
           </nav>
 
           {/* Actions */}
-          <div className="flex items-center gap-4">
-            {/* Search */}
+          <div className="flex items-center gap-2 sm:gap-4">
+            {/* Search - Hidden on mobile */}
             <button
               onClick={() => setIsSearchOpen(!isSearchOpen)}
-              className="p-2 text-gray-600 hover:text-primary transition-colors duration-200"
+              className="hidden sm:block p-2 text-gray-600 hover:text-primary transition-colors duration-200"
               aria-label="Search"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -133,10 +134,10 @@ export default function SiteHeaderIsland({ siteName = 'Artisan & Co.', logoImage
               </svg>
             </button>
 
-            {/* Wishlist */}
+            {/* Wishlist - Hidden on mobile */}
             <a
               href="/wishlist"
-              className="p-2 text-gray-600 hover:text-primary transition-colors duration-200"
+              className="hidden sm:block p-2 text-gray-600 hover:text-primary transition-colors duration-200"
               aria-label="Wishlist"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -144,10 +145,10 @@ export default function SiteHeaderIsland({ siteName = 'Artisan & Co.', logoImage
               </svg>
             </a>
 
-            {/* Account */}
+            {/* Account - Hidden on mobile */}
             <a
               href="/account"
-              className="p-2 text-gray-600 hover:text-primary transition-colors duration-200"
+              className="hidden sm:block p-2 text-gray-600 hover:text-primary transition-colors duration-200"
               aria-label="Account"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -170,6 +171,23 @@ export default function SiteHeaderIsland({ siteName = 'Artisan & Co.', logoImage
                 </span>
               )}
             </a>
+
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="lg:hidden p-2 text-gray-600 hover:text-primary transition-colors duration-200"
+              aria-label="Toggle menu"
+            >
+              {isMobileMenuOpen ? (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              ) : (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              )}
+            </button>
           </div>
         </div>
 
@@ -189,6 +207,92 @@ export default function SiteHeaderIsland({ siteName = 'Artisan & Co.', logoImage
             </div>
           </div>
         )}
+      </div>
+
+      {/* Mobile Menu Overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        ></div>
+      )}
+
+      {/* Mobile Menu Drawer */}
+      <div 
+        className={`fixed top-0 right-0 h-full w-80 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out lg:hidden ${
+          isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
+        <div className="flex flex-col h-full">
+          {/* Mobile Menu Header */}
+          <div className="flex items-center justify-between p-4 border-b border-gray-200">
+            <span className="text-lg font-display font-semibold text-gray-900">Menu</span>
+            <button
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="p-2 text-gray-600 hover:text-primary transition-colors"
+              aria-label="Close menu"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Mobile Navigation Links */}
+          <nav className="flex-1 overflow-y-auto py-4">
+            {navigationItems.map((item) => (
+              <a
+                key={item.label}
+                href={item.href}
+                className="block px-6 py-3 text-base font-medium text-gray-700 hover:bg-beige-100 hover:text-primary transition-colors"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                {item.label}
+              </a>
+            ))}
+
+            {/* Divider */}
+            <div className="my-4 border-t border-gray-200"></div>
+
+            {/* Additional Mobile Links */}
+            <a
+              href="/wishlist"
+              className="flex items-center px-6 py-3 text-base font-medium text-gray-700 hover:bg-beige-100 hover:text-primary transition-colors"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+              Wishlist
+            </a>
+            <a
+              href="/account"
+              className="flex items-center px-6 py-3 text-base font-medium text-gray-700 hover:bg-beige-100 hover:text-primary transition-colors"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              Account
+            </a>
+          </nav>
+
+          {/* Mobile Menu Footer */}
+          <div className="p-4 border-t border-gray-200 bg-beige-50">
+            <a
+              href="/cart"
+              className="flex items-center justify-between px-4 py-3 bg-primary text-white rounded-lg font-semibold hover:bg-primary-600 transition-colors"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              <span>View Cart</span>
+              {cartCount > 0 && (
+                <span className="bg-white text-primary px-2 py-1 rounded-full text-sm font-bold">
+                  {cartCount}
+                </span>
+              )}
+            </a>
+          </div>
+        </div>
       </div>
     </header>
   );
