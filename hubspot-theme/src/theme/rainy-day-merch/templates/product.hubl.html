@@ -1,11 +1,13 @@
+<!--
+  templateType: page
+  isAvailableForNewContent: true
+  label: Product Detail - Single Product
+-->
 {% extends "./layouts/base.hubl.html" %}
 
 {% block body %}
 
-{# Header #}
-{% module "site_header"
-  path="@projects/artisan-ecommerce/rainy-day-merch/components/modules/SiteHeader/index"
-%}
+
 
 {# Product Detail #}
 {% module "product_detail"
@@ -20,10 +22,7 @@
   maxProducts=4
 %}
 
-{# Footer #}
-{% module "site_footer"
-  path="@projects/artisan-ecommerce/rainy-day-merch/components/modules/SiteFooter/index"
-%}
+
 
 {% endblock %}
 
