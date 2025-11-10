@@ -1,5 +1,5 @@
 import { Island } from '@hubspot/cms-components';
-import { ModuleFields, RepeaterField, TextField, TextAreaField, BooleanField } from '@hubspot/cms-components/fields';
+import { ModuleFields, RepeatedFieldGroup, TextField, TextAreaField, BooleanField } from '@hubspot/cms-components/fields';
 import CategoryBannerIsland from '../../islands/CategoryBannerIsland.jsx?island';
 
 export function Component({ fieldValues = {}, ...props }) {
@@ -19,26 +19,30 @@ export function Component({ fieldValues = {}, ...props }) {
 
 export const fields = (
   <ModuleFields>
-    <RepeaterField
+    <RepeatedFieldGroup
       name="categoryOverrides"
       label="Category Custom Content"
+      occurrence={{
+        min: 0,
+        max: 20,
+        default: 0,
+      }}
       default={[]}
-      helpText="Override banner text for specific categories. Category name must exactly match Square category name."
     >
       <TextField
         name="categoryName"
         label="Category Name"
-        required
+        required={true}
         helpText="Must exactly match Square category (e.g., 'Bracelets', 'Necklaces')"
       />
       <TextAreaField
         name="customDescription"
         label="Custom Description"
-        required
+        required={true}
         rows={4}
         helpText="Custom description text for this category banner"
       />
-    </RepeaterField>
+    </RepeatedFieldGroup>
     
     <BooleanField
       name="showSaleBadge"
