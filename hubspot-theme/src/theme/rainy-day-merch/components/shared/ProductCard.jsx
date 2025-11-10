@@ -53,7 +53,7 @@ const ProductCard = ({
   return (
     <a href={href} className={`card group block ${className}`}>
       {/* Image Container */}
-      <div className="relative aspect-square overflow-hidden bg-gray-100">
+      <div className="relative aspect-square overflow-hidden bg-gray-100 rounded-xl">
         <img
           src={image}
           alt={title}
