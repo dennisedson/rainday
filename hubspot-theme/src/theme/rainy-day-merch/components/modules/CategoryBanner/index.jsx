@@ -2,7 +2,7 @@ import { Island } from '@hubspot/cms-components';
 import { ModuleFields, TextField, TextAreaField, BooleanField } from '@hubspot/cms-components/fields';
 import CategoryBannerIsland from '../../islands/CategoryBannerIsland.jsx?island';
 
-export function Component({ fieldValues, ...props }) {
+export function Component({ fieldValues = {}, ...props }) {
   // Get site name from HubSpot settings
   const siteName = props.content?.website_settings?.website_header?.company_name || 'Rainy Day Merchandise';
   
@@ -10,10 +10,10 @@ export function Component({ fieldValues, ...props }) {
     <Island 
       module={CategoryBannerIsland} 
       siteName={siteName}
-      customTitle={fieldValues.customTitle}
-      customDescription={fieldValues.customDescription}
-      showSaleBadge={fieldValues.showSaleBadge}
-      showFeatures={fieldValues.showFeatures}
+      customTitle={fieldValues.customTitle || ''}
+      customDescription={fieldValues.customDescription || ''}
+      showSaleBadge={fieldValues.showSaleBadge !== undefined ? fieldValues.showSaleBadge : true}
+      showFeatures={fieldValues.showFeatures !== undefined ? fieldValues.showFeatures : true}
     />
   );
 }

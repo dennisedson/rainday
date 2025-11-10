@@ -176,7 +176,7 @@ export default function CategoryBannerIsland({
           <div className="relative h-full min-h-[400px] lg:min-h-[500px] overflow-hidden">
             <img
               src={imageUrl}
-              alt={content.title}
+              alt={displayTitle}
               className="w-full h-full object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
