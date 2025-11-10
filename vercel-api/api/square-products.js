@@ -63,6 +63,12 @@ export default async function handler(req, res) {
 
     const data = await response.json();
     
+    // Log first item to debug category structure
+    const firstItem = (data.objects || []).find(obj => obj.type === 'ITEM');
+    if (firstItem) {
+      console.log('Sample item data:', JSON.stringify(firstItem.item_data, null, 2));
+    }
+    
     // Filter for ITEM objects and transform to our format
     const products = (data.objects || [])
       .filter(obj => obj.type === 'ITEM')
@@ -71,8 +77,18 @@ export default async function handler(req, res) {
         const variation = itemData.variations?.[0];
         const price = variation?.item_variation_data?.price_money?.amount || 0;
         
-        // Use reporting_category for the category name (this is what shows in Square dashboard)
-        const categoryName = itemData.reporting_category?.name || 'Uncategorized';
+        // Try multiple possible category field locations in Square API
+        const categoryName = 
+          itemData.reporting_category?.name ||  // Try reporting_category first
+          itemData.category?.name ||            // Try category object
+          itemData.product_type ||              // Try product_type field
+          'Uncategorized';
+        
+        console.log(`Product "${itemData.name}" category:`, categoryName, 'Raw:', {
+          reporting_category: itemData.reporting_category,
+          category: itemData.category,
+          product_type: itemData.product_type
+        });
         
         return {
           id: item.id,

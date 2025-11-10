@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
  * CategoryBannerIsland - Dynamic banner that updates based on URL category parameter
  * Shows category-specific content and imagery
  */
-export default function CategoryBannerIsland() {
+export default function CategoryBannerIsland({ siteName = 'Rainy Day Merchandise' }) {
   const [category, setCategory] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 

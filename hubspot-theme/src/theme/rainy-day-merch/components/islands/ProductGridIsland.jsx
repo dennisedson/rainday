@@ -8,7 +8,7 @@ const API_ENDPOINT = 'https://hsecommerce-api.vercel.app/api/square-products';
  * ProductGridIsland - Client-side component for fetching and displaying products
  * This runs in the browser as an island
  */
-export default function ProductGridIsland({ sectionTitle, category, sortBy, columnsDesktop }) {
+export default function ProductGridIsland({ sectionTitle, category, sortBy, columnsDesktop, siteName = 'Rainy Day Merchandise' }) {
   // State for products, loading, and errors
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -29,7 +29,7 @@ export default function ProductGridIsland({ sectionTitle, category, sortBy, colu
   useEffect(() => {
     if (activeCategory) {
       // Update page title
-      document.title = `${activeCategory} - Artisan & Co.`;
+      document.title = `${activeCategory} - ${siteName}`;
       
       // Update meta description
       let metaDescription = document.querySelector('meta[name="description"]');
@@ -38,7 +38,7 @@ export default function ProductGridIsland({ sectionTitle, category, sortBy, colu
         metaDescription.name = 'description';
         document.head.appendChild(metaDescription);
       }
-      metaDescription.content = `Shop ${activeCategory} products at Artisan & Co. Handcrafted with care, designed to inspire.`;
+      metaDescription.content = `Shop ${activeCategory} products at ${siteName}. Handcrafted with care, designed to inspire.`;
 
       // Update Open Graph tags for social sharing
       let ogTitle = document.querySelector('meta[property="og:title"]');
@@ -47,7 +47,7 @@ export default function ProductGridIsland({ sectionTitle, category, sortBy, colu
         ogTitle.setAttribute('property', 'og:title');
         document.head.appendChild(ogTitle);
       }
-      ogTitle.content = `${activeCategory} - Artisan & Co.`;
+      ogTitle.content = `${activeCategory} - ${siteName}`;
 
       let ogDescription = document.querySelector('meta[property="og:description"]');
       if (!ogDescription) {
@@ -55,9 +55,9 @@ export default function ProductGridIsland({ sectionTitle, category, sortBy, colu
         ogDescription.setAttribute('property', 'og:description');
         document.head.appendChild(ogDescription);
       }
-      ogDescription.content = `Shop ${activeCategory} products at Artisan & Co.`;
+      ogDescription.content = `Shop ${activeCategory} products at ${siteName}`;
     }
-  }, [activeCategory]);
+  }, [activeCategory, siteName]);
   
   // Fetch products from Vercel API
   useEffect(() => {

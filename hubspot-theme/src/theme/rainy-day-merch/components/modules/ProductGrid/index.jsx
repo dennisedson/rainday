@@ -6,8 +6,11 @@ import {
 } from '@hubspot/cms-components/fields';
 import ProductGridIsland from '../../islands/ProductGridIsland.jsx?island';
 
-export function Component({ fieldValues }) {
+export function Component({ fieldValues, ...props }) {
   const { sectionTitle, category, sortBy, columnsDesktop } = fieldValues;
+  
+  // Get site name from HubSpot settings
+  const siteName = props.content?.website_settings?.website_header?.company_name || 'Rainy Day Merchandise';
   
   return (
     <Island 
@@ -16,6 +19,7 @@ export function Component({ fieldValues }) {
       category={category}
       sortBy={sortBy}
       columnsDesktop={columnsDesktop}
+      siteName={siteName}
     />
   );
 }

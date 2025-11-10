@@ -1,9 +1,15 @@
 import { Island, ModuleFields } from '@hubspot/cms-components';
 import CategoryBannerIsland from '../../islands/CategoryBannerIsland';
 
-export default function CategoryBanner() {
+export default function CategoryBanner(props) {
+  // Get site name from HubSpot settings
+  const siteName = props.content?.website_settings?.website_header?.company_name || 'Rainy Day Merchandise';
+  
   return (
-    <Island module={CategoryBannerIsland} />
+    <Island 
+      module={CategoryBannerIsland} 
+      siteName={siteName}
+    />
   );
 }
 
