@@ -152,9 +152,24 @@ export default function OrderConfirmationIsland() {
                   </svg>
                   <div>
                     <p className="font-medium text-gray-900">
-                      Card ending in {orderData.paymentInfo.last4}
+                      {orderData.paymentInfo.cardName || 'Card payment'}
                     </p>
-                    <p className="text-sm">{orderData.paymentInfo.cardName}</p>
+                    {orderData.paymentInfo.paymentId && (
+                      <p className="text-xs text-gray-500 mt-1">Payment ID: {orderData.paymentInfo.paymentId}</p>
+                    )}
+                    {orderData.paymentInfo.receiptNumber && (
+                      <p className="text-xs text-gray-500">Receipt: {orderData.paymentInfo.receiptNumber}</p>
+                    )}
+                    {orderData.paymentInfo.receiptUrl && (
+                      <a 
+                        href={orderData.paymentInfo.receiptUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-xs text-primary hover:text-primary-600 mt-1 inline-block"
+                      >
+                        View Square Receipt →
+                      </a>
+                    )}
                   </div>
                 </div>
               </div>

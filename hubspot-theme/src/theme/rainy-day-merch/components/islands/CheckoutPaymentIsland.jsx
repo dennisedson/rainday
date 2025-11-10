@@ -1,16 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+
+const API_BASE_URL = 'https://hsecommerce-api.vercel.app/api';
 
 export default function CheckoutPaymentIsland() {
   const [checkoutData, setCheckoutData] = useState(null);
-  const [formData, setFormData] = useState({
-    cardNumber: '',
-    cardName: '',
-    expiryDate: '',
-    cvv: '',
-    saveCard: false,
-  });
-  const [errors, setErrors] = useState({});
   const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState(null);
+  const [squareLoaded, setSquareLoaded] = useState(false);
+  const [squareConfig, setSquareConfig] = useState(null);
+  const cardRef = useRef(null);
+  const paymentsRef = useRef(null);
 
   // Load checkout data from previous steps
   useEffect(() => {
@@ -19,7 +18,6 @@ export default function CheckoutPaymentIsland() {
       try {
         const data = JSON.parse(saved);
         if (!data.shippingInfo) {
-          // Missing shipping info, redirect back
           window.location.href = '/checkout-shipping';
         } else {
           setCheckoutData(data);
@@ -29,125 +27,151 @@ export default function CheckoutPaymentIsland() {
         window.location.href = '/cart';
       }
     } else {
-      // No cart data, redirect to cart
       window.location.href = '/cart';
     }
   }, []);
 
-  // Format card number (add spaces every 4 digits)
-  const formatCardNumber = (value) => {
-    const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
-    const matches = v.match(/\d{4,16}/g);
-    const match = (matches && matches[0]) || '';
-    const parts = [];
-
-    for (let i = 0, len = match.length; i < len; i += 4) {
-      parts.push(match.substring(i, i + 4));
-    }
-
-    if (parts.length) {
-      return parts.join(' ');
+  // Load Square SDK
+  useEffect(() => {
+    if (!window.Square) {
+      const script = document.createElement('script');
+      script.src = 'https://sandbox.web.squarecdn.com/v1/square.js';
+      script.async = true;
+      script.onload = () => setSquareLoaded(true);
+      script.onerror = () => setError('Failed to load Square SDK');
+      document.head.appendChild(script);
     } else {
-      return value;
+      setSquareLoaded(true);
     }
-  };
+  }, []);
 
-  // Format expiry date (MM/YY)
-  const formatExpiryDate = (value) => {
-    const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
-    if (v.length >= 2) {
-      return `${v.substring(0, 2)}/${v.substring(2, 4)}`;
-    }
-    return v;
-  };
+  // Fetch Square config and initialize payment form
+  useEffect(() => {
+    if (!squareLoaded || !checkoutData) return;
 
-  // Handle form input changes
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    
-    let formattedValue = value;
-    if (name === 'cardNumber') {
-      formattedValue = formatCardNumber(value);
-    } else if (name === 'expiryDate') {
-      formattedValue = formatExpiryDate(value);
-    } else if (name === 'cvv') {
-      formattedValue = value.replace(/[^0-9]/gi, '').substring(0, 4);
-    }
+    const initSquare = async () => {
+      try {
+        // Fetch Square config
+        const configResponse = await fetch(`${API_BASE_URL}/square-config`);
+        const config = await configResponse.json();
+        setSquareConfig(config);
 
-    setFormData(prev => ({ 
-      ...prev, 
-      [name]: type === 'checkbox' ? checked : formattedValue 
-    }));
-    
-    // Clear error for this field
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
-    }
-  };
+        // Initialize Square Payments
+        const payments = window.Square.payments(config.applicationId, config.locationId);
+        paymentsRef.current = payments;
 
-  // Validate form
-  const validateForm = () => {
-    const newErrors = {};
+        // Initialize Card
+        const card = await payments.card();
+        await card.attach('#card-container');
+        cardRef.current = card;
 
-    if (!formData.cardNumber) {
-      newErrors.cardNumber = 'Card number is required';
-    } else if (formData.cardNumber.replace(/\s/g, '').length < 13) {
-      newErrors.cardNumber = 'Card number is invalid';
-    }
+      } catch (e) {
+        console.error('Error initializing Square:', e);
+        setError('Failed to initialize payment form');
+      }
+    };
 
-    if (!formData.cardName) {
-      newErrors.cardName = 'Cardholder name is required';
-    }
-
-    if (!formData.expiryDate) {
-      newErrors.expiryDate = 'Expiry date is required';
-    } else if (!/^\d{2}\/\d{2}$/.test(formData.expiryDate)) {
-      newErrors.expiryDate = 'Expiry date must be MM/YY';
-    }
-
-    if (!formData.cvv) {
-      newErrors.cvv = 'CVV is required';
-    } else if (formData.cvv.length < 3) {
-      newErrors.cvv = 'CVV must be 3 or 4 digits';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+    initSquare();
+  }, [squareLoaded, checkoutData]);
 
   // Process payment
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!validateForm()) {
+    
+    if (!cardRef.current || !checkoutData) {
+      setError('Payment form not ready');
       return;
     }
 
     setIsProcessing(true);
+    setError(null);
 
-    // Simulate payment processing
-    setTimeout(() => {
-      // In production, this would call your payment API
-      const orderData = {
-        ...checkoutData,
-        paymentInfo: {
-          last4: formData.cardNumber.slice(-4),
-          cardName: formData.cardName,
-        },
-        orderId: `ORD-${Date.now()}`,
-        orderDate: new Date().toISOString(),
-      };
-
-      // Save order data
-      localStorage.setItem('orderData', JSON.stringify(orderData));
+    try {
+      // Tokenize card
+      const result = await cardRef.current.tokenize();
       
-      // Clear checkout data
-      localStorage.removeItem('checkoutData');
-      localStorage.removeItem('cart');
+      if (result.status === 'OK') {
+        const { token } = result;
 
-      // Redirect to confirmation
-      window.location.href = '/order-confirmation';
-    }, 2000);
+        // Process payment via API
+        const paymentResponse = await fetch(`${API_BASE_URL}/process-payment`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sourceId: token,
+            amount: checkoutData.total,
+            currency: 'USD',
+            orderId: `ORD-${Date.now()}`,
+            billingDetails: {
+              address1: checkoutData.shippingInfo.address,
+              address2: checkoutData.shippingInfo.apartment,
+              city: checkoutData.shippingInfo.city,
+              state: checkoutData.shippingInfo.state,
+              zipCode: checkoutData.shippingInfo.zipCode,
+              country: 'US',
+            },
+            shippingDetails: checkoutData.shippingInfo,
+          }),
+        });
+
+        const paymentData = await paymentResponse.json();
+
+        if (!paymentResponse.ok) {
+          throw new Error(paymentData.error || 'Payment failed');
+        }
+
+        // Create deal in HubSpot
+        try {
+          await fetch(`${API_BASE_URL}/create-deal`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: checkoutData.shippingInfo.email,
+              firstName: checkoutData.shippingInfo.firstName,
+              lastName: checkoutData.shippingInfo.lastName,
+              orderTotal: checkoutData.total,
+              orderItems: checkoutData.cartItems,
+              paymentId: paymentData.paymentId,
+              orderId: paymentData.orderId || `ORD-${Date.now()}`,
+            }),
+          });
+        } catch (dealError) {
+          console.error('Failed to create deal:', dealError);
+          // Don't fail checkout if deal creation fails
+        }
+
+        // Save order data for confirmation page
+        const orderData = {
+          ...checkoutData,
+          paymentInfo: {
+            paymentId: paymentData.paymentId,
+            receiptNumber: paymentData.receiptNumber,
+            receiptUrl: paymentData.receiptUrl,
+            last4: '****', // Square doesn't return this
+            cardName: 'Card on file',
+          },
+          orderId: paymentData.orderId || `ORD-${Date.now()}`,
+          orderDate: new Date().toISOString(),
+        };
+
+        localStorage.setItem('orderData', JSON.stringify(orderData));
+        localStorage.removeItem('checkoutData');
+        localStorage.removeItem('cart');
+
+        // Redirect to confirmation
+        window.location.href = '/order-confirmation';
+
+      } else {
+        // Handle tokenization errors
+        const errorMessages = result.errors?.map(error => error.message).join(', ') || 'Payment failed';
+        throw new Error(errorMessages);
+      }
+
+    } catch (err) {
+      console.error('Payment error:', err);
+      setError(err.message || 'An error occurred processing your payment');
+      setIsProcessing(false);
+    }
   };
 
   if (!checkoutData) {
@@ -183,7 +207,6 @@ export default function CheckoutPaymentIsland() {
               <span className="text-sm font-medium text-gray-900">Shopping Cart</span>
             </div>
 
-            {/* Divider */}
             <div className="w-16 h-0.5 bg-green-500"></div>
 
             {/* Step 2 - Shipping (completed) */}
@@ -196,7 +219,6 @@ export default function CheckoutPaymentIsland() {
               <span className="text-sm font-medium text-gray-900">Shipping</span>
             </div>
 
-            {/* Divider */}
             <div className="w-16 h-0.5 bg-primary"></div>
 
             {/* Step 3 - Payment (active) */}
@@ -219,96 +241,25 @@ export default function CheckoutPaymentIsland() {
             <div className="bg-white rounded-xl shadow-card p-6 mb-6">
               <h2 className="text-2xl font-display font-bold text-gray-900 mb-6">Payment Information</h2>
 
+              {error && (
+                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-red-600 text-sm">{error}</p>
+                </div>
+              )}
+
               <form onSubmit={handleSubmit}>
-                {/* Card Number */}
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Card Number *
-                  </label>
-                  <input
-                    type="text"
-                    name="cardNumber"
-                    value={formData.cardNumber}
-                    onChange={handleChange}
-                    maxLength="19"
-                    className={`w-full px-4 py-3 border ${errors.cardNumber ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent`}
-                    placeholder="1234 5678 9012 3456"
-                  />
-                  {errors.cardNumber && (
-                    <p className="text-red-500 text-sm mt-1">{errors.cardNumber}</p>
-                  )}
-                </div>
-
-                {/* Cardholder Name */}
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Cardholder Name *
-                  </label>
-                  <input
-                    type="text"
-                    name="cardName"
-                    value={formData.cardName}
-                    onChange={handleChange}
-                    className={`w-full px-4 py-3 border ${errors.cardName ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent`}
-                    placeholder="John Doe"
-                  />
-                  {errors.cardName && (
-                    <p className="text-red-500 text-sm mt-1">{errors.cardName}</p>
-                  )}
-                </div>
-
-                {/* Expiry and CVV */}
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Expiry Date *
-                    </label>
-                    <input
-                      type="text"
-                      name="expiryDate"
-                      value={formData.expiryDate}
-                      onChange={handleChange}
-                      maxLength="5"
-                      className={`w-full px-4 py-3 border ${errors.expiryDate ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent`}
-                      placeholder="MM/YY"
-                    />
-                    {errors.expiryDate && (
-                      <p className="text-red-500 text-sm mt-1">{errors.expiryDate}</p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      CVV *
-                    </label>
-                    <input
-                      type="text"
-                      name="cvv"
-                      value={formData.cvv}
-                      onChange={handleChange}
-                      maxLength="4"
-                      className={`w-full px-4 py-3 border ${errors.cvv ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent`}
-                      placeholder="123"
-                    />
-                    {errors.cvv && (
-                      <p className="text-red-500 text-sm mt-1">{errors.cvv}</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Save Card Option */}
+                {/* Square Card Container */}
                 <div className="mb-6">
-                  <label className="flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      name="saveCard"
-                      checked={formData.saveCard}
-                      onChange={handleChange}
-                      className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
-                    />
-                    <span className="ml-2 text-sm text-gray-700">
-                      Save card for future purchases
-                    </span>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Card Information *
                   </label>
+                  <div 
+                    id="card-container" 
+                    className="border border-gray-300 rounded-lg p-4 min-h-[60px]"
+                  ></div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    {squareConfig?.environment === 'sandbox' ? 'Test mode: Use card 4111 1111 1111 1111' : 'Secure payment processed by Square'}
+                  </p>
                 </div>
 
                 {/* Action Buttons */}
@@ -321,7 +272,7 @@ export default function CheckoutPaymentIsland() {
                   </a>
                   <button
                     type="submit"
-                    disabled={isProcessing}
+                    disabled={isProcessing || !squareLoaded}
                     className="flex-1 px-6 py-3 bg-primary hover:bg-primary-600 text-white font-semibold rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                   >
                     {isProcessing ? (
@@ -435,7 +386,7 @@ export default function CheckoutPaymentIsland() {
                   <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
-                  <span>Your payment information is secure</span>
+                  <span>Secured by Square</span>
                 </div>
               </div>
             </div>
@@ -445,4 +396,3 @@ export default function CheckoutPaymentIsland() {
     </div>
   );
 }
-
