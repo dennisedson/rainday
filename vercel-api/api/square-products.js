@@ -63,11 +63,16 @@ export default async function handler(req, res) {
 
     const data = await response.json();
     
-    // Log first item to debug category structure
-    const firstItem = (data.objects || []).find(obj => obj.type === 'ITEM');
-    if (firstItem) {
-      console.log('Sample item data:', JSON.stringify(firstItem.item_data, null, 2));
-    }
+    // Build category map: ID -> Name
+    const categoryMap = {};
+    (data.objects || [])
+      .filter(obj => obj.type === 'CATEGORY')
+      .forEach(category => {
+        const categoryData = category.category_data;
+        categoryMap[category.id] = categoryData?.name || 'Uncategorized';
+      });
+    
+    console.log('Category Map:', categoryMap);
     
     // Filter for ITEM objects and transform to our format
     const products = (data.objects || [])
@@ -77,18 +82,9 @@ export default async function handler(req, res) {
         const variation = itemData.variations?.[0];
         const price = variation?.item_variation_data?.price_money?.amount || 0;
         
-        // Try multiple possible category field locations in Square API
-        const categoryName = 
-          itemData.reporting_category?.name ||  // Try reporting_category first
-          itemData.category?.name ||            // Try category object
-          itemData.product_type ||              // Try product_type field
-          'Uncategorized';
-        
-        console.log(`Product "${itemData.name}" category:`, categoryName, 'Raw:', {
-          reporting_category: itemData.reporting_category,
-          category: itemData.category,
-          product_type: itemData.product_type
-        });
+        // Get category name from reporting_category ID
+        const categoryId = itemData.reporting_category?.id;
+        const categoryName = categoryId ? categoryMap[categoryId] || 'Uncategorized' : 'Uncategorized';
         
         return {
           id: item.id,
