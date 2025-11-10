@@ -23,6 +23,40 @@ export default function ProductGridIsland({ sectionTitle, category, sortBy, colu
       setActiveCategory(urlCategory);
     }
   }, []);
+
+  // Update page meta when category changes
+  useEffect(() => {
+    if (activeCategory) {
+      // Update page title
+      document.title = `${activeCategory} - Artisan & Co.`;
+      
+      // Update meta description
+      let metaDescription = document.querySelector('meta[name="description"]');
+      if (!metaDescription) {
+        metaDescription = document.createElement('meta');
+        metaDescription.name = 'description';
+        document.head.appendChild(metaDescription);
+      }
+      metaDescription.content = `Shop ${activeCategory} products at Artisan & Co. Handcrafted with care, designed to inspire.`;
+
+      // Update Open Graph tags for social sharing
+      let ogTitle = document.querySelector('meta[property="og:title"]');
+      if (!ogTitle) {
+        ogTitle = document.createElement('meta');
+        ogTitle.setAttribute('property', 'og:title');
+        document.head.appendChild(ogTitle);
+      }
+      ogTitle.content = `${activeCategory} - Artisan & Co.`;
+
+      let ogDescription = document.querySelector('meta[property="og:description"]');
+      if (!ogDescription) {
+        ogDescription = document.createElement('meta');
+        ogDescription.setAttribute('property', 'og:description');
+        document.head.appendChild(ogDescription);
+      }
+      ogDescription.content = `Shop ${activeCategory} products at Artisan & Co.`;
+    }
+  }, [activeCategory]);
   
   // Fetch products from Vercel API
   useEffect(() => {
