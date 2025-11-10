@@ -63,13 +63,16 @@ export default async function handler(req, res) {
 
     const data = await response.json();
     
-    // Build category map: ID -> Name
+    // Build category map: ID -> { name, image }
     const categoryMap = {};
     (data.objects || [])
       .filter(obj => obj.type === 'CATEGORY')
       .forEach(category => {
         const categoryData = category.category_data;
-        categoryMap[category.id] = categoryData?.name || 'Uncategorized';
+        categoryMap[category.id] = {
+          name: categoryData?.name || 'Uncategorized',
+          image: categoryData?.image_ids?.[0] || null, // Get first category image
+        };
       });
     
     console.log('Category Map:', categoryMap);
@@ -82,15 +85,18 @@ export default async function handler(req, res) {
         const variation = itemData.variations?.[0];
         const price = variation?.item_variation_data?.price_money?.amount || 0;
         
-        // Get category name from reporting_category ID
+        // Get category name and image from reporting_category ID
         const categoryId = itemData.reporting_category?.id;
-        const categoryName = categoryId ? categoryMap[categoryId] || 'Uncategorized' : 'Uncategorized';
+        const categoryInfo = categoryId ? categoryMap[categoryId] : null;
+        const categoryName = categoryInfo?.name || 'Uncategorized';
+        const categoryImage = categoryInfo?.image || null;
         
         return {
           id: item.id,
           name: itemData.name || 'Untitled Product',
           description: itemData.description || '',
           category: categoryName,
+          categoryImage: categoryImage,
           price: price / 100, // Convert cents to dollars
           image: itemData.image_ids?.[0] || DEFAULT_PRODUCT_IMAGE, // Use placeholder if no image
           available: !itemData.is_deleted && itemData.available_online,

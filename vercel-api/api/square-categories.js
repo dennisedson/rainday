@@ -66,6 +66,7 @@ export default async function handler(req, res) {
       .map(category => ({
         id: category.id,
         name: category.category_data.name,
+        image: category.category_data.image_ids?.[0] || null, // Get first category image
         // Create URL-friendly slug from name
         slug: category.category_data.name
           .toLowerCase()

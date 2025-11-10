@@ -7,6 +7,30 @@ import { useState, useEffect } from 'react';
 export default function CategoryBannerIsland({ siteName = 'Rainy Day Merchandise' }) {
   const [category, setCategory] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [categoryImages, setCategoryImages] = useState({});
+
+  // Fetch category images from Square
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch('https://hsecommerce-api.vercel.app/api/square-categories');
+        const data = await response.json();
+        
+        // Build map of category name to image
+        const imageMap = {};
+        data.categories.forEach(cat => {
+          imageMap[cat.name] = cat.image;
+        });
+        
+        setCategoryImages(imageMap);
+        console.log('[CategoryBannerIsland] Category images:', imageMap);
+      } catch (error) {
+        console.error('[CategoryBannerIsland] Error fetching categories:', error);
+      }
+    };
+    
+    fetchCategories();
+  }, []);
 
   // Read category from URL parameter
   useEffect(() => {
@@ -54,6 +78,9 @@ export default function CategoryBannerIsland({ siteName = 'Rainy Day Merchandise
   };
 
   const content = categoryContent[category] || categoryContent['All Products'];
+  
+  // Use Square category image if available, otherwise fallback to hardcoded image
+  const imageUrl = categoryImages[category] || content.image;
 
   if (isLoading) {
     return (
@@ -134,7 +161,7 @@ export default function CategoryBannerIsland({ siteName = 'Rainy Day Merchandise
           {/* Image */}
           <div className="relative h-96 lg:h-full min-h-[500px]">
             <img
-              src={content.image}
+              src={imageUrl}
               alt={content.title}
               className="absolute inset-0 w-full h-full object-cover"
             />
