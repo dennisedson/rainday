@@ -96,9 +96,9 @@ export default function CategoryBannerIsland({ siteName = 'Rainy Day Merchandise
   }
 
   return (
-    <section className="relative bg-gradient-to-r from-beige-100 to-beige-50 overflow-hidden">
-      <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+    <section className="relative bg-gradient-to-r from-beige-100 to-beige-50 overflow-hidden py-8 md:py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center rounded-3xl overflow-hidden bg-white shadow-2xl">
           {/* Text Content */}
           <div className="px-8 py-16 lg:px-12 lg:py-24">
             <div className="inline-block px-4 py-1 bg-primary text-white text-sm font-semibold rounded-full mb-6">
@@ -159,13 +159,13 @@ export default function CategoryBannerIsland({ siteName = 'Rainy Day Merchandise
           </div>
 
           {/* Image */}
-          <div className="relative h-96 lg:h-full min-h-[500px]">
+          <div className="relative h-full min-h-[400px] lg:min-h-[500px] overflow-hidden">
             <img
               src={imageUrl}
               alt={content.title}
-              className="absolute inset-0 w-full h-full object-cover"
+              className="w-full h-full object-cover"
             />
-            <div className="absolute inset-0 bg-gradient-to-l from-transparent to-beige-100 lg:bg-gradient-to-r lg:from-transparent lg:to-beige-50 opacity-30"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
           </div>
         </div>
       </div>

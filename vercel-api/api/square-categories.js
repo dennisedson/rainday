@@ -39,8 +39,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Fetch categories from Square Catalog
-    const response = await fetch(`${SQUARE_API_BASE}/v2/catalog/list?types=CATEGORY`, {
+    // Fetch categories and images from Square Catalog
+    const response = await fetch(`${SQUARE_API_BASE}/v2/catalog/list?types=CATEGORY,IMAGE`, {
       method: 'GET',
       headers: {
         'Square-Version': '2024-12-18',
