@@ -87,11 +87,10 @@ vercel
 4. Copy the Access Token
 
 **Option 2: HubSpot App (New Platform) ✅ Recommended**
-1. Upload app: `cd hubspot-app && hs project upload`
-2. Get static token: `hs project open` → Auth tab → Copy token
+1. Upload project: `cd hubspot-theme && hs project upload` (includes both theme and app)
+2. Get static token: `hs project open` → Find "Rainy Day Merch API" app → Auth tab → Copy token
 3. Install app in your HubSpot account (one-time)
 4. Add token to Vercel as `HUBSPOT_ACCESS_TOKEN`
-5. See `hubspot-app/README.md` for details
 
 ## 🛠 Tech Stack
 

@@ -33,11 +33,11 @@ HubSpot is moving away from **Legacy Apps** (Private Apps) and encouraging the n
 **What it is:** A HubSpot App created on the new platform (2025.2) with `private` distribution and `static` authentication.
 
 **How to set it up:**
-The app is already created in `hubspot-app/` directory:
+The app is already included in the `hubspot-theme/` project:
 
 ```bash
-cd hubspot-app
-hs project upload
+cd hubspot-theme
+hs project upload  # Uploads both theme and app
 ```
 
 Then:
