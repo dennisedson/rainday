@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { getFavoritesCount } from '../../utils/favorites';
 
 const API_BASE_URL = 'https://hsecommerce-api.vercel.app/api';
 
 export default function SiteHeaderIsland({ siteName = 'Artisan & Co.', logoImage = null }) {
   const [cartCount, setCartCount] = useState(0);
+  const [favoritesCount, setFavoritesCount] = useState(0);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [navigationItems, setNavigationItems] = useState([
@@ -59,14 +61,28 @@ export default function SiteHeaderIsland({ siteName = 'Artisan & Co.', logoImage
     fetchCategories();
   }, []);
 
+  // Update favorites count
+  const updateFavoritesCount = async () => {
+    try {
+      const count = await getFavoritesCount();
+      setFavoritesCount(count);
+    } catch (error) {
+      console.error('Failed to get favorites count:', error);
+      setFavoritesCount(0);
+    }
+  };
+
   // Update cart count on mount and when localStorage changes
   useEffect(() => {
     updateCartCount();
+    updateFavoritesCount();
 
     // Listen for storage events (cart updates from other tabs)
     const handleStorageChange = (e) => {
       if (e.key === 'cart') {
         updateCartCount();
+      } else if (e.key === 'favorites') {
+        updateFavoritesCount();
       }
     };
 
@@ -75,12 +91,19 @@ export default function SiteHeaderIsland({ siteName = 'Artisan & Co.', logoImage
       updateCartCount();
     };
 
+    // Listen for favorites update events
+    const handleFavoritesUpdate = () => {
+      updateFavoritesCount();
+    };
+
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('cartUpdated', handleCartUpdate);
+    window.addEventListener('favoritesUpdated', handleFavoritesUpdate);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('cartUpdated', handleCartUpdate);
+      window.removeEventListener('favoritesUpdated', handleFavoritesUpdate);
     };
   }, []);
 
@@ -134,15 +157,20 @@ export default function SiteHeaderIsland({ siteName = 'Artisan & Co.', logoImage
               </svg>
             </button>
 
-            {/* Wishlist - Hidden on mobile */}
+            {/* Favorites - Hidden on mobile */}
             <a
-              href="/wishlist"
-              className="hidden sm:block p-2 text-gray-600 hover:text-primary transition-colors duration-200"
-              aria-label="Wishlist"
+              href="/favorites"
+              className="hidden sm:block relative p-2 text-gray-600 hover:text-primary transition-colors duration-200"
+              aria-label={`Favorites (${favoritesCount} items)`}
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
               </svg>
+              {favoritesCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-primary text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  {favoritesCount > 9 ? '9+' : favoritesCount}
+                </span>
+              )}
             </a>
 
             {/* Account - Hidden on mobile */}
@@ -256,14 +284,19 @@ export default function SiteHeaderIsland({ siteName = 'Artisan & Co.', logoImage
 
             {/* Additional Mobile Links */}
             <a
-              href="/wishlist"
+              href="/favorites"
               className="flex items-center px-6 py-3 text-base font-medium text-gray-700 hover:bg-beige-100 hover:text-primary transition-colors"
               onClick={() => setIsMobileMenuOpen(false)}
             >
               <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
               </svg>
-              Wishlist
+              Favorites
+              {favoritesCount > 0 && (
+                <span className="ml-auto bg-primary text-white text-xs font-bold rounded-full px-2 py-1">
+                  {favoritesCount}
+                </span>
+              )}
             </a>
             <a
               href="/account"

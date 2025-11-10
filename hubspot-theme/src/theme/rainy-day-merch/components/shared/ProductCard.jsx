@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Icon from './Icon';
 import Badge from './Badge';
+import { toggleFavorite, isFavorite } from '../../utils/favorites';
 
 /**
  * ProductCard component (S) - Shared product display card
- * Displays product image, title, price, rating, and category with wishlist functionality
+ * Displays product image, title, price, rating, and category with favorites functionality
  */
 const ProductCard = ({
   id,
@@ -17,20 +18,58 @@ const ProductCard = ({
   reviewCount = 0,
   onSale = false,
   featured = false,
-  onWishlistToggle,
   onAddToCart,
   productUrl,
   className = '',
 }) => {
-  const [isWishlisted, setIsWishlisted] = useState(false);
+  const [isFavorited, setIsFavorited] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [isToggling, setIsToggling] = useState(false);
 
-  const handleWishlistClick = (e) => {
+  // Check favorite status on mount
+  useEffect(() => {
+    const checkFavorite = async () => {
+      try {
+        const favorited = await isFavorite(id);
+        setIsFavorited(favorited);
+      } catch (error) {
+        console.error('[ProductCard] Error checking favorite:', error);
+      }
+    };
+    checkFavorite();
+
+    // Listen for favorites updates
+    const handleFavoritesUpdate = () => {
+      checkFavorite();
+    };
+    window.addEventListener('favoritesUpdated', handleFavoritesUpdate);
+    return () => window.removeEventListener('favoritesUpdated', handleFavoritesUpdate);
+  }, [id]);
+
+  const handleFavoriteClick = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsWishlisted(!isWishlisted);
-    if (onWishlistToggle) {
-      onWishlistToggle(id, !isWishlisted);
+    
+    if (isToggling) return;
+    
+    setIsToggling(true);
+    const newState = !isFavorited;
+    setIsFavorited(newState); // Optimistic update
+    
+    try {
+      const result = await toggleFavorite(id);
+      if (result.success) {
+        setIsFavorited(result.isFavorite);
+      } else {
+        // Revert on error
+        setIsFavorited(!newState);
+      }
+    } catch (error) {
+      console.error('[ProductCard] Error toggling favorite:', error);
+      // Revert on error
+      setIsFavorited(!newState);
+    } finally {
+      setIsToggling(false);
     }
   };
 
@@ -69,16 +108,17 @@ const ProductCard = ({
           {featured && <Badge variant="featured">Featured</Badge>}
         </div>
         
-        {/* Wishlist Button */}
+        {/* Favorites Button */}
         <button
-          onClick={handleWishlistClick}
-          className="absolute top-3 right-3 p-2 bg-white rounded-full shadow-md hover:shadow-lg transition-all duration-200 opacity-0 group-hover:opacity-100"
-          aria-label="Add to wishlist"
+          onClick={handleFavoriteClick}
+          disabled={isToggling}
+          className={`absolute top-3 right-3 p-2 bg-white rounded-full shadow-md hover:shadow-lg transition-all duration-200 opacity-0 group-hover:opacity-100 ${isFavorited ? 'opacity-100' : ''}`}
+          aria-label={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
         >
           <Icon
-            name={isWishlisted ? 'heartFilled' : 'heart'}
+            name={isFavorited ? 'heartFilled' : 'heart'}
             size={20}
-            className={isWishlisted ? 'text-red-500' : 'text-gray-600'}
+            className={isFavorited ? 'text-red-500' : 'text-gray-600'}
           />
         </button>
         
