@@ -166,7 +166,7 @@ export default function ProductDetailIsland({ fallbackData }) {
           {/* Left: Image Gallery */}
           <div>
             {/* Main Image */}
-            <div className="bg-black rounded-lg overflow-hidden mb-4">
+            <div className="bg-gray-100 rounded-xl overflow-hidden mb-4">
               <img
                 src={allImages[selectedImage]}
                 alt={product.name}
@@ -181,7 +181,7 @@ export default function ProductDetailIsland({ fallbackData }) {
                   <button
                     key={idx}
                     onClick={() => setSelectedImage(idx)}
-                    className={`border-2 rounded-lg overflow-hidden hover:border-orange-500 transition-colors ${
+                    className={`border-2 rounded-xl overflow-hidden hover:border-orange-500 transition-colors ${
                       selectedImage === idx ? 'border-orange-500' : 'border-gray-300'
                     }`}
                   >
