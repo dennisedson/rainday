@@ -7,6 +7,7 @@ export default function SiteHeaderIsland({ siteName = 'Artisan & Co.', logoImage
   const [cartCount, setCartCount] = useState(0);
   const [favoritesCount, setFavoritesCount] = useState(0);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [navigationItems, setNavigationItems] = useState([
     // Default fallback items
@@ -61,6 +62,15 @@ export default function SiteHeaderIsland({ siteName = 'Artisan & Co.', logoImage
     fetchCategories();
   }, []);
 
+  // Handle search submission
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      // Navigate to shop page with search query
+      window.location.href = `/shop?search=${encodeURIComponent(searchQuery.trim())}`;
+    }
+  };
+
   // Update favorites count
   const updateFavoritesCount = async () => {
     try {
@@ -71,6 +81,16 @@ export default function SiteHeaderIsland({ siteName = 'Artisan & Co.', logoImage
       setFavoritesCount(0);
     }
   };
+
+  // Check URL for search query and pre-populate search input
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlSearch = urlParams.get('search');
+    if (urlSearch) {
+      setSearchQuery(urlSearch);
+      setIsSearchOpen(true); // Keep search bar open if there's a search query
+    }
+  }, []);
 
   // Update cart count on mount and when localStorage changes
   useEffect(() => {
@@ -222,17 +242,25 @@ export default function SiteHeaderIsland({ siteName = 'Artisan & Co.', logoImage
         {/* Search Bar (slides down when open) */}
         {isSearchOpen && (
           <div className="py-4 border-t border-gray-200">
-            <div className="relative">
+            <form onSubmit={handleSearch} className="relative">
               <input
                 type="search"
                 placeholder="Search for products..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full px-4 py-3 pl-12 pr-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                 autoFocus
               />
               <svg className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
-            </div>
+              <button
+                type="submit"
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-600 transition-colors text-sm font-medium"
+              >
+                Search
+              </button>
+            </form>
           </div>
         )}
       </div>

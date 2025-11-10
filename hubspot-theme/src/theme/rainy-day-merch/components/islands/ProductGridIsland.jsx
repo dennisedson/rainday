@@ -14,20 +14,55 @@ export default function ProductGridIsland({ sectionTitle, category, sortBy, colu
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeCategory, setActiveCategory] = useState(category || null);
+  const [searchQuery, setSearchQuery] = useState('');
   
-  // Check URL for category parameter
+  // Check URL for category and search parameters
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const urlCategory = urlParams.get('category');
+    const urlSearch = urlParams.get('search');
     console.log('[ProductGridIsland] URL Category:', urlCategory);
+    console.log('[ProductGridIsland] URL Search:', urlSearch);
     if (urlCategory) {
       setActiveCategory(urlCategory);
     }
+    if (urlSearch) {
+      setSearchQuery(urlSearch);
+    }
   }, []);
 
-  // Update page meta when category changes
+  // Update page meta when category or search changes
   useEffect(() => {
-    if (activeCategory) {
+    if (searchQuery) {
+      // Update page title for search results
+      document.title = `Search: "${searchQuery}" - ${siteName}`;
+      
+      // Update meta description
+      let metaDescription = document.querySelector('meta[name="description"]');
+      if (!metaDescription) {
+        metaDescription = document.createElement('meta');
+        metaDescription.name = 'description';
+        document.head.appendChild(metaDescription);
+      }
+      metaDescription.content = `Search results for "${searchQuery}" at ${siteName}. Find handcrafted products that match your search.`;
+
+      // Update Open Graph tags for social sharing
+      let ogTitle = document.querySelector('meta[property="og:title"]');
+      if (!ogTitle) {
+        ogTitle = document.createElement('meta');
+        ogTitle.setAttribute('property', 'og:title');
+        document.head.appendChild(ogTitle);
+      }
+      ogTitle.content = `Search: "${searchQuery}" - ${siteName}`;
+
+      let ogDescription = document.querySelector('meta[property="og:description"]');
+      if (!ogDescription) {
+        ogDescription = document.createElement('meta');
+        ogDescription.setAttribute('property', 'og:description');
+        document.head.appendChild(ogDescription);
+      }
+      ogDescription.content = `Search results for "${searchQuery}" at ${siteName}`;
+    } else if (activeCategory) {
       // Update page title
       document.title = `${activeCategory} - ${siteName}`;
       
@@ -57,7 +92,7 @@ export default function ProductGridIsland({ sectionTitle, category, sortBy, colu
       }
       ogDescription.content = `Shop ${activeCategory} products at ${siteName}`;
     }
-  }, [activeCategory, siteName]);
+  }, [activeCategory, searchQuery, siteName]);
   
   // Fetch products from Vercel API
   useEffect(() => {
@@ -80,6 +115,7 @@ export default function ProductGridIsland({ sectionTitle, category, sortBy, colu
           id: product.id,
           image: product.image,
           title: product.name,
+          description: product.description || '',
           category: product.category === 'uncategorized' ? '' : product.category,
           price: product.price,
           rating: 0,
@@ -102,20 +138,31 @@ export default function ProductGridIsland({ sectionTitle, category, sortBy, colu
     fetchProducts();
   }, []);
   
-  // Filter products by category (from URL or prop)
+  // Filter products by category and search query
   let filteredProducts = products;
   const filterCategory = activeCategory || category;
   
   console.log('[ProductGridIsland] Filter category:', filterCategory);
+  console.log('[ProductGridIsland] Search query:', searchQuery);
   console.log('[ProductGridIsland] Total products:', products.length);
-  console.log('[ProductGridIsland] Products with categories:', products.map(p => ({ name: p.title, category: p.category })));
   
+  // Filter by category (from URL or prop)
   if (filterCategory && filterCategory !== 'all') {
     filteredProducts = filteredProducts.filter(p => {
       // Exact match comparison (case-insensitive)
       const match = p.category.toLowerCase() === filterCategory.toLowerCase();
       console.log(`[ProductGridIsland] Checking "${p.title}" (${p.category}) against "${filterCategory}": ${match}`);
       return match;
+    });
+  }
+  
+  // Filter by search query (searches in product name and description)
+  if (searchQuery && searchQuery.trim()) {
+    const query = searchQuery.trim().toLowerCase();
+    filteredProducts = filteredProducts.filter(p => {
+      const nameMatch = p.title.toLowerCase().includes(query);
+      const descriptionMatch = p.description && p.description.toLowerCase().includes(query);
+      return nameMatch || descriptionMatch;
     });
   }
   
@@ -136,12 +183,27 @@ export default function ProductGridIsland({ sectionTitle, category, sortBy, colu
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16" data-product-grid>
-      {/* Section Title (only show if no active category - banner handles category titles) */}
-      {!activeCategory && sectionTitle && (
+      {/* Section Title (only show if no active category and no search - banner handles category titles) */}
+      {!activeCategory && !searchQuery && sectionTitle && (
         <div className="text-center mb-12">
           <h2 className="text-4xl font-bold text-gray-900">
             {sectionTitle}
           </h2>
+        </div>
+      )}
+      
+      {/* Search Results Header */}
+      {searchQuery && (
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            Search Results for "{searchQuery}"
+          </h2>
+          <p className="text-gray-600">
+            {filteredProducts.length === 0 
+              ? 'No products found matching your search.'
+              : `Found ${filteredProducts.length} product${filteredProducts.length === 1 ? '' : 's'}.`
+            }
+          </p>
         </div>
       )}
       
