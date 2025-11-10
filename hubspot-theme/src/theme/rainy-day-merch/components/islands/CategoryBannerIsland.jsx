@@ -4,13 +4,7 @@ import { useState, useEffect } from 'react';
  * CategoryBannerIsland - Dynamic banner that updates based on URL category parameter
  * Shows category-specific content and imagery
  */
-export default function CategoryBannerIsland({ 
-  siteName = 'Rainy Day Merchandise',
-  customTitle = '',
-  customDescription = '',
-  showSaleBadge = true,
-  showFeatures = true,
-}) {
+export default function CategoryBannerIsland({ siteName = 'Rainy Day Merchandise' }) {
   const [category, setCategory] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [categoryImages, setCategoryImages] = useState({});
@@ -85,10 +79,6 @@ export default function CategoryBannerIsland({
 
   const content = categoryContent[category] || categoryContent['All Products'];
   
-  // Use custom values if provided, otherwise use defaults
-  const displayTitle = customTitle || content.title;
-  const displayDescription = customDescription || content.description;
-  
   // Use Square category image if available, otherwise fallback to hardcoded image
   const imageUrl = categoryImages[category] || content.image;
 
@@ -111,16 +101,14 @@ export default function CategoryBannerIsland({
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center rounded-3xl overflow-hidden bg-white shadow-2xl">
           {/* Text Content */}
           <div className="px-8 py-16 lg:px-12 lg:py-24">
-            {showSaleBadge && (
-              <div className="inline-block px-4 py-1 bg-primary text-white text-sm font-semibold rounded-full mb-6">
-                SALE
-              </div>
-            )}
+            <div className="inline-block px-4 py-1 bg-primary text-white text-sm font-semibold rounded-full mb-6">
+              SALE
+            </div>
             <h1 className="text-5xl lg:text-6xl font-display font-bold text-gray-900 mb-6">
-              {displayTitle}
+              {content.title}
             </h1>
             <p className="text-lg text-gray-600 mb-8 leading-relaxed">
-              {displayDescription}
+              {content.description}
             </p>
             <button 
               onClick={() => {
@@ -139,8 +127,7 @@ export default function CategoryBannerIsland({
             </button>
 
             {/* Features */}
-            {showFeatures && (
-              <div className="grid grid-cols-3 gap-6 mt-12">
+            <div className="grid grid-cols-3 gap-6 mt-12">
                 <div className="text-center">
                 <div className="inline-flex items-center justify-center w-12 h-12 bg-white rounded-full mb-3 shadow-md">
                   <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -168,15 +155,14 @@ export default function CategoryBannerIsland({
                 <h3 className="text-sm font-semibold text-gray-900 mb-1">Gift Ready</h3>
                 <p className="text-xs text-gray-600">Luxury packaging</p>
                 </div>
-              </div>
-            )}
+            </div>
           </div>
 
           {/* Image */}
           <div className="relative h-full min-h-[400px] lg:min-h-[500px] overflow-hidden">
             <img
               src={imageUrl}
-              alt={displayTitle}
+              alt={content.title}
               className="w-full h-full object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
