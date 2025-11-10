@@ -166,12 +166,12 @@ export const meta = {
   icon: 'menu',
 };
 
-// Fetch company settings from HubSpot
+// Fetch company settings from HubSpot using correct variables
 export const hublDataTemplate = `
   {% set hublData = {
-    "companyName": site_settings.company_name,
-    "companyLogo": site_settings.company_logo,
-    "companyDomain": site_settings.company_domain
+    "companyName": site_settings.company_name|default(""),
+    "companyLogo": brand_settings.primary_logo.src|default(""),
+    "companyLogoAlt": brand_settings.primary_logo.alt|default("")
   } %}
 `;
 
