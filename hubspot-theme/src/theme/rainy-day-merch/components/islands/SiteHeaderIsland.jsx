@@ -1,8 +1,15 @@
 import { useState, useEffect } from 'react';
 
+const API_BASE_URL = 'https://hsecommerce-api.vercel.app/api';
+
 export default function SiteHeaderIsland({ siteName = 'Artisan & Co.', logoImage = null }) {
   const [cartCount, setCartCount] = useState(0);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [navigationItems, setNavigationItems] = useState([
+    // Default fallback items
+    { label: 'Shop', href: '/shop' },
+    { label: 'About', href: '/about' },
+  ]);
 
   // Update cart count from localStorage
   const updateCartCount = () => {
@@ -20,6 +27,36 @@ export default function SiteHeaderIsland({ siteName = 'Artisan & Co.', logoImage
       setCartCount(0);
     }
   };
+
+  // Fetch Square categories for navigation
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/square-categories`);
+        if (response.ok) {
+          const data = await response.json();
+          
+          // Map categories to navigation items
+          const categoryNavItems = data.categories.map(cat => ({
+            label: cat.name,
+            href: `/shop?category=${encodeURIComponent(cat.name)}`,
+          }));
+
+          // Add "All Products" at the beginning and "About" at the end
+          setNavigationItems([
+            { label: 'All Products', href: '/shop' },
+            ...categoryNavItems,
+            { label: 'About', href: '/about' },
+          ]);
+        }
+      } catch (error) {
+        console.error('Failed to fetch categories:', error);
+        // Keep fallback navigation items
+      }
+    };
+
+    fetchCategories();
+  }, []);
 
   // Update cart count on mount and when localStorage changes
   useEffect(() => {
@@ -45,14 +82,6 @@ export default function SiteHeaderIsland({ siteName = 'Artisan & Co.', logoImage
       window.removeEventListener('cartUpdated', handleCartUpdate);
     };
   }, []);
-
-  const navigationItems = [
-    { label: 'New Arrivals', href: '/new-arrivals' },
-    { label: 'Jewelry', href: '/jewelry' },
-    { label: 'Crafts', href: '/crafts' },
-    { label: 'Collections', href: '/collections' },
-    { label: 'About', href: '/about' },
-  ];
 
   return (
     <header className="bg-white shadow-sm sticky top-0 z-50">

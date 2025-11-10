@@ -13,6 +13,16 @@ export default function ProductGridIsland({ sectionTitle, category, sortBy, colu
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [activeCategory, setActiveCategory] = useState(category || null);
+  
+  // Check URL for category parameter
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlCategory = urlParams.get('category');
+    if (urlCategory) {
+      setActiveCategory(urlCategory);
+    }
+  }, []);
   
   // Fetch products from Vercel API
   useEffect(() => {
@@ -57,11 +67,12 @@ export default function ProductGridIsland({ sectionTitle, category, sortBy, colu
     fetchProducts();
   }, []);
   
-  // Filter products by category
+  // Filter products by category (from URL or prop)
   let filteredProducts = products;
-  if (category && category !== 'all') {
+  const filterCategory = activeCategory || category;
+  if (filterCategory && filterCategory !== 'all') {
     filteredProducts = filteredProducts.filter(p => 
-      p.category.toLowerCase().includes(category.toLowerCase())
+      p.category.toLowerCase().includes(filterCategory.toLowerCase())
     );
   }
   
@@ -80,10 +91,18 @@ export default function ProductGridIsland({ sectionTitle, category, sortBy, colu
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-      {sectionTitle && (
-        <h2 className="text-4xl font-bold text-center mb-12 text-gray-900">
-          {sectionTitle}
-        </h2>
+      {/* Category Title or Section Title */}
+      {(filterCategory || sectionTitle) && (
+        <div className="text-center mb-12">
+          <h2 className="text-4xl font-bold text-gray-900">
+            {filterCategory ? `${filterCategory}` : sectionTitle}
+          </h2>
+          {filterCategory && (
+            <p className="text-gray-600 mt-2">
+              Showing {filteredProducts.length} {filteredProducts.length === 1 ? 'product' : 'products'}
+            </p>
+          )}
+        </div>
       )}
       
       {/* Loading State */}
