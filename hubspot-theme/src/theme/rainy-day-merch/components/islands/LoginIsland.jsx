@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { requestMagicLink } from '../../utils/auth';
 
 const API_BASE_URL = 'https://hsecommerce-api.vercel.app/api';
@@ -9,19 +9,9 @@ export default function LoginIsland() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [linkSent, setLinkSent] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
 
-  // Check if we're verifying a magic link from email
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
-    const emailParam = urlParams.get('email');
-
-    if (token && emailParam) {
-      verifyMagicLink(token, emailParam);
-    }
-  }, []);
-
-  const verifyMagicLink = async (token, email) => {
+  const verifyMagicLink = useCallback(async (token, email) => {
     try {
       setLoading(true);
       setError('');
@@ -65,7 +55,32 @@ export default function LoginIsland() {
       setError(err.message || 'Failed to verify magic link. Please try again.');
       setLoading(false);
     }
-  };
+  }, []);
+
+  // Check if we're verifying a magic link from email
+  useEffect(() => {
+    // Check URL params multiple ways to ensure we catch them
+    const fullUrl = window.location.href;
+    const searchParams = window.location.search;
+    
+    console.log('[LoginIsland] Full URL:', fullUrl);
+    console.log('[LoginIsland] Search params:', searchParams);
+    
+    const urlParams = new URLSearchParams(searchParams);
+    const token = urlParams.get('token');
+    const emailParam = urlParams.get('email');
+    
+    console.log('[LoginIsland] Token:', token ? token.substring(0, 10) + '...' : 'none');
+    console.log('[LoginIsland] Email:', emailParam || 'none');
+
+    if (token && emailParam) {
+      console.log('[LoginIsland] Found magic link params, starting verification...');
+      setIsVerifying(true);
+      verifyMagicLink(token, emailParam);
+    } else {
+      console.log('[LoginIsland] No magic link params found');
+    }
+  }, [verifyMagicLink]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -96,10 +111,6 @@ export default function LoginIsland() {
       setLoading(false);
     }
   };
-
-  // Show loading state when verifying magic link
-  const urlParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
-  const isVerifying = urlParams.get('token') && urlParams.get('email');
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
