@@ -58,8 +58,17 @@ export default async function handler(req, res) {
   const productId = req.body?.productId;
   const action = req.body?.action;
 
+  // Validate email format (must be a real email, not a guest ID)
+  const isValidEmail = (email) => {
+    if (!email) return false;
+    // Reject guest IDs
+    if (email.startsWith('guest_')) return false;
+    // Must contain @ symbol
+    return email.includes('@') && email.includes('.');
+  };
+
   // For GET requests, can be in query params
-  const contactEmail = email;
+  const contactEmail = email && isValidEmail(email) ? email : null;
   const trackingToken = hubspotutk;
 
   if (!contactEmail && !trackingToken) {
@@ -105,7 +114,10 @@ export default async function handler(req, res) {
           contact = searchResponse.results[0];
           contactId = contact.id;
         } else {
-          // Create new contact (only if we have email)
+          // Create new contact (only if we have valid email)
+          if (!isValidEmail(contactEmail)) {
+            return res.status(400).json({ error: 'Invalid email address' });
+          }
           const newContact = await hubspotClient.crm.contacts.basicApi.create({
             properties: {
               email: contactEmail,

@@ -18,25 +18,49 @@ function getHubSpotTrackingToken() {
   return null;
 }
 
-// Get user identifier (HubSpot tracking token or fallback)
-function getUserIdentifier() {
-  // Try to get HubSpot tracking token first
+// Get session token from localStorage
+function getSessionToken() {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('auth_session_token');
+}
+
+// Get user identifier (authenticated email > tracking token > fallback)
+async function getUserIdentifier() {
+  // First, check if user is authenticated (has session token)
+  const sessionToken = getSessionToken();
+  if (sessionToken) {
+    try {
+      // Verify session and get contact email
+      const response = await fetch(`${API_BASE_URL}/auth/verify-session`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionToken}`,
+        },
+        body: JSON.stringify({ token: sessionToken }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.contact && data.contact.email) {
+          return { type: 'email', value: data.contact.email };
+        }
+      }
+    } catch (error) {
+      console.error('[Favorites] Error verifying session:', error);
+      // Fall through to other methods
+    }
+  }
+
+  // Try to get HubSpot tracking token
   const trackingToken = getHubSpotTrackingToken();
-  
   if (trackingToken) {
     return { type: 'tracking_token', value: trackingToken };
   }
   
-  // Fallback to localStorage email if available
-  let userId = localStorage.getItem('user_email');
-  
-  if (!userId) {
-    // Generate a temporary ID as last resort
-    userId = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    localStorage.setItem('user_email', userId);
-  }
-  
-  return { type: 'email', value: userId };
+  // Fallback: Don't use guest IDs - they're not valid emails
+  // Return null to indicate no valid identifier
+  return null;
 }
 
 /**
@@ -44,7 +68,13 @@ function getUserIdentifier() {
  */
 export async function getFavorites() {
   try {
-    const identifier = getUserIdentifier();
+    const identifier = await getUserIdentifier();
+    
+    if (!identifier) {
+      // No valid identifier - return empty array
+      return [];
+    }
+    
     const params = new URLSearchParams();
     
     if (identifier.type === 'tracking_token') {
@@ -83,7 +113,12 @@ export async function getFavorites() {
  */
 export async function toggleFavorite(productId) {
   try {
-    const identifier = getUserIdentifier();
+    const identifier = await getUserIdentifier();
+    
+    if (!identifier) {
+      throw new Error('Please sign in to save favorites');
+    }
+    
     const body = {
       productId,
       action: 'toggle',
@@ -121,32 +156,37 @@ export async function toggleFavorite(productId) {
   } catch (error) {
     console.error('[Favorites] Error toggling favorite:', error);
     
-    // Fallback to localStorage
-    try {
-      const localFavorites = JSON.parse(localStorage.getItem('favorites') || '[]');
-      const index = localFavorites.indexOf(productId);
-      
-      if (index > -1) {
-        localFavorites.splice(index, 1);
-      } else {
-        localFavorites.push(productId);
+    // Fallback to localStorage only if we have a valid identifier
+    const identifier = await getUserIdentifier();
+    if (identifier) {
+      try {
+        const localFavorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+        const index = localFavorites.indexOf(productId);
+        
+        if (index > -1) {
+          localFavorites.splice(index, 1);
+        } else {
+          localFavorites.push(productId);
+        }
+        
+        localStorage.setItem('favorites', JSON.stringify(localFavorites));
+        
+        window.dispatchEvent(new CustomEvent('favoritesUpdated', {
+          detail: { favorites: localFavorites, count: localFavorites.length },
+        }));
+        
+        return {
+          success: true,
+          favorites: localFavorites,
+          count: localFavorites.length,
+          isFavorite: localFavorites.includes(productId),
+        };
+      } catch (e) {
+        return { success: false, error: e.message };
       }
-      
-      localStorage.setItem('favorites', JSON.stringify(localFavorites));
-      
-      window.dispatchEvent(new CustomEvent('favoritesUpdated', {
-        detail: { favorites: localFavorites, count: localFavorites.length },
-      }));
-      
-      return {
-        success: true,
-        favorites: localFavorites,
-        count: localFavorites.length,
-        isFavorite: localFavorites.includes(productId),
-      };
-    } catch (e) {
-      return { success: false, error: e.message };
     }
+    
+    return { success: false, error: error.message };
   }
 }
 
