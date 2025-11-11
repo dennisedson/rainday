@@ -7,7 +7,9 @@
     "deploy": "vercel --prod"
   },
   "dependencies": {
-    "@hubspot/api-client": "^11.0.0"
+    "@hubspot/api-client": "^11.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "resend": "^3.2.0"
   },
   "devDependencies": {
     "vercel": "^33.0.0"
