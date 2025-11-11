@@ -26,7 +26,7 @@ function generateToken() {
  * Uses Resend if API key is configured, otherwise logs to console
  */
 async function sendMagicLinkEmail(email, token) {
-  const magicLink = `${BASE_URL}/auth/verify?token=${token}&email=${encodeURIComponent(email)}`;
+  const magicLink = `${BASE_URL}/login?token=${token}&email=${encodeURIComponent(email)}`;
   
   // Try to send via Resend if configured
   const RESEND_API_KEY = process.env.RESEND_API_KEY;
