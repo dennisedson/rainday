@@ -51,11 +51,16 @@ export default async function handler(req, res) {
   }
 
   const hubspotClient = new Client({ accessToken: HUBSPOT_ACCESS_TOKEN });
-  const { email, hubspotutk, productId, action } = req.body;
+  
+  // For GET requests, use query params. For POST/DELETE, use body
+  const email = req.method === 'GET' ? req.query.email : req.body?.email;
+  const hubspotutk = req.method === 'GET' ? req.query.hubspotutk : req.body?.hubspotutk;
+  const productId = req.body?.productId;
+  const action = req.body?.action;
 
   // For GET requests, can be in query params
-  const contactEmail = email || req.query.email;
-  const trackingToken = hubspotutk || req.query.hubspotutk;
+  const contactEmail = email;
+  const trackingToken = hubspotutk;
 
   if (!contactEmail && !trackingToken) {
     return res.status(400).json({ error: 'Email or hubspotutk is required' });
