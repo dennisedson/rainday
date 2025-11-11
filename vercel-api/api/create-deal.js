@@ -18,10 +18,11 @@
 import { Client } from '@hubspot/api-client';
 
 export default async function handler(req, res) {
-  // Set CORS headers to allow requests from HubSpot domains
+  // Set CORS headers - must be set before any response
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Max-Age', '86400'); // 24 hours
   
   // Handle preflight request
   if (req.method === 'OPTIONS') {
