@@ -20,9 +20,8 @@ console.log(`📡 API URL: ${API_URL}`);
 console.log(`⏰ Interval: ${INTERVAL_MINUTES} minutes`);
 console.log(`🔄 Pinging every ${INTERVAL_MINUTES} minutes to keep functions warm...\n`);
 
-async function pingHealth() {
+async function pingEndpoint(name, url) {
   const timestamp = new Date().toISOString();
-  const url = `${API_URL}/api/health`;
   
   try {
     const response = await fetch(url, {
@@ -32,27 +31,45 @@ async function pingHealth() {
       },
     });
 
-    const data = await response.json();
-    
     if (response.ok) {
-      console.log(`✅ [${timestamp}] Health check OK - Status: ${data.status}, Environment: ${data.environment}`);
+      try {
+        const data = await response.json();
+        console.log(`✅ [${timestamp}] ${name} OK - Status: ${data.status || 'ok'}`);
+      } catch {
+        // If response isn't JSON, that's ok - just check status
+        console.log(`✅ [${timestamp}] ${name} OK - Status: ${response.status}`);
+      }
       return true;
     } else {
-      console.error(`❌ [${timestamp}] Health check failed - Status: ${response.status}`);
+      console.error(`❌ [${timestamp}] ${name} failed - Status: ${response.status}`);
       return false;
     }
   } catch (error) {
-    console.error(`❌ [${timestamp}] Health check error:`, error.message);
+    console.error(`❌ [${timestamp}] ${name} error:`, error.message);
     return false;
   }
 }
 
+async function pingAll() {
+  const endpoints = [
+    { name: 'Health', url: `${API_URL}/api/health` },
+    { name: 'Categories', url: `${API_URL}/api/square-categories` },
+  ];
+  
+  const results = await Promise.all(
+    endpoints.map(endpoint => pingEndpoint(endpoint.name, endpoint.url))
+  );
+  
+  const successCount = results.filter(r => r).length;
+  console.log(`📊 [${new Date().toISOString()}] Pinged ${endpoints.length} endpoints: ${successCount} successful\n`);
+}
+
 // Ping immediately on start
-pingHealth();
+pingAll();
 
 // Then ping every interval
 setInterval(() => {
-  pingHealth();
+  pingAll();
 }, INTERVAL_MS);
 
 // Handle graceful shutdown
