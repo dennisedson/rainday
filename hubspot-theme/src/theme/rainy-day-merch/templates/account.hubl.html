@@ -1,0 +1,14 @@
+<!--
+  templateType: page
+  isAvailableForNewContent: true
+  label: Account - Account Page
+-->
+{% extends "./layouts/base.hubl.html" %}
+
+{% block body %}
+  {% module
+    "account_module"
+    path="../components/modules/Account"
+  %}
+{% endblock body %}
+

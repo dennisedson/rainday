@@ -1,9 +1,9 @@
 import { Island } from '@hubspot/cms-components';
-import { ModuleFields, TextField, ImageField } from '@hubspot/cms-components/fields';
+import { ModuleFields, TextField, ImageField, BooleanField } from '@hubspot/cms-components/fields';
 import SiteHeaderIsland from '../../islands/SiteHeaderIsland.jsx?island';
 
 export function Component({ fieldValues, hublData }) {
-  const { siteName, logoImage } = fieldValues;
+  const { siteName, logoImage, showAboutLink, aboutLinkText, aboutLinkUrl } = fieldValues;
   
   // Prioritize: HubSpot settings → Module fields → Defaults
   const displayName = hublData?.companyName || siteName || 'Artisan & Co.';
@@ -14,6 +14,9 @@ export function Component({ fieldValues, hublData }) {
       module={SiteHeaderIsland}
       siteName={displayName}
       logoImage={displayLogoImage}
+      showAboutLink={showAboutLink !== undefined ? showAboutLink : true}
+      aboutLinkText={aboutLinkText || 'About'}
+      aboutLinkUrl={aboutLinkUrl || '/about'}
     />
   );
 }
@@ -36,6 +39,24 @@ export const fields = (
       label="Logo Letter (Fallback)"
       default="R"
       helpText="Letter shown if no logo image is provided"
+    />
+    <BooleanField
+      name="showAboutLink"
+      label="Show 'About' Link"
+      default={true}
+      helpText="Display the About link in the navigation menu"
+    />
+    <TextField
+      name="aboutLinkText"
+      label="About Link Text"
+      default="About"
+      helpText="Text displayed for the About link (only shown if 'Show About Link' is enabled)"
+    />
+    <TextField
+      name="aboutLinkUrl"
+      label="About Link URL"
+      default="/about"
+      helpText="URL for the About link (e.g., '/about' or '/about-us')"
     />
   </ModuleFields>
 );
