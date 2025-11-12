@@ -3,7 +3,7 @@
  * Client-side authentication helpers for magic link authentication
  */
 
-const API_BASE_URL = 'https://hsecommerce-api.vercel.app/api';
+import { post, get } from './api';
 
 // Session token storage key
 const SESSION_TOKEN_KEY = 'auth_session_token';
@@ -37,33 +37,12 @@ export function clearSessionToken() {
  */
 export async function requestMagicLink(email) {
   try {
-    const response = await fetch(`${API_BASE_URL}/auth/magic-link`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email }),
-    });
-
-    // Check if response is ok before parsing JSON
-    if (!response.ok) {
-      let errorMessage = 'Failed to request magic link';
-      try {
-        const errorData = await response.json();
-        errorMessage = errorData.error || errorMessage;
-      } catch (e) {
-        // If JSON parsing fails, use status text
-        errorMessage = `Server error: ${response.status} ${response.statusText}`;
-      }
-      throw new Error(errorMessage);
-    }
-
-    const data = await response.json();
+    const data = await post('/auth/magic-link', { email });
     return data;
   } catch (error) {
     console.error('[Auth] Error requesting magic link:', error);
     // Provide more helpful error messages
-    if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+    if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError') || error.message.includes('API request failed')) {
       throw new Error('Unable to connect to server. Please check your internet connection and try again.');
     }
     throw error;
@@ -75,15 +54,7 @@ export async function requestMagicLink(email) {
  */
 export async function verifyMagicLink(token, email) {
   try {
-    const response = await fetch(`${API_BASE_URL}/auth/verify-link?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`, {
-      method: 'GET',
-    });
-
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.error || 'Failed to verify magic link');
-    }
+    const data = await get(`/auth/verify-link?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`);
 
     // Store session token
     if (data.token) {
@@ -111,33 +82,19 @@ export async function verifySession() {
   console.log('[Auth] Verifying session with token:', token.substring(0, 20) + '...');
 
   try {
-    const response = await fetch(`${API_BASE_URL}/auth/verify-session`, {
-      method: 'POST',
+    const data = await post('/auth/verify-session', { token }, {
       headers: {
-        'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({ token }),
     });
 
-    console.log('[Auth] Verify session response status:', response.status);
-
-    const data = await response.json();
     console.log('[Auth] Verify session response data:', data);
-    
-    if (!response.ok) {
-      // Token invalid or expired
-      console.log('[Auth] Session verification failed:', data.error || 'Unknown error');
-      clearSessionToken();
-      return null;
-    }
-
     console.log('[Auth] Session verified successfully for:', data.contact?.email);
     return data.contact;
   } catch (error) {
     console.error('[Auth] Error verifying session:', error);
     // Don't clear token on network errors - might be temporary
-    if (error.message.includes('Failed to fetch')) {
+    if (error.message.includes('Failed to fetch') || error.message.includes('API request failed')) {
       console.log('[Auth] Network error, keeping token for retry');
     } else {
       clearSessionToken();

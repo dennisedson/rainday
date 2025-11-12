@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import ProductCard from '../shared/ProductCard';
-
-// Vercel API endpoint for Square products
-const API_ENDPOINT = 'https://hsecommerce-api.vercel.app/api/square-products';
+import { get } from '../../utils/api';
 
 /**
  * TrendingProductsIsland - Client-side component for fetching and displaying trending products
@@ -74,13 +72,7 @@ export default function TrendingProductsIsland({
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        const response = await fetch(API_ENDPOINT);
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch products: ${response.status}`);
-        }
-
-        const data = await response.json();
+        const data = await get('/square-products');
 
         // Transform Square products to our format and limit to maxProducts
         const transformedProducts = data.products

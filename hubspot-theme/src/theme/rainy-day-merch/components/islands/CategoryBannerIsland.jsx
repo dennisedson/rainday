@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { get } from '../../utils/api';
 
 /**
  * CategoryBannerIsland - Dynamic banner that updates based on URL category parameter
@@ -18,8 +19,7 @@ export default function CategoryBannerIsland({
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch('https://hsecommerce-api.vercel.app/api/square-categories');
-        const data = await response.json();
+        const data = await get('/square-categories');
         
         // Build map of category name to { image, description }
         const dataMap = {};

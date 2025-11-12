@@ -4,7 +4,7 @@
  * Falls back to localStorage if email not available
  */
 
-const API_BASE_URL = 'https://hsecommerce-api.vercel.app/api';
+import { get, post, del } from './api';
 
 // Get HubSpot tracking token from cookie
 function getHubSpotTrackingToken() {
@@ -31,20 +31,14 @@ async function getUserIdentifier() {
   if (sessionToken) {
     try {
       // Verify session and get contact email
-      const response = await fetch(`${API_BASE_URL}/auth/verify-session`, {
-        method: 'POST',
+      const data = await post('/auth/verify-session', { token: sessionToken }, {
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${sessionToken}`,
         },
-        body: JSON.stringify({ token: sessionToken }),
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data.contact && data.contact.email) {
-          return { type: 'email', value: data.contact.email };
-        }
+      if (data.contact && data.contact.email) {
+        return { type: 'email', value: data.contact.email };
       }
     } catch (error) {
       console.error('[Favorites] Error verifying session:', error);
@@ -83,13 +77,7 @@ export async function getFavorites() {
       params.append('email', identifier.value);
     }
     
-    const response = await fetch(`${API_BASE_URL}/favorites?${params.toString()}`);
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch favorites');
-    }
-    
-    const data = await response.json();
+    const data = await get(`/favorites?${params.toString()}`);
     
     // Also sync to localStorage as backup
     localStorage.setItem('favorites', JSON.stringify(data.favorites || []));
@@ -130,19 +118,7 @@ export async function toggleFavorite(productId) {
       body.email = identifier.value;
     }
     
-    const response = await fetch(`${API_BASE_URL}/favorites`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to update favorite');
-    }
-    
-    const data = await response.json();
+    const data = await post('/favorites', body);
     
     // Sync to localStorage
     localStorage.setItem('favorites', JSON.stringify(data.favorites || []));

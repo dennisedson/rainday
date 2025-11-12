@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getFavoritesCount } from '../../utils/favorites';
 import { verifySession, getSessionToken } from '../../utils/auth';
-
-const API_BASE_URL = 'https://hsecommerce-api.vercel.app/api';
+import { get } from '../../utils/api';
 
 export default function SiteHeaderIsland({ 
   siteName = 'Artisan & Co.', 
@@ -49,29 +48,26 @@ export default function SiteHeaderIsland({
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/square-categories`);
-        if (response.ok) {
-          const data = await response.json();
-          
-          // Map categories to navigation items
-          const categoryNavItems = data.categories.map(cat => ({
-            label: cat.name,
-            href: `/shop?category=${encodeURIComponent(cat.name)}`,
-          }));
+        const data = await get('/square-categories');
+        
+        // Map categories to navigation items
+        const categoryNavItems = data.categories.map(cat => ({
+          label: cat.name,
+          href: `/shop?category=${encodeURIComponent(cat.name)}`,
+        }));
 
-          // Add "All Products" at the beginning and "About" at the end (if enabled)
-          const navItems = [
-            { label: 'All Products', href: '/shop' },
-            ...categoryNavItems,
-          ];
-          
-          // Add About link if enabled
-          if (showAboutLink) {
-            navItems.push({ label: aboutLinkText, href: aboutLinkUrl });
-          }
-          
-          setNavigationItems(navItems);
+        // Add "All Products" at the beginning and "About" at the end (if enabled)
+        const navItems = [
+          { label: 'All Products', href: '/shop' },
+          ...categoryNavItems,
+        ];
+        
+        // Add About link if enabled
+        if (showAboutLink) {
+          navItems.push({ label: aboutLinkText, href: aboutLinkUrl });
         }
+        
+        setNavigationItems(navItems);
       } catch (error) {
         console.error('Failed to fetch categories:', error);
         // Keep fallback navigation items
@@ -79,7 +75,7 @@ export default function SiteHeaderIsland({
     };
 
     fetchCategories();
-  }, []);
+  }, [showAboutLink, aboutLinkText, aboutLinkUrl]);
 
   // Handle search submission
   const handleSearch = (e) => {

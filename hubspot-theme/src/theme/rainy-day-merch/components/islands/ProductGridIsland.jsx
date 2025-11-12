@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import ProductCard from '../shared/ProductCard';
-
-// Vercel API endpoint for Square products
-const API_ENDPOINT = 'https://hsecommerce-api.vercel.app/api/square-products';
+import { get } from '../../utils/api';
 
 /**
  * ProductGridIsland - Client-side component for fetching and displaying products
@@ -146,16 +144,9 @@ export default function ProductGridIsland({ sectionTitle, category, sortBy, colu
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        console.log('[ProductGridIsland] Starting fetch from:', API_ENDPOINT);
+        console.log('[ProductGridIsland] Starting fetch from: /square-products');
         setLoading(true);
-        const response = await fetch(API_ENDPOINT);
-        console.log('[ProductGridIsland] Response status:', response.status);
-        
-        if (!response.ok) {
-          throw new Error(`Failed to fetch products: ${response.status}`);
-        }
-        
-        const data = await response.json();
+        const data = await get('/square-products');
         console.log('[ProductGridIsland] Fetched data:', data);
         
         // Transform Square products to our format
