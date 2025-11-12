@@ -37,16 +37,35 @@ export default function AccountIsland() {
     }
 
     try {
+      const token = getSessionToken();
+      console.log('[Account] Checking auth, token exists:', !!token);
+      
+      if (!token) {
+        console.log('[Account] No token found, redirecting to login');
+        window.location.href = '/login';
+        return;
+      }
+
       const sessionContact = await verifySession();
+      console.log('[Account] Session verification result:', sessionContact ? 'Success' : 'Failed');
+      
       if (sessionContact) {
         setContact(sessionContact);
       } else {
         // Not authenticated, redirect to login
+        console.log('[Account] Session invalid, redirecting to login');
         window.location.href = '/login';
       }
     } catch (error) {
       console.error('[Account] Auth check error:', error);
-      window.location.href = '/login';
+      // Don't redirect immediately on error - might be network issue
+      // Wait a bit and retry once
+      setTimeout(() => {
+        const token = getSessionToken();
+        if (!token) {
+          window.location.href = '/login';
+        }
+      }, 1000);
     } finally {
       setLoading(false);
     }

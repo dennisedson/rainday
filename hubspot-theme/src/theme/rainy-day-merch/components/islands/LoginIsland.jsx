@@ -39,13 +39,19 @@ export default function LoginIsland() {
       if (data.token) {
         console.log('[LoginIsland] Storing session token...');
         localStorage.setItem('auth_session_token', data.token);
+        
+        // Verify token was stored
+        const storedToken = localStorage.getItem('auth_session_token');
+        console.log('[LoginIsland] Token stored, verifying:', storedToken ? storedToken.substring(0, 20) + '...' : 'NOT STORED');
+        
         window.dispatchEvent(new CustomEvent('authStateChanged', { detail: { authenticated: true } }));
         
-        // Small delay to ensure token is stored before redirect
+        // Longer delay to ensure token is persisted and page is ready
         setTimeout(() => {
           console.log('[LoginIsland] Redirecting to /account...');
-          window.location.replace('/account');
-        }, 100);
+          // Use href instead of replace to allow back navigation if needed
+          window.location.href = '/account';
+        }, 300);
       } else {
         console.warn('[LoginIsland] No token in response:', data);
         throw new Error('No session token received');
@@ -146,7 +152,7 @@ export default function LoginIsland() {
               </p>
             </div>
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+        <form className="mt-8 space-y-6" id="login-form" onSubmit={handleSubmit}>
           {error && (
             <div className="rounded-md bg-red-50 p-4">
               <div className="flex">
