@@ -21,6 +21,54 @@ export default function TrendingProductsIsland({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Handle add to cart
+  const handleAddToCart = (productId) => {
+    // Find the product
+    const product = products.find(p => p.id === productId);
+    if (!product) {
+      console.error('[TrendingProductsIsland] Product not found:', productId);
+      return;
+    }
+
+    // Get existing cart
+    let cart = [];
+    try {
+      const savedCart = localStorage.getItem('cart');
+      if (savedCart) {
+        cart = JSON.parse(savedCart);
+      }
+    } catch (e) {
+      console.error('[TrendingProductsIsland] Failed to parse cart:', e);
+    }
+
+    // Check if product already in cart
+    const existingIndex = cart.findIndex(item => item.id === product.id);
+    
+    if (existingIndex > -1) {
+      // Update quantity
+      cart[existingIndex].quantity += 1;
+    } else {
+      // Add new item
+      cart.push({
+        id: product.id,
+        name: product.title,
+        price: product.price,
+        quantity: 1,
+        image: product.image,
+        category: product.category || 'Products'
+      });
+    }
+
+    // Save cart
+    localStorage.setItem('cart', JSON.stringify(cart));
+
+    // Dispatch custom event to update cart count in header
+    window.dispatchEvent(new Event('cartUpdated'));
+
+    // Show success message (optional - could use a toast notification instead)
+    console.log(`Added ${product.title} to cart`);
+  };
+
   // Fetch products from Vercel API
   useEffect(() => {
     const fetchProducts = async () => {
@@ -119,6 +167,8 @@ export default function TrendingProductsIsland({
                   price={product.price}
                   rating={product.rating}
                   reviewCount={product.reviewCount}
+                  onAddToCart={handleAddToCart}
+                  productUrl={`/product?id=${encodeURIComponent(product.id)}`}
                 />
               ))}
             </div>
