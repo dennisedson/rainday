@@ -13,6 +13,7 @@ export default function SiteHeaderIsland({
 }) {
   const [cartCount, setCartCount] = useState(0);
   const [favoritesCount, setFavoritesCount] = useState(0);
+  const [heartbeat, setHeartbeat] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -93,7 +94,14 @@ export default function SiteHeaderIsland({
   const updateFavoritesCount = async () => {
     try {
       const count = await getFavoritesCount();
+      const previousCount = favoritesCount;
       setFavoritesCount(count);
+      
+      // Trigger heartbeat if count increased
+      if (count > previousCount) {
+        setHeartbeat(true);
+        setTimeout(() => setHeartbeat(false), 1000);
+      }
     } catch (error) {
       console.error('Failed to get favorites count:', error);
       setFavoritesCount(0);
@@ -225,20 +233,50 @@ export default function SiteHeaderIsland({
             </button>
 
             {/* Favorites - Hidden on mobile */}
-            <a
-              href="/favorites"
-              className="hidden sm:block relative p-2 text-gray-600 hover:text-primary transition-colors duration-200"
-              aria-label={`Favorites (${favoritesCount} items)`}
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-              </svg>
-              {favoritesCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-primary text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                  {favoritesCount > 9 ? '9+' : favoritesCount}
-                </span>
-              )}
-            </a>
+            <>
+              <style dangerouslySetInnerHTML={{__html: `
+                @keyframes heartbeat {
+                  0%, 100% {
+                    transform: scale(1);
+                  }
+                  10%, 30% {
+                    transform: scale(1.1);
+                  }
+                  20%, 40% {
+                    transform: scale(1.15);
+                  }
+                  50% {
+                    transform: scale(1.2);
+                  }
+                }
+                .heartbeat-animation {
+                  animation: heartbeat 0.6s ease-in-out;
+                }
+              `}} />
+              <a
+                href="/favorites"
+                className="hidden sm:block relative p-2 text-gray-600 hover:text-red-500 transition-colors duration-200 group"
+                aria-label={`Favorites (${favoritesCount} items)`}
+                onMouseEnter={() => {
+                  setHeartbeat(true);
+                  setTimeout(() => setHeartbeat(false), 600);
+                }}
+              >
+                <svg 
+                  className={`w-6 h-6 text-red-500 ${heartbeat ? 'heartbeat-animation' : ''}`}
+                  fill="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                </svg>
+                {/* Count inside heart */}
+                {favoritesCount > 0 && (
+                  <span className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-white text-xs font-bold pointer-events-none z-10">
+                    {favoritesCount > 9 ? '9+' : favoritesCount}
+                  </span>
+                )}
+              </a>
+            </>
 
             {/* Account - Hidden on mobile */}
             <a
@@ -360,18 +398,24 @@ export default function SiteHeaderIsland({
             {/* Additional Mobile Links */}
             <a
               href="/favorites"
-              className="flex items-center px-6 py-3 text-base font-medium text-gray-700 hover:bg-beige-100 hover:text-primary transition-colors"
+              className="flex items-center px-6 py-3 text-base font-medium text-gray-700 hover:bg-beige-100 hover:text-primary transition-colors relative"
               onClick={() => setIsMobileMenuOpen(false)}
             >
-              <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              <svg 
+                className={`w-5 h-5 mr-3 text-red-500 ${heartbeat ? 'heartbeat-animation' : ''}`}
+                fill="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
               </svg>
-              Favorites
-              {favoritesCount > 0 && (
-                <span className="ml-auto bg-primary text-white text-xs font-bold rounded-full px-2 py-1">
-                  {favoritesCount}
-                </span>
-              )}
+              <span className="relative">
+                Favorites
+                {favoritesCount > 0 && (
+                  <span className="absolute -top-1 -right-6 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                    {favoritesCount > 9 ? '9+' : favoritesCount}
+                  </span>
+                )}
+              </span>
             </a>
             <a
               href={isAuthenticated ? "/account" : "/login"}
