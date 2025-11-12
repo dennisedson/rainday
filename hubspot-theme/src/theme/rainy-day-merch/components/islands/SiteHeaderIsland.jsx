@@ -1,19 +1,31 @@
 import { useState, useEffect } from 'react';
 import { getFavoritesCount } from '../../utils/favorites';
+import { verifySession, getSessionToken } from '../../utils/auth';
 
 const API_BASE_URL = 'https://hsecommerce-api.vercel.app/api';
 
-export default function SiteHeaderIsland({ siteName = 'Artisan & Co.', logoImage = null }) {
+export default function SiteHeaderIsland({ 
+  siteName = 'Artisan & Co.', 
+  logoImage = null,
+  showAboutLink = true,
+  aboutLinkText = 'About',
+  aboutLinkUrl = '/about'
+}) {
   const [cartCount, setCartCount] = useState(0);
   const [favoritesCount, setFavoritesCount] = useState(0);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [navigationItems, setNavigationItems] = useState([
-    // Default fallback items
-    { label: 'Shop', href: '/shop' },
-    { label: 'About', href: '/about' },
-  ]);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [navigationItems, setNavigationItems] = useState(() => {
+    // Default fallback items - respect showAboutLink prop
+    const fallbackItems = [{ label: 'Shop', href: '/shop' }];
+    if (showAboutLink) {
+      fallbackItems.push({ label: aboutLinkText, href: aboutLinkUrl });
+    }
+    return fallbackItems;
+  });
 
   // Update cart count from localStorage
   const updateCartCount = () => {
@@ -46,12 +58,18 @@ export default function SiteHeaderIsland({ siteName = 'Artisan & Co.', logoImage
             href: `/shop?category=${encodeURIComponent(cat.name)}`,
           }));
 
-          // Add "All Products" at the beginning and "About" at the end
-          setNavigationItems([
+          // Add "All Products" at the beginning and "About" at the end (if enabled)
+          const navItems = [
             { label: 'All Products', href: '/shop' },
             ...categoryNavItems,
-            { label: 'About', href: '/about' },
-          ]);
+          ];
+          
+          // Add About link if enabled
+          if (showAboutLink) {
+            navItems.push({ label: aboutLinkText, href: aboutLinkUrl });
+          }
+          
+          setNavigationItems(navItems);
         }
       } catch (error) {
         console.error('Failed to fetch categories:', error);
@@ -90,6 +108,35 @@ export default function SiteHeaderIsland({ siteName = 'Artisan & Co.', logoImage
       setSearchQuery(urlSearch);
       setIsSearchOpen(true); // Keep search bar open if there's a search query
     }
+  }, []);
+
+  // Check authentication status
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const token = getSessionToken();
+        if (token) {
+          const contact = await verifySession();
+          setIsAuthenticated(contact !== null);
+        } else {
+          setIsAuthenticated(false);
+        }
+      } catch (error) {
+        setIsAuthenticated(false);
+      } finally {
+        setAuthLoading(false);
+      }
+    };
+
+    checkAuth();
+
+    // Listen for auth state changes
+    const handleAuthChange = () => {
+      checkAuth();
+    };
+
+    window.addEventListener('authStateChanged', handleAuthChange);
+    return () => window.removeEventListener('authStateChanged', handleAuthChange);
   }, []);
 
   // Update cart count on mount and when localStorage changes
@@ -195,9 +242,9 @@ export default function SiteHeaderIsland({ siteName = 'Artisan & Co.', logoImage
 
             {/* Account - Hidden on mobile */}
             <a
-              href="/account"
+              href={isAuthenticated ? "/account" : "/login"}
               className="hidden sm:block p-2 text-gray-600 hover:text-primary transition-colors duration-200"
-              aria-label="Account"
+              aria-label={isAuthenticated ? "Account" : "Sign In"}
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -327,14 +374,14 @@ export default function SiteHeaderIsland({ siteName = 'Artisan & Co.', logoImage
               )}
             </a>
             <a
-              href="/account"
+              href={isAuthenticated ? "/account" : "/login"}
               className="flex items-center px-6 py-3 text-base font-medium text-gray-700 hover:bg-beige-100 hover:text-primary transition-colors"
               onClick={() => setIsMobileMenuOpen(false)}
             >
               <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
-              Account
+              {isAuthenticated ? "Account" : "Sign In"}
             </a>
           </nav>
 
