@@ -4,7 +4,8 @@
   "description": "Backend API for HubSpot e-commerce site with Square integration",
   "scripts": {
     "dev": "vercel dev",
-    "deploy": "vercel --prod"
+    "deploy": "vercel --prod",
+    "keep-alive": "node keep-alive.js"
   },
   "dependencies": {
     "@hubspot/api-client": "^11.0.0",
