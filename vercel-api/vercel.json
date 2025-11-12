@@ -1,16 +1,13 @@
 {
   "version": 2,
+  "buildCommand": "echo 'No build needed'",
+  "outputDirectory": ".",
   "functions": {
     "api/**/*.js": {
-      "maxDuration": 10
+      "maxDuration": 10,
+      "memory": 1024
     }
   },
-  "crons": [
-    {
-      "path": "/api/cron/keep-alive",
-      "schedule": "*/5 * * * *"
-    }
-  ],
   "headers": [
     {
       "source": "/api/(.*)",
