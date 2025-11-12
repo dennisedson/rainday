@@ -259,7 +259,7 @@ export default function SiteHeaderIsland({
                 }}
               >
                 <svg 
-                  className={`w-6 h-6 text-red-500 ${heartbeat ? 'heartbeat-animation' : ''}`}
+                  className={`w-8 h-8 text-red-500 ${heartbeat ? 'heartbeat-animation' : ''}`}
                   fill="currentColor" 
                   viewBox="0 0 24 24"
                 >
@@ -267,7 +267,7 @@ export default function SiteHeaderIsland({
                 </svg>
                 {/* Count inside heart */}
                 {favoritesCount > 0 && (
-                  <span className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-white text-xs font-bold pointer-events-none z-10">
+                  <span className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-white text-sm font-bold pointer-events-none z-10">
                     {favoritesCount > 9 ? '9+' : favoritesCount}
                   </span>
                 )}

@@ -51,6 +51,7 @@ export default async function handler(req, res) {
     { name: 'Health', url: `${API_URL}/api/health` },
     { name: 'Categories', url: `${API_URL}/api/square-categories` },
     { name: 'Products', url: `${API_URL}/api/square-products` },
+    { name: 'Favorites', url: `${API_URL}/api/favorites?email=keepalive@test.com` },
   ];
 
   const results = await Promise.all(

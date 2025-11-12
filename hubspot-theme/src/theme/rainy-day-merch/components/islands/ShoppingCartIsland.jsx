@@ -279,19 +279,19 @@ export default function ShoppingCartIsland() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Promo Code
                 </label>
-                <div className="flex gap-2">
+                <div className="flex flex-col xl:flex-row gap-2">
                   <input
                     type="text"
                     value={promoCode}
                     onChange={(e) => setPromoCode(e.target.value)}
                     placeholder="Enter code"
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    className="flex-1 min-w-0 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                     disabled={appliedPromo !== null}
                   />
                   <button
                     onClick={applyPromoCode}
                     disabled={!promoCode || appliedPromo !== null}
-                    className="px-4 py-2 bg-gray-900 text-white font-medium rounded-lg hover:bg-gray-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-2 bg-gray-900 text-white font-medium rounded-lg hover:bg-gray-800 transition disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0"
                   >
                     Apply
                   </button>

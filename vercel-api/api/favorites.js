@@ -4,7 +4,7 @@
  * Uses HubSpot tracking token (hubspotutk) or email to identify contacts
  */
 
-const { Client } = require('@hubspot/api-client');
+import { Client } from '@hubspot/api-client';
 
 const HUBSPOT_ACCESS_TOKEN = process.env.HUBSPOT_ACCESS_TOKEN;
 
