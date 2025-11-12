@@ -1,18 +1,10 @@
 {
   "version": 2,
-  "buildCommand": "cd vercel-api && npm install",
-  "installCommand": "cd vercel-api && npm install",
   "functions": {
-    "vercel-api/api/**/*.js": {
+    "api/**/*.js": {
       "maxDuration": 30
     }
   },
-  "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/vercel-api/api/$1"
-    }
-  ],
   "headers": [
     {
       "source": "/api/(.*)",
