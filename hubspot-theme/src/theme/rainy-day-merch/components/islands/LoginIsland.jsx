@@ -59,19 +59,29 @@ export default function LoginIsland() {
 
   // Check if we're verifying a magic link from email
   useEffect(() => {
-    // Check URL params multiple ways to ensure we catch them
-    const fullUrl = window.location.href;
-    const searchParams = window.location.search;
+    // First, try to get params from data attributes (set by HubL template server-side)
+    const container = document.getElementById('login-container');
+    let token = container?.dataset?.token || '';
+    let emailParam = container?.dataset?.email || '';
     
-    console.log('[LoginIsland] Full URL:', fullUrl);
-    console.log('[LoginIsland] Search params:', searchParams);
+    console.log('[LoginIsland] Data attributes - Token:', token ? token.substring(0, 10) + '...' : 'none');
+    console.log('[LoginIsland] Data attributes - Email:', emailParam || 'none');
     
-    const urlParams = new URLSearchParams(searchParams);
-    const token = urlParams.get('token');
-    const emailParam = urlParams.get('email');
-    
-    console.log('[LoginIsland] Token:', token ? token.substring(0, 10) + '...' : 'none');
-    console.log('[LoginIsland] Email:', emailParam || 'none');
+    // Fallback: Check URL params (in case HubSpot doesn't strip them)
+    if (!token || !emailParam) {
+      const fullUrl = window.location.href;
+      const searchParams = window.location.search;
+      
+      console.log('[LoginIsland] Fallback - Full URL:', fullUrl);
+      console.log('[LoginIsland] Fallback - Search params:', searchParams);
+      
+      const urlParams = new URLSearchParams(searchParams);
+      token = token || urlParams.get('token') || '';
+      emailParam = emailParam || urlParams.get('email') || '';
+      
+      console.log('[LoginIsland] Fallback - Token:', token ? token.substring(0, 10) + '...' : 'none');
+      console.log('[LoginIsland] Fallback - Email:', emailParam || 'none');
+    }
 
     if (token && emailParam) {
       console.log('[LoginIsland] Found magic link params, starting verification...');

@@ -1,0 +1,26 @@
+<!--
+  templateType: page
+  isAvailableForNewContent: true
+  label: Login - Login Page
+-->
+
+{% extends "./layouts/base.hubl.html" %}
+
+{% block body %}
+  {# Capture query parameters server-side before they're stripped #}
+  {% set token_param = request.query_dict.token %}
+  {% set email_param = request.query_dict.email %}
+  
+  {# Pass params to React component via data attributes #}
+  <div 
+    id="login-container"
+    data-token="{{ token_param }}"
+    data-email="{{ email_param }}"
+  >
+    {% module
+      "login_module"
+      path="../components/modules/Login"
+    %}
+  </div>
+{% endblock body %}
+
