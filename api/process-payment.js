@@ -54,7 +54,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { sourceId, amount, currency = 'USD', orderId, billingDetails, shippingDetails } = req.body;
+    const { sourceId, amount, currency = 'USD', orderId, buyerEmail, billingDetails, shippingDetails } = req.body;
 
     if (!sourceId || !amount) {
       return res.status(400).json({ error: 'Missing required fields: sourceId and amount' });
@@ -76,6 +76,11 @@ export default async function handler(req, res) {
       },
       location_id: SQUARE_LOCATION_ID,
     };
+
+    // Add buyer email for Square to send digital receipt
+    if (buyerEmail) {
+      paymentData.buyer_email_address = buyerEmail;
+    }
 
     // Add order ID if provided
     if (orderId) {

@@ -1,16 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
-export default function CheckoutPaymentIsland() {
+export default function CheckoutPaymentIsland({ squareApplicationId, squareLocationId }) {
   const [checkoutData, setCheckoutData] = useState(null);
-  const [formData, setFormData] = useState({
-    cardNumber: '',
-    cardName: '',
-    expiryDate: '',
-    cvv: '',
-    saveCard: false,
-  });
   const [errors, setErrors] = useState({});
   const [isProcessing, setIsProcessing] = useState(false);
+  const [squareReady, setSquareReady] = useState(false);
+  const cardRef = useRef(null);
+  const paymentsRef = useRef(null);
+  const cardElementRef = useRef(null);
 
   // Load checkout data from previous steps
   useEffect(() => {
@@ -19,7 +16,6 @@ export default function CheckoutPaymentIsland() {
       try {
         const data = JSON.parse(saved);
         if (!data.shippingInfo) {
-          // Missing shipping info, redirect back
           window.location.href = '/checkout-shipping';
         } else {
           setCheckoutData(data);
@@ -29,125 +25,142 @@ export default function CheckoutPaymentIsland() {
         window.location.href = '/cart';
       }
     } else {
-      // No cart data, redirect to cart
       window.location.href = '/cart';
     }
   }, []);
 
-  // Format card number (add spaces every 4 digits)
-  const formatCardNumber = (value) => {
-    const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
-    const matches = v.match(/\d{4,16}/g);
-    const match = (matches && matches[0]) || '';
-    const parts = [];
+  // Initialize Square Web Payments SDK
+  useEffect(() => {
+    if (!squareApplicationId || !squareLocationId || !checkoutData) return;
 
-    for (let i = 0, len = match.length; i < len; i += 4) {
-      parts.push(match.substring(i, i + 4));
-    }
+    const initializeSquare = async () => {
+      if (!window.Square) {
+        console.error('Square.js not loaded');
+        setErrors({ general: 'Square Payments SDK failed to load. Please refresh the page.' });
+        return;
+      }
 
-    if (parts.length) {
-      return parts.join(' ');
-    } else {
-      return value;
-    }
-  };
+      try {
+        const payments = window.Square.payments(squareApplicationId, squareLocationId);
+        paymentsRef.current = payments;
 
-  // Format expiry date (MM/YY)
-  const formatExpiryDate = (value) => {
-    const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
-    if (v.length >= 2) {
-      return `${v.substring(0, 2)}/${v.substring(2, 4)}`;
-    }
-    return v;
-  };
+        const card = await payments.card();
+        await card.attach('#card-container');
+        cardElementRef.current = card;
+        
+        setSquareReady(true);
+      } catch (e) {
+        console.error('Failed to initialize Square:', e);
+        setErrors({ general: 'Failed to initialize payment form. Please check your credentials.' });
+      }
+    };
 
-  // Handle form input changes
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    
-    let formattedValue = value;
-    if (name === 'cardNumber') {
-      formattedValue = formatCardNumber(value);
-    } else if (name === 'expiryDate') {
-      formattedValue = formatExpiryDate(value);
-    } else if (name === 'cvv') {
-      formattedValue = value.replace(/[^0-9]/gi, '').substring(0, 4);
-    }
+    initializeSquare();
 
-    setFormData(prev => ({ 
-      ...prev, 
-      [name]: type === 'checkbox' ? checked : formattedValue 
-    }));
-    
-    // Clear error for this field
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
-    }
-  };
-
-  // Validate form
-  const validateForm = () => {
-    const newErrors = {};
-
-    if (!formData.cardNumber) {
-      newErrors.cardNumber = 'Card number is required';
-    } else if (formData.cardNumber.replace(/\s/g, '').length < 13) {
-      newErrors.cardNumber = 'Card number is invalid';
-    }
-
-    if (!formData.cardName) {
-      newErrors.cardName = 'Cardholder name is required';
-    }
-
-    if (!formData.expiryDate) {
-      newErrors.expiryDate = 'Expiry date is required';
-    } else if (!/^\d{2}\/\d{2}$/.test(formData.expiryDate)) {
-      newErrors.expiryDate = 'Expiry date must be MM/YY';
-    }
-
-    if (!formData.cvv) {
-      newErrors.cvv = 'CVV is required';
-    } else if (formData.cvv.length < 3) {
-      newErrors.cvv = 'CVV must be 3 or 4 digits';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+    return () => {
+      if (cardElementRef.current) {
+        cardElementRef.current.destroy();
+      }
+    };
+  }, [squareApplicationId, squareLocationId, checkoutData]);
 
   // Process payment
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!validateForm()) {
+    if (!squareReady || isProcessing) {
       return;
     }
 
     setIsProcessing(true);
+    setErrors({});
 
-    // Simulate payment processing
-    setTimeout(() => {
-      // In production, this would call your payment API
-      const orderData = {
-        ...checkoutData,
-        paymentInfo: {
-          last4: formData.cardNumber.slice(-4),
-          cardName: formData.cardName,
-        },
-        orderId: `ORD-${Date.now()}`,
-        orderDate: new Date().toISOString(),
-      };
+    try {
+      // 1. Get token from Square
+      const result = await cardElementRef.current.tokenize();
+      if (result.status === 'OK') {
+        const token = result.token;
+        console.log('[Checkout] Payment token received:', token);
 
-      // Save order data
-      localStorage.setItem('orderData', JSON.stringify(orderData));
-      
-      // Clear checkout data
-      localStorage.removeItem('checkoutData');
-      localStorage.removeItem('cart');
+        // 2. Call our API to process payment
+        const paymentResponse = await fetch('https://hsecommerce-api.vercel.app/api/process-payment', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            sourceId: token,
+            amount: checkoutData.total,
+            currency: 'USD',
+            orderId: `ORD-${Date.now()}`,
+            buyerEmail: checkoutData.shippingInfo.email,
+            billingDetails: {
+              address1: checkoutData.shippingInfo.address,
+              city: checkoutData.shippingInfo.city,
+              state: checkoutData.shippingInfo.state,
+              zipCode: checkoutData.shippingInfo.zipCode,
+              country: 'US',
+            }
+          }),
+        });
 
-      // Redirect to confirmation
-      window.location.href = '/order-confirmation';
-    }, 2000);
+        const paymentResult = await paymentResponse.json();
+
+        if (!paymentResponse.ok) {
+          throw new Error(paymentResult.error || 'Payment processing failed');
+        }
+
+        console.log('[Checkout] Payment successful:', paymentResult);
+
+        // 3. Create Deal in HubSpot
+        try {
+          await fetch('https://hsecommerce-api.vercel.app/api/create-deal', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email: checkoutData.shippingInfo.email,
+              firstName: checkoutData.shippingInfo.firstName,
+              lastName: checkoutData.shippingInfo.lastName,
+              orderTotal: checkoutData.total,
+              orderItems: checkoutData.cartItems,
+              paymentId: paymentResult.paymentId,
+              orderId: paymentResult.orderId || `ORD-${Date.now()}`,
+            }),
+          });
+        } catch (dealError) {
+          console.error('[Checkout] Failed to create HubSpot deal:', dealError);
+          // Don't fail the whole order if deal creation fails
+        }
+
+        // 4. Save order data and redirect
+        const orderData = {
+          ...checkoutData,
+          paymentId: paymentResult.paymentId,
+          orderId: paymentResult.orderId || `ORD-${Date.now()}`,
+          orderDate: new Date().toISOString(),
+          receiptUrl: paymentResult.receiptUrl,
+        };
+
+        localStorage.setItem('orderData', JSON.stringify(orderData));
+        localStorage.removeItem('checkoutData');
+        localStorage.removeItem('cart');
+
+        window.location.href = '/order-confirmation';
+      } else {
+        let errorMessage = 'Tokenization failed';
+        if (result.errors) {
+          errorMessage = result.errors[0].message;
+        }
+        setErrors({ general: errorMessage });
+        setIsProcessing(false);
+      }
+    } catch (err) {
+      console.error('[Checkout] Error:', err);
+      setErrors({ general: err.message || 'An unexpected error occurred' });
+      setIsProcessing(false);
+    }
   };
 
   if (!checkoutData) {
@@ -217,98 +230,26 @@ export default function CheckoutPaymentIsland() {
           {/* Payment Form */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-xl shadow-card p-6 mb-6">
-              <h2 className="text-2xl font-display font-bold text-gray-900 mb-6">Payment Information</h2>
+              <h2 className="text-2xl font-display font-bold text-gray-900 mb-6">Secure Payment</h2>
+
+              {errors.general && (
+                <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm">
+                  {errors.general}
+                </div>
+              )}
 
               <form onSubmit={handleSubmit}>
-                {/* Card Number */}
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Card Number *
+                <div className="mb-8">
+                  <label className="block text-sm font-medium text-gray-700 mb-4">
+                    Credit or Debit Card
                   </label>
-                  <input
-                    type="text"
-                    name="cardNumber"
-                    value={formData.cardNumber}
-                    onChange={handleChange}
-                    maxLength="19"
-                    className={`w-full px-4 py-3 border ${errors.cardNumber ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent`}
-                    placeholder="1234 5678 9012 3456"
-                  />
-                  {errors.cardNumber && (
-                    <p className="text-red-500 text-sm mt-1">{errors.cardNumber}</p>
-                  )}
-                </div>
-
-                {/* Cardholder Name */}
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Cardholder Name *
-                  </label>
-                  <input
-                    type="text"
-                    name="cardName"
-                    value={formData.cardName}
-                    onChange={handleChange}
-                    className={`w-full px-4 py-3 border ${errors.cardName ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent`}
-                    placeholder="John Doe"
-                  />
-                  {errors.cardName && (
-                    <p className="text-red-500 text-sm mt-1">{errors.cardName}</p>
-                  )}
-                </div>
-
-                {/* Expiry and CVV */}
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Expiry Date *
-                    </label>
-                    <input
-                      type="text"
-                      name="expiryDate"
-                      value={formData.expiryDate}
-                      onChange={handleChange}
-                      maxLength="5"
-                      className={`w-full px-4 py-3 border ${errors.expiryDate ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent`}
-                      placeholder="MM/YY"
-                    />
-                    {errors.expiryDate && (
-                      <p className="text-red-500 text-sm mt-1">{errors.expiryDate}</p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      CVV *
-                    </label>
-                    <input
-                      type="text"
-                      name="cvv"
-                      value={formData.cvv}
-                      onChange={handleChange}
-                      maxLength="4"
-                      className={`w-full px-4 py-3 border ${errors.cvv ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent`}
-                      placeholder="123"
-                    />
-                    {errors.cvv && (
-                      <p className="text-red-500 text-sm mt-1">{errors.cvv}</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Save Card Option */}
-                <div className="mb-6">
-                  <label className="flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      name="saveCard"
-                      checked={formData.saveCard}
-                      onChange={handleChange}
-                      className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
-                    />
-                    <span className="ml-2 text-sm text-gray-700">
-                      Save card for future purchases
-                    </span>
-                  </label>
+                  <div 
+                    id="card-container" 
+                    className="p-4 border border-gray-300 rounded-lg bg-gray-50 focus-within:ring-2 focus-within:ring-primary focus-within:border-transparent min-h-[80px]"
+                  ></div>
+                  <p className="mt-2 text-xs text-gray-500">
+                    Your payment is processed securely by Square. We do not store your card details.
+                  </p>
                 </div>
 
                 {/* Action Buttons */}
@@ -321,7 +262,7 @@ export default function CheckoutPaymentIsland() {
                   </a>
                   <button
                     type="submit"
-                    disabled={isProcessing}
+                    disabled={!squareReady || isProcessing}
                     className="flex-1 px-6 py-3 bg-primary hover:bg-primary-600 text-white font-semibold rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                   >
                     {isProcessing ? (
@@ -333,7 +274,7 @@ export default function CheckoutPaymentIsland() {
                         Processing...
                       </>
                     ) : (
-                      'Complete Purchase'
+                      `Pay $${checkoutData.total?.toFixed(2)}`
                     )}
                   </button>
                 </div>
