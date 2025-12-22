@@ -93,6 +93,9 @@ export default function ProductDetailIsland({ fallbackData }) {
       checkFavorite();
     };
     window.addEventListener('favoritesUpdated', handleFavoritesUpdate);
+
+    // Fetch product data from API
+    const fetchProduct = async () => {
       try {
         console.log('[ProductDetailIsland] Fetching product:', productId);
         setLoading(true);
@@ -125,6 +128,10 @@ export default function ProductDetailIsland({ fallbackData }) {
     };
     
     fetchProduct();
+
+    return () => {
+      window.removeEventListener('favoritesUpdated', handleFavoritesUpdate);
+    };
   }, []);
   
   // Loading state
