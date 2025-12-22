@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import ProductCard from '../shared/ProductCard';
+import { getFavorites } from '../../utils/favorites';
 
 const API_ENDPOINT = 'https://hsecommerce-api.vercel.app/api/square-products';
-const FAVORITES_API = 'https://hsecommerce-api.vercel.app/api/favorites';
 
 /**
  * FavoritesIsland - Displays all favorited products
@@ -67,33 +67,15 @@ export default function FavoritesIsland({ siteName = 'Rainy Day Merchandise' }) 
       try {
         setLoading(true);
         
-        // Get user identifier (tracking token or email)
-        const cookies = document.cookie.split('; ');
-        const hubspotCookie = cookies.find(row => row.startsWith('hubspotutk='));
-        const trackingToken = hubspotCookie ? hubspotCookie.split('=')[1] : null;
-        
-        let favoritesResponse;
-        if (trackingToken) {
-          favoritesResponse = await fetch(`${FAVORITES_API}?hubspotutk=${encodeURIComponent(trackingToken)}`);
-        } else {
-          const userId = localStorage.getItem('user_email') || `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-          if (!localStorage.getItem('user_email')) {
-            localStorage.setItem('user_email', userId);
-          }
-          favoritesResponse = await fetch(`${FAVORITES_API}?email=${encodeURIComponent(userId)}`);
-        }
-        let favoriteIds = [];
-        
-        if (favoritesResponse.ok) {
-          const favoritesData = await favoritesResponse.json();
-          favoriteIds = favoritesData.favorites || [];
-        } else {
-          // Fallback to localStorage
-          const localFavorites = localStorage.getItem('favorites');
-          favoriteIds = localFavorites ? JSON.parse(localFavorites) : [];
-        }
-
+        // Use favorites utility for consistent identification
+        const favoriteIds = await getFavorites();
         setFavorites(favoriteIds);
+
+        if (favoriteIds.length === 0) {
+          setProducts([]);
+          setLoading(false);
+          return;
+        }
 
         // Fetch all products
         const productsResponse = await fetch(API_ENDPOINT);

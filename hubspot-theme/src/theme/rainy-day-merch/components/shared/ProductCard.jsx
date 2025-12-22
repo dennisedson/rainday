@@ -112,7 +112,9 @@ const ProductCard = ({
         <button
           onClick={handleFavoriteClick}
           disabled={isToggling}
-          className={`absolute top-3 right-3 p-2 bg-white rounded-full shadow-md hover:shadow-lg transition-all duration-200 opacity-0 group-hover:opacity-100 ${isFavorited ? 'opacity-100' : ''}`}
+          className={`absolute top-3 right-3 p-2 bg-white rounded-full shadow-md hover:shadow-lg transition-all duration-200 ${
+            isFavorited ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+          }`}
           aria-label={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
         >
           <Icon

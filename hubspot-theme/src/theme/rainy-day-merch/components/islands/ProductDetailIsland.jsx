@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import Icon from '../shared/Icon';
+import { toggleFavorite, isFavorite } from '../../utils/favorites';
 
 // Vercel API endpoint for single Square product
 const API_ENDPOINT = 'https://hsecommerce-api.vercel.app/api/square-product';
@@ -61,6 +63,8 @@ export default function ProductDetailIsland({ fallbackData }) {
   const [error, setError] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [isToggling, setIsToggling] = useState(false);
   
   // Get product ID from URL parameters
   useEffect(() => {
@@ -72,9 +76,23 @@ export default function ProductDetailIsland({ fallbackData }) {
       setLoading(false);
       return;
     }
-    
-    // Fetch product data from API
-    const fetchProduct = async () => {
+
+    // Check favorite status
+    const checkFavorite = async () => {
+      try {
+        const favorited = await isFavorite(productId);
+        setIsFavorited(favorited);
+      } catch (err) {
+        console.error('[ProductDetailIsland] Error checking favorite:', err);
+      }
+    };
+    checkFavorite();
+
+    // Listen for favorites updates
+    const handleFavoritesUpdate = () => {
+      checkFavorite();
+    };
+    window.addEventListener('favoritesUpdated', handleFavoritesUpdate);
       try {
         console.log('[ProductDetailIsland] Fetching product:', productId);
         setLoading(true);
@@ -301,36 +319,33 @@ export default function ProductDetailIsland({ fallbackData }) {
                 Add to Cart
               </button>
               <button
-                className="w-12 h-12 flex items-center justify-center border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                aria-label="Add to wishlist"
-                onClick={(e) => {
-                  e.currentTarget.classList.toggle('bg-red-50');
-                  e.currentTarget.classList.toggle('border-red-300');
-                  const svg = e.currentTarget.querySelector('svg');
-                  if (svg.getAttribute('fill') === 'currentColor') {
-                    svg.setAttribute('fill', 'none');
-                    svg.classList.remove('text-red-500');
-                    svg.classList.add('text-gray-600');
-                  } else {
-                    svg.setAttribute('fill', 'currentColor');
-                    svg.classList.add('text-red-500');
-                    svg.classList.remove('text-gray-600');
+                className={`w-12 h-12 flex items-center justify-center border rounded-lg transition-colors ${
+                  isFavorited 
+                    ? 'bg-red-50 border-red-200' 
+                    : 'border-gray-300 hover:bg-gray-50'
+                }`}
+                aria-label={isFavorited ? "Remove from favorites" : "Add to favorites"}
+                disabled={isToggling}
+                onClick={async () => {
+                  if (isToggling) return;
+                  setIsToggling(true);
+                  try {
+                    const result = await toggleFavorite(product.id);
+                    if (result.success) {
+                      setIsFavorited(result.isFavorite);
+                    }
+                  } catch (err) {
+                    console.error('[ProductDetailIsland] Error toggling favorite:', err);
+                  } finally {
+                    setIsToggling(false);
                   }
                 }}
               >
-                <svg
-                  className="w-6 h-6 text-gray-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                  />
-                </svg>
+                <Icon
+                  name={isFavorited ? 'heartFilled' : 'heart'}
+                  size={24}
+                  className={isFavorited ? 'text-red-500' : 'text-gray-600'}
+                />
               </button>
             </div>
 
