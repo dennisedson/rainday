@@ -13,6 +13,54 @@ export default function FavoritesIsland({ siteName = 'Rainy Day Merchandise' }) 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Handle add to cart
+  const handleAddToCart = (productId) => {
+    // Find the product
+    const product = products.find(p => p.id === productId);
+    if (!product) {
+      console.error('[FavoritesIsland] Product not found:', productId);
+      return;
+    }
+
+    // Get existing cart
+    let cart = [];
+    try {
+      const savedCart = localStorage.getItem('cart');
+      if (savedCart) {
+        cart = JSON.parse(savedCart);
+      }
+    } catch (e) {
+      console.error('[FavoritesIsland] Failed to parse cart:', e);
+    }
+
+    // Check if product already in cart
+    const existingIndex = cart.findIndex(item => item.id === product.id);
+    
+    if (existingIndex > -1) {
+      // Update quantity
+      cart[existingIndex].quantity += 1;
+    } else {
+      // Add new item
+      cart.push({
+        id: product.id,
+        name: product.title,
+        price: product.price,
+        quantity: 1,
+        image: product.image,
+        category: product.category || 'Products'
+      });
+    }
+
+    // Save cart
+    localStorage.setItem('cart', JSON.stringify(cart));
+
+    // Dispatch custom event to update cart count in header
+    window.dispatchEvent(new Event('cartUpdated'));
+
+    // Show success message (optional - could use a toast notification instead)
+    console.log(`Added ${product.title} to cart`);
+  };
+
   // Fetch favorites and products
   useEffect(() => {
     const fetchData = async () => {
@@ -153,6 +201,7 @@ export default function FavoritesIsland({ siteName = 'Rainy Day Merchandise' }) 
               price={product.price}
               rating={product.rating}
               reviewCount={product.reviewCount}
+              onAddToCart={handleAddToCart}
             />
           ))}
         </div>

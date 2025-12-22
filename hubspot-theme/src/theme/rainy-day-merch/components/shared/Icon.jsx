@@ -121,7 +121,6 @@ const Icon = ({ name, size = 24, className = '', ...props }) => {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      fill="none"
       viewBox="0 0 24 24"
       strokeWidth={name.includes('Filled') ? 0 : 1.5}
       stroke="currentColor"

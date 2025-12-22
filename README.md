@@ -18,14 +18,14 @@ hsecommerce-project/
 │   ├── hsproject.json
 │   └── package.json
 │
-└── vercel-api/         # Vercel Serverless Functions
-    ├── api/
-    │   ├── square-products.js      # Fetch products from Square
-    │   ├── process-payment.js      # Process Square payments
-    │   └── create-deal.js          # Log orders in HubSpot CRM
-    ├── vercel.json
-    ├── package.json
-    └── .env (not tracked - add your credentials)
+├── api/                # Vercel Serverless Functions
+│   ├── auth/           # Authentication endpoints
+│   ├── cron/           # Background jobs
+│   └── ...             # Core API endpoints
+├── vercel.json         # Vercel configuration
+├── package.json        # Project dependencies & scripts
+├── keep-alive.js       # Local keep-alive script
+└── .env                # Local environment variables (not tracked)
 ```
 
 ## 🚀 Quick Start
@@ -48,8 +48,6 @@ hs project open
 ### 2. Vercel API Setup
 
 ```bash
-cd vercel-api
-
 # Install dependencies
 npm install
 
@@ -64,6 +62,9 @@ cp env.example .env
 
 # Deploy to Vercel
 vercel
+
+# Keep functions warm (optional)
+npm run keep-alive
 ```
 
 ## 🔑 Required Credentials
@@ -109,7 +110,6 @@ vercel
 ## 📚 Documentation
 
 - [Square Setup Guide](./hubspot-theme/SQUARE_SETUP_GUIDE.md) - Detailed Square integration guide
-- [Vercel API README](./vercel-api/README.md) - API deployment instructions
 - [HubSpot Project README](./hubspot-theme/README.md) - Theme development guide
 
 ## 🔒 Security Notes
@@ -127,7 +127,7 @@ vercel
    - Preview: `hs project open`
 
 2. **API Development:**
-   - Edit functions in `vercel-api/api/`
+   - Edit functions in `api/`
    - Test locally: `vercel dev`
    - Deploy: `vercel --prod`
 

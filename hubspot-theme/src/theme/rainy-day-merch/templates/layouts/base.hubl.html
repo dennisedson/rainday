@@ -57,6 +57,52 @@
     </script>
     {# To see a full list of what is included via standard_footer_includes please reference this article: https://developers.hubspot.com/docs/cms/hubl/variables#required-page-template-variables #}
     {{ standard_header_includes }}
+    {# Sync categories from Square to HubSpot CMS on page load #}
+    <script>
+      // Sync categories from Square to HubSpot CMS (runs in background)
+      (function() {
+        // Call sync endpoint - this will update HubSpot CMS if categories changed
+        fetch('https://hsecommerce-api.vercel.app/api/sync-categories', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+        .then(function(response) {
+          if (response.ok) {
+            return response.json();
+          }
+          throw new Error('Failed to sync categories');
+        })
+        .then(function(data) {
+          // Store categories in window for immediate use
+          if (data.categories) {
+            window.__CATEGORIES__ = data.categories;
+          }
+          if (data.synced) {
+            console.log('[Nav] Categories synced to HubSpot CMS');
+          }
+        })
+        .catch(function(error) {
+          console.error('[Nav] Failed to sync categories:', error);
+          // Fallback: try to fetch categories directly
+          fetch('https://hsecommerce-api.vercel.app/api/square-categories')
+            .then(function(response) {
+              if (response.ok) {
+                return response.json();
+              }
+              throw new Error('Failed to fetch categories');
+            })
+            .then(function(data) {
+              window.__CATEGORIES__ = data.categories || [];
+            })
+            .catch(function(err) {
+              console.error('[Nav] Failed to fetch categories:', err);
+              window.__CATEGORIES__ = [];
+            });
+        });
+      })();
+    </script>
   </head>
   <body>
     {% module "site_header"

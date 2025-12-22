@@ -3,11 +3,21 @@ import { ModuleFields, TextField, ImageField, BooleanField } from '@hubspot/cms-
 import SiteHeaderIsland from '../../islands/SiteHeaderIsland.jsx?island';
 
 export function Component({ fieldValues, hublData }) {
-  const { siteName, logoImage, showAboutLink, aboutLinkText, aboutLinkUrl } = fieldValues;
+  const { siteName, logoImage, showAboutLink, aboutLinkText, aboutLinkUrl, categoriesJson } = fieldValues;
   
   // Prioritize: HubSpot settings → Module fields → Defaults
   const displayName = hublData?.companyName || siteName || 'Artisan & Co.';
   const displayLogoImage = hublData?.companyLogo || logoImage?.src || null;
+
+  // Parse categories from JSON field if available
+  let categories = null;
+  if (categoriesJson) {
+    try {
+      categories = JSON.parse(categoriesJson);
+    } catch (e) {
+      console.error('Failed to parse categories JSON:', e);
+    }
+  }
 
   return (
     <Island 
@@ -17,6 +27,7 @@ export function Component({ fieldValues, hublData }) {
       showAboutLink={showAboutLink !== undefined ? showAboutLink : true}
       aboutLinkText={aboutLinkText || 'About'}
       aboutLinkUrl={aboutLinkUrl || '/about'}
+      categories={categories}
     />
   );
 }
@@ -57,6 +68,12 @@ export const fields = (
       label="About Link URL"
       default="/about"
       helpText="URL for the About link (e.g., '/about' or '/about-us')"
+    />
+    <TextField
+      name="categoriesJson"
+      label="Categories (Auto-synced)"
+      helpText="Categories are automatically synced from Square. Do not edit manually."
+      default="[]"
     />
   </ModuleFields>
 );

@@ -8,7 +8,8 @@ export default function SiteHeaderIsland({
   logoImage = null,
   showAboutLink = true,
   aboutLinkText = 'About',
-  aboutLinkUrl = '/about'
+  aboutLinkUrl = '/about',
+  categories = null // Categories from HubSpot CMS module field
 }) {
   const [cartCount, setCartCount] = useState(0);
   const [favoritesCount, setFavoritesCount] = useState(0);
@@ -18,7 +19,48 @@ export default function SiteHeaderIsland({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
+  // Initialize navigation items - prioritize HubSpot CMS categories > window categories > fallback
   const [navigationItems, setNavigationItems] = useState(() => {
+    // First priority: Categories from HubSpot CMS module field (server-side rendered)
+    if (categories && Array.isArray(categories) && categories.length > 0) {
+      const categoryNavItems = categories.map(cat => ({
+        label: cat.name,
+        href: `/shop?category=${encodeURIComponent(cat.name)}`,
+      }));
+
+      const navItems = [
+        { label: 'All Products', href: '/shop' },
+        ...categoryNavItems,
+      ];
+      
+      if (showAboutLink) {
+        navItems.push({ label: aboutLinkText, href: aboutLinkUrl });
+      }
+      
+      return navItems;
+    }
+    
+    // Second priority: Pre-fetched categories from sync script
+    const preFetchedCategories = typeof window !== 'undefined' && window.__CATEGORIES__;
+    
+    if (preFetchedCategories && Array.isArray(preFetchedCategories) && preFetchedCategories.length > 0) {
+      const categoryNavItems = preFetchedCategories.map(cat => ({
+        label: cat.name,
+        href: `/shop?category=${encodeURIComponent(cat.name)}`,
+      }));
+
+      const navItems = [
+        { label: 'All Products', href: '/shop' },
+        ...categoryNavItems,
+      ];
+      
+      if (showAboutLink) {
+        navItems.push({ label: aboutLinkText, href: aboutLinkUrl });
+      }
+      
+      return navItems;
+    }
+    
     // Default fallback items - respect showAboutLink prop
     const fallbackItems = [{ label: 'Shop', href: '/shop' }];
     if (showAboutLink) {
@@ -44,11 +86,66 @@ export default function SiteHeaderIsland({
     }
   };
 
-  // Fetch Square categories for navigation
+  // Fetch Square categories for navigation (only if not already pre-fetched)
   useEffect(() => {
-    const fetchCategories = async () => {
+    // Check if categories were already pre-fetched
+    const preFetchedCategories = typeof window !== 'undefined' && window.__CATEGORIES__;
+    
+    // If categories are already loaded (not null and not empty), skip fetch
+    if (preFetchedCategories && Array.isArray(preFetchedCategories) && preFetchedCategories.length > 0) {
+      console.log('[Nav] Using pre-fetched categories');
+      return; // Categories already loaded, no need to fetch
+    }
+    
+    // If still loading (null), wait a bit and check again
+    if (preFetchedCategories === null) {
+      const checkInterval = setInterval(() => {
+        const categories = window.__CATEGORIES__;
+        if (categories !== null) {
+          clearInterval(checkInterval);
+          if (Array.isArray(categories) && categories.length > 0) {
+            // Categories loaded, update nav
+            const categoryNavItems = categories.map(cat => ({
+              label: cat.name,
+              href: `/shop?category=${encodeURIComponent(cat.name)}`,
+            }));
+
+            const navItems = [
+              { label: 'All Products', href: '/shop' },
+              ...categoryNavItems,
+            ];
+            
+            if (showAboutLink) {
+              navItems.push({ label: aboutLinkText, href: aboutLinkUrl });
+            }
+            
+            setNavigationItems(navItems);
+            return;
+          }
+        }
+      }, 50); // Check every 50ms
+      
+      // Fallback: if still loading after 2 seconds, fetch via API
+      setTimeout(() => {
+        clearInterval(checkInterval);
+        if (window.__CATEGORIES__ === null || (Array.isArray(window.__CATEGORIES__) && window.__CATEGORIES__.length === 0)) {
+          fetchCategoriesViaAPI();
+        }
+      }, 2000);
+      
+      return;
+    }
+    
+    // No pre-fetch available, fetch via API
+    const fetchCategoriesViaAPI = async () => {
       try {
+        console.log('[Nav] Fetching categories via API');
         const data = await get('/square-categories');
+        
+        // Store in window for future use
+        if (typeof window !== 'undefined') {
+          window.__CATEGORIES__ = data.categories || [];
+        }
         
         // Map categories to navigation items
         const categoryNavItems = data.categories.map(cat => ({
@@ -69,12 +166,12 @@ export default function SiteHeaderIsland({
         
         setNavigationItems(navItems);
       } catch (error) {
-        console.error('Failed to fetch categories:', error);
+        console.error('[Nav] Failed to fetch categories:', error);
         // Keep fallback navigation items
       }
     };
-
-    fetchCategories();
+    
+    fetchCategoriesViaAPI();
   }, [showAboutLink, aboutLinkText, aboutLinkUrl]);
 
   // Handle search submission
