@@ -5,12 +5,19 @@ export default function CheckoutPaymentIsland({ squareApplicationId, squareLocat
   const [errors, setErrors] = useState({});
   const [isProcessing, setIsProcessing] = useState(false);
   const [squareReady, setSquareReady] = useState(false);
-  const cardRef = useRef(null);
+  const [isMounted, setIsMounted] = useState(false);
   const paymentsRef = useRef(null);
   const cardElementRef = useRef(null);
 
+  // Fix hydration issues by waiting for mount
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   // Load checkout data from previous steps
   useEffect(() => {
+    if (!isMounted) return;
+
     const saved = localStorage.getItem('checkoutData');
     if (saved) {
       try {
@@ -27,13 +34,15 @@ export default function CheckoutPaymentIsland({ squareApplicationId, squareLocat
     } else {
       window.location.href = '/cart';
     }
-  }, []);
+  }, [isMounted]);
 
   // Initialize Square Web Payments SDK
   useEffect(() => {
-    if (!squareApplicationId || !squareLocationId || !checkoutData) return;
+    if (!isMounted || !squareApplicationId || !squareLocationId || !checkoutData) return;
 
     const initializeSquare = async () => {
+      console.log('[Square] Attempting init with Application ID:', squareApplicationId);
+      
       if (!window.Square) {
         console.error('Square.js not loaded');
         setErrors({ general: 'Square Payments SDK failed to load. Please refresh the page.' });
@@ -49,9 +58,10 @@ export default function CheckoutPaymentIsland({ squareApplicationId, squareLocat
         cardElementRef.current = card;
         
         setSquareReady(true);
+        console.log('[Square] Success: Payment form attached');
       } catch (e) {
         console.error('Failed to initialize Square:', e);
-        setErrors({ general: 'Failed to initialize payment form. Please check your credentials.' });
+        setErrors({ general: `Square Error: ${e.message}. Please check your Application ID and Location ID in HubSpot.` });
       }
     };
 
@@ -62,7 +72,7 @@ export default function CheckoutPaymentIsland({ squareApplicationId, squareLocat
         cardElementRef.current.destroy();
       }
     };
-  }, [squareApplicationId, squareLocationId, checkoutData]);
+  }, [isMounted, squareApplicationId, squareLocationId, checkoutData]);
 
   // Process payment
   const handleSubmit = async (e) => {
@@ -131,7 +141,6 @@ export default function CheckoutPaymentIsland({ squareApplicationId, squareLocat
           });
         } catch (dealError) {
           console.error('[Checkout] Failed to create HubSpot deal:', dealError);
-          // Don't fail the whole order if deal creation fails
         }
 
         // 4. Save order data and redirect
@@ -163,7 +172,7 @@ export default function CheckoutPaymentIsland({ squareApplicationId, squareLocat
     }
   };
 
-  if (!checkoutData) {
+  if (!isMounted || !checkoutData) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
         <p className="text-gray-600">Loading...</p>
@@ -386,4 +395,3 @@ export default function CheckoutPaymentIsland({ squareApplicationId, squareLocat
     </div>
   );
 }
-

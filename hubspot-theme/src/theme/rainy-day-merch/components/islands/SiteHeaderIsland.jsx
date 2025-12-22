@@ -19,8 +19,13 @@ export default function SiteHeaderIsland({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
-  // Initialize navigation items - prioritize HubSpot CMS categories > window categories > fallback
-  const [navigationItems, setNavigationItems] = useState(() => {
+  const [navigationItems, setNavigationItems] = useState([]);
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Initialize navigation items after mount to avoid hydration mismatch
+  useEffect(() => {
+    setIsMounted(true);
+    
     // First priority: Categories from HubSpot CMS module field (server-side rendered)
     if (categories && Array.isArray(categories) && categories.length > 0) {
       const categoryNavItems = categories.map(cat => ({
@@ -37,11 +42,12 @@ export default function SiteHeaderIsland({
         navItems.push({ label: aboutLinkText, href: aboutLinkUrl });
       }
       
-      return navItems;
+      setNavigationItems(navItems);
+      return;
     }
     
     // Second priority: Pre-fetched categories from sync script
-    const preFetchedCategories = typeof window !== 'undefined' && window.__CATEGORIES__;
+    const preFetchedCategories = window.__CATEGORIES__;
     
     if (preFetchedCategories && Array.isArray(preFetchedCategories) && preFetchedCategories.length > 0) {
       const categoryNavItems = preFetchedCategories.map(cat => ({
@@ -58,16 +64,17 @@ export default function SiteHeaderIsland({
         navItems.push({ label: aboutLinkText, href: aboutLinkUrl });
       }
       
-      return navItems;
+      setNavigationItems(navItems);
+      return;
     }
     
-    // Default fallback items - respect showAboutLink prop
+    // Default fallback items
     const fallbackItems = [{ label: 'Shop', href: '/shop' }];
     if (showAboutLink) {
       fallbackItems.push({ label: aboutLinkText, href: aboutLinkUrl });
     }
-    return fallbackItems;
-  });
+    setNavigationItems(fallbackItems);
+  }, []);
 
   // Update cart count from localStorage
   const updateCartCount = () => {
