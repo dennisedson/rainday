@@ -1,7 +1,6 @@
 {
   "name": "hsecommerce-api",
   "version": "1.0.0",
-  "type": "module",
   "description": "Backend API for HubSpot e-commerce site with Square integration",
   "scripts": {
     "dev": "vercel dev",

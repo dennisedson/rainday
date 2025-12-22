@@ -14,7 +14,7 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '30d';
 const MAGIC_LINK_TOKEN_PROPERTY = 'magic_link_token';
 const MAGIC_LINK_EXPIRES_PROPERTY = 'magic_link_expires';
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // Set CORS headers - must be set before any response
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
@@ -109,5 +109,4 @@ export default async function handler(req, res) {
     console.error('Magic link verification error:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
-}
-
+};

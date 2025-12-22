@@ -33,8 +33,8 @@ async function sendMagicLinkEmail(email, token) {
   
   if (RESEND_API_KEY) {
     try {
-      // Dynamic import for Resend (only load if API key exists)
-      const { Resend } = await import('resend');
+      // Use dynamic require for Resend (only load if API key exists)
+      const { Resend } = require('resend');
       const resend = new Resend(RESEND_API_KEY);
       
       await resend.emails.send({
@@ -68,7 +68,7 @@ async function sendMagicLinkEmail(email, token) {
   return { success: true, link: magicLink, sent: false };
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // Set CORS headers - must be set before any response
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -166,5 +166,4 @@ export default async function handler(req, res) {
     console.error('Magic link request error:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
-}
-
+};

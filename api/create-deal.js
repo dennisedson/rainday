@@ -15,9 +15,9 @@
  * }
  */
 
-import { Client } from '@hubspot/api-client';
+const { Client } = require('@hubspot/api-client');
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // Set CORS headers - must be set before any response
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -126,5 +126,4 @@ export default async function handler(req, res) {
       details: error.body || error,
     });
   }
-}
-
+};

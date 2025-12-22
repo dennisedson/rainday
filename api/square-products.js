@@ -8,7 +8,7 @@
 // Default placeholder image for products without images
 const DEFAULT_PRODUCT_IMAGE = 'https://images.unsplash.com/photo-1560393464-5c69a73c5770?w=800&auto=format&fit=crop&q=80';
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // Set CORS headers - must be set before any response
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -84,11 +84,9 @@ export default async function handler(req, res) {
         
         categoryMap[category.id] = {
           name: categoryData?.name || 'Uncategorized',
-          image: imageUrl, // Use actual URL, not ID
+          image: imageUrl,
         };
       });
-    
-    console.log('Category Map:', categoryMap);
     
     // Filter for ITEM objects and transform to our format
     const products = (data.objects || [])
@@ -114,8 +112,8 @@ export default async function handler(req, res) {
           description: itemData.description || '',
           category: categoryName,
           categoryImage: categoryImage,
-          price: price / 100, // Convert cents to dollars
-          image: productImageUrl || DEFAULT_PRODUCT_IMAGE, // Use actual URL or placeholder
+          price: price / 100,
+          image: productImageUrl || DEFAULT_PRODUCT_IMAGE,
           available: !itemData.is_deleted && itemData.available_online,
           variations: itemData.variations || [],
         };
@@ -133,5 +131,4 @@ export default async function handler(req, res) {
       message: error.message 
     });
   }
-}
-
+};

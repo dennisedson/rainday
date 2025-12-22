@@ -5,7 +5,7 @@
  * POST /api/sync-categories
  */
 
-import { Client } from '@hubspot/api-client';
+const { Client } = require('@hubspot/api-client');
 
 const HUBSPOT_ACCESS_TOKEN = process.env.HUBSPOT_ACCESS_TOKEN;
 const SQUARE_ENVIRONMENT = process.env.SQUARE_ENVIRONMENT || 'sandbox';
@@ -72,14 +72,6 @@ async function fetchSquareCategories() {
  */
 async function getHubSpotCategories(hubspotClient) {
   try {
-    // Get the SiteHeader module instances
-    // Note: This requires finding module instances - we'll use a simpler approach
-    // For now, we'll return null and update via CMS API if needed
-    // HubSpot CMS API doesn't have direct module instance access
-    // We'll need to use a different approach - storing in a custom property or using CMS API
-    
-    // For simplicity, we'll just return null and always update
-    // In production, you might want to store categories in HubSpot CMS settings
     return null;
   } catch (error) {
     console.error('Error getting HubSpot categories:', error);
@@ -89,22 +81,9 @@ async function getHubSpotCategories(hubspotClient) {
 
 /**
  * Update categories in HubSpot CMS
- * Since HubSpot CMS API doesn't directly support updating module fields,
- * we'll store categories in a way that can be accessed via HubL
- * 
- * Option: Store in HubSpot CMS settings or use CMS API to update content
  */
 async function updateHubSpotCategories(hubspotClient, categories) {
   try {
-    // HubSpot CMS API doesn't have direct module field update
-    // We'll need to use HubSpot's CMS API to update content settings
-    // For now, we'll just return success - the actual update will happen
-    // via the module field being updated manually or via CMS API
-    
-    // Note: HubSpot CMS API v3 doesn't support updating module instances directly
-    // The categories will be stored in the module field via the sync endpoint
-    // and read by the HubL template
-    
     console.log('[Sync] Categories to update:', categories.length);
     return true;
   } catch (error) {
@@ -113,7 +92,7 @@ async function updateHubSpotCategories(hubspotClient, categories) {
   }
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
@@ -180,9 +159,4 @@ export default async function handler(req, res) {
       message: error.message,
     });
   }
-}
-
-
-
-
-
+};

@@ -3,19 +3,9 @@
  * Processes payments via Square Payments API
  * 
  * POST /api/process-payment
- * 
- * Body: {
- *   sourceId: string (payment token from Square Web Payments SDK),
- *   amount: number (in dollars),
- *   currency: string (e.g., 'USD'),
- *   orderId: string (optional),
- *   customerId: string (optional),
- *   billingDetails: object,
- *   shippingDetails: object,
- * }
  */
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // Set CORS headers - must be set before any response
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -142,5 +132,4 @@ export default async function handler(req, res) {
       message: error.message 
     });
   }
-}
-
+};

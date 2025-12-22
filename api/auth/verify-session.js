@@ -9,7 +9,7 @@ const { Client } = require('@hubspot/api-client');
 const HUBSPOT_ACCESS_TOKEN = process.env.HUBSPOT_ACCESS_TOKEN;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-jwt-secret-change-in-production';
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // Set CORS headers - must be set before any response
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
@@ -71,5 +71,4 @@ export default async function handler(req, res) {
     console.error('Session verification error:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
-}
-
+};

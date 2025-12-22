@@ -5,7 +5,7 @@
  * GET /api/square-categories
  */
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // Set CORS headers - must be set before any response
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -61,25 +61,14 @@ export default async function handler(req, res) {
 
     const data = await response.json();
     
-    // Debug: Log all object types
-    const objectTypes = (data.objects || []).reduce((acc, obj) => {
-      acc[obj.type] = (acc[obj.type] || 0) + 1;
-      return acc;
-    }, {});
-    console.log('Object types in response:', objectTypes);
-    
     // Build image map: ID -> URL
     const imageMap = {};
     const imageObjects = (data.objects || []).filter(obj => obj.type === 'IMAGE');
-    console.log('Found IMAGE objects:', imageObjects.length);
     
     imageObjects.forEach(image => {
       const imageData = image.image_data;
-      console.log('Processing image:', image.id, 'URL:', imageData?.url);
       imageMap[image.id] = imageData?.url || null;
     });
-    
-    console.log('Image Map:', imageMap);
 
     // Extract and format categories
     const categories = (data.objects || [])
@@ -91,16 +80,15 @@ export default async function handler(req, res) {
         return {
           id: category.id,
           name: category.category_data.name,
-          description: category.category_data.description || '', // Include category description
-          image: imageUrl, // Use actual image URL, not ID
-          // Create URL-friendly slug from name
+          description: category.category_data.description || '',
+          image: imageUrl,
           slug: category.category_data.name
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, '-')
             .replace(/^-|-$/g, ''),
         };
       })
-      .sort((a, b) => a.name.localeCompare(b.name)); // Sort alphabetically
+      .sort((a, b) => a.name.localeCompare(b.name));
 
     return res.status(200).json({
       categories,
@@ -114,5 +102,4 @@ export default async function handler(req, res) {
       message: error.message 
     });
   }
-}
-
+};

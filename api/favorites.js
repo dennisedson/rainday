@@ -4,7 +4,7 @@
  * Uses HubSpot tracking token (hubspotutk) or email to identify contacts
  */
 
-import { Client } from '@hubspot/api-client';
+const { Client } = require('@hubspot/api-client');
 
 const HUBSPOT_ACCESS_TOKEN = process.env.HUBSPOT_ACCESS_TOKEN;
 
@@ -36,7 +36,7 @@ async function identifyContactFromToken(hubspotutk) {
   }
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // Set CORS headers - must be set before any response
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
@@ -217,4 +217,4 @@ export default async function handler(req, res) {
     console.error('Favorites API error:', error);
     return res.status(500).json({ error: error.message || 'Internal server error' });
   }
-}
+};
