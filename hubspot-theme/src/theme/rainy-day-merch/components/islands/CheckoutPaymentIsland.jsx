@@ -150,6 +150,7 @@ export default function CheckoutPaymentIsland({ squareApplicationId, squareLocat
           orderId: paymentResult.orderId || `ORD-${Date.now()}`,
           orderDate: new Date().toISOString(),
           receiptUrl: paymentResult.receiptUrl,
+          cardDetails: paymentResult.cardDetails,
         };
 
         localStorage.setItem('orderData', JSON.stringify(orderData));

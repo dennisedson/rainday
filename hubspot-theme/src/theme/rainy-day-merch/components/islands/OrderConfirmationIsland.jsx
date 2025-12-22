@@ -2,9 +2,17 @@ import { useState, useEffect } from 'react';
 
 export default function OrderConfirmationIsland() {
   const [orderData, setOrderData] = useState(null);
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Fix hydration issues
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Load order data
   useEffect(() => {
+    if (!isMounted) return;
+
     const saved = localStorage.getItem('orderData');
     if (saved) {
       try {
@@ -17,12 +25,12 @@ export default function OrderConfirmationIsland() {
       // No order data, redirect home
       window.location.href = '/';
     }
-  }, []);
+  }, [isMounted]);
 
-  if (!orderData) {
+  if (!isMounted || !orderData) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
-        <p className="text-gray-600">Loading...</p>
+        <p className="text-gray-600">Loading order confirmation...</p>
       </div>
     );
   }
@@ -43,8 +51,18 @@ export default function OrderConfirmationIsland() {
             Your order number is <span className="font-semibold text-gray-900">{orderData.orderId}</span>
           </p>
           <p className="text-sm text-gray-500 mt-4">
-            A confirmation email has been sent to {orderData.shippingInfo.email}
+            A confirmation email has been sent to {orderData.shippingInfo?.email}
           </p>
+          {orderData.receiptUrl && (
+            <a 
+              href={orderData.receiptUrl} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="inline-block mt-4 text-primary hover:text-primary-600 font-medium underline"
+            >
+              View Square Receipt
+            </a>
+          )}
         </div>
 
         {/* Order Details */}
@@ -123,28 +141,28 @@ export default function OrderConfirmationIsland() {
             </div>
           </div>
 
-          {/* Shipping Address */}
+          {/* Shipping and Payment Info */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-3">Shipping Address</h3>
-              <div className="text-gray-600">
+              <div className="text-gray-600 text-sm">
                 <p className="font-medium text-gray-900">
-                  {orderData.shippingInfo.firstName} {orderData.shippingInfo.lastName}
+                  {orderData.shippingInfo?.firstName} {orderData.shippingInfo?.lastName}
                 </p>
-                <p>{orderData.shippingInfo.address}</p>
-                {orderData.shippingInfo.apartment && (
-                  <p>{orderData.shippingInfo.apartment}</p>
+                <p>{orderData.shippingInfo?.address}</p>
+                {orderData.shippingInfo?.apartment && (
+                  <p>{orderData.shippingInfo?.apartment}</p>
                 )}
                 <p>
-                  {orderData.shippingInfo.city}, {orderData.shippingInfo.state} {orderData.shippingInfo.zipCode}
+                  {orderData.shippingInfo?.city}, {orderData.shippingInfo?.state} {orderData.shippingInfo?.zipCode}
                 </p>
-                <p className="mt-2">{orderData.shippingInfo.phone}</p>
+                <p className="mt-2">{orderData.shippingInfo?.phone}</p>
               </div>
             </div>
 
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-3">Payment Method</h3>
-              <div className="text-gray-600">
+              <div className="text-gray-600 text-sm">
                 <div className="flex items-center gap-2">
                   <svg className="w-8 h-8 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
@@ -152,9 +170,10 @@ export default function OrderConfirmationIsland() {
                   </svg>
                   <div>
                     <p className="font-medium text-gray-900">
-                      Card ending in {orderData.paymentInfo.last4}
+                      {orderData.cardDetails?.brand ? `${orderData.cardDetails.brand} ` : ''}
+                      {orderData.cardDetails?.last4 ? `ending in ${orderData.cardDetails.last4}` : 'Processed by Square'}
                     </p>
-                    <p className="text-sm">{orderData.paymentInfo.cardName}</p>
+                    <p className="text-xs">Payment ID: {orderData.paymentId}</p>
                   </div>
                 </div>
               </div>
@@ -167,7 +186,7 @@ export default function OrderConfirmationIsland() {
           <h2 className="text-2xl font-display font-bold text-gray-900 mb-6">What's Next?</h2>
           <div className="space-y-4">
             <div className="flex gap-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-primary-100 text-primary rounded-full flex items-center justify-center font-bold">
+              <div className="flex-shrink-0 w-8 h-8 bg-orange-100 text-primary rounded-full flex items-center justify-center font-bold">
                 1
               </div>
               <div>
@@ -176,7 +195,7 @@ export default function OrderConfirmationIsland() {
               </div>
             </div>
             <div className="flex gap-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-primary-100 text-primary rounded-full flex items-center justify-center font-bold">
+              <div className="flex-shrink-0 w-8 h-8 bg-orange-100 text-primary rounded-full flex items-center justify-center font-bold">
                 2
               </div>
               <div>
@@ -185,7 +204,7 @@ export default function OrderConfirmationIsland() {
               </div>
             </div>
             <div className="flex gap-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-primary-100 text-primary rounded-full flex items-center justify-center font-bold">
+              <div className="flex-shrink-0 w-8 h-8 bg-orange-100 text-primary rounded-full flex items-center justify-center font-bold">
                 3
               </div>
               <div>
@@ -223,4 +242,3 @@ export default function OrderConfirmationIsland() {
     </div>
   );
 }
-
