@@ -123,6 +123,10 @@ module.exports = async function handler(req, res) {
       amount: payment.amount_money.amount / 100,
       currency: payment.amount_money.currency,
       createdAt: payment.created_at,
+      cardDetails: payment.card_details ? {
+        last4: payment.card_details.card?.last_4,
+        brand: payment.card_details.card?.card_brand,
+      } : null,
     });
 
   } catch (error) {
