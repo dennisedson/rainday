@@ -116,8 +116,9 @@ Square is the source of truth. Typical workflow:
     - Add a **Category Banner override** on the Shop page if you want custom copy
 
 - **Shipping & Tax**
-  - Taxes are calculated automatically by Square based on your Square account settings and the customer's shipping address.
-  - Shipping rates currently use a $12 flat rate fallback, but will pull from Square if you have "Service Charges" configured in your Square Catalog.
+  - Taxes and shipping are calculated automatically by Square.
+  - **If you see $0.00**: ensure you have configured your **Tax Rules** and **Shipping Rates** (as Service Charges) in your Square Dashboard under Settings.
+  - The site pulls exactly what Square returns for the customer's location.
 
 ---
 

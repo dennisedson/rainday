@@ -206,7 +206,10 @@ async function handleCalculateOrder(req, res) {
     const subtotal = (data.order.net_amounts.subtotal_money?.amount || 0) / 100;
     const tax = (data.order.net_amounts.tax_money?.amount || 0) / 100;
     const discount = (data.order.net_amounts.discount_money?.amount || 0) / 100;
-    let shipping = data.order.service_charges ? data.order.service_charges.reduce((sum, charge) => sum + (charge.amount_money?.amount || 0), 0) / 100 : 12.00;
+    let shipping = data.order.service_charges ? 
+      data.order.service_charges.reduce((sum, charge) => sum + (charge.amount_money?.amount || 0), 0) / 100 : 
+      0; // Remove the $12 hardcoded fallback to see Square's actual value
+
     const total = (data.order.net_amounts.total_money?.amount || 0) / 100 + (data.order.service_charges ? 0 : shipping);
 
     return res.status(200).json({ success: true, subtotal, tax, discount, shipping, total, orderId: data.order.id });

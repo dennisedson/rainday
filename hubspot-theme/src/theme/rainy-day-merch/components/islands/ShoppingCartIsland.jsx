@@ -63,10 +63,10 @@ export default function ShoppingCartIsland() {
         const sub = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         setCalculation({
           subtotal: sub,
-          shipping: 12.00,
-          tax: sub * 0.08,
+          shipping: 0,
+          tax: 0,
           discount: 0,
-          total: sub + 12.00 + (sub * 0.08),
+          total: sub,
           loading: false
         });
       }
