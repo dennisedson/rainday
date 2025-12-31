@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
+import { post } from '../../utils/api';
 
 export default function CheckoutShippingIsland() {
   const [checkoutData, setCheckoutData] = useState(null);
+  const [isCalculating, setIsCalculating] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     firstName: '',
@@ -20,7 +22,11 @@ export default function CheckoutShippingIsland() {
     const saved = localStorage.getItem('checkoutData');
     if (saved) {
       try {
-        setCheckoutData(JSON.parse(saved));
+        const data = JSON.parse(saved);
+        setCheckoutData(data);
+        if (data.shippingInfo) {
+          setFormData(data.shippingInfo);
+        }
       } catch (e) {
         console.error('Failed to parse checkout data:', e);
         window.location.href = '/cart';
@@ -30,6 +36,42 @@ export default function CheckoutShippingIsland() {
       window.location.href = '/cart';
     }
   }, []);
+
+  // Update totals whenever zip code or state changes
+  useEffect(() => {
+    if (!checkoutData || !formData.zipCode || formData.zipCode.length < 5) return;
+
+    const updateTotals = async () => {
+      setIsCalculating(true);
+      try {
+        const result = await post('/calculate-order', {
+          cartItems: checkoutData.cartItems,
+          shippingAddress: {
+            address: formData.address,
+            city: formData.city,
+            state: formData.state,
+            zipCode: formData.zipCode
+          }
+        });
+
+        setCheckoutData(prev => ({
+          ...prev,
+          subtotal: result.subtotal,
+          shipping: result.shipping,
+          tax: result.tax,
+          discount: result.discount,
+          total: result.total
+        }));
+      } catch (error) {
+        console.error('[Shipping] Calculation failed:', error);
+      } finally {
+        setIsCalculating(false);
+      }
+    };
+
+    const timer = setTimeout(updateTotals, 1000); // Debounce
+    return () => clearTimeout(timer);
+  }, [formData.zipCode, formData.state, checkoutData?.cartItems]);
 
   // Handle form input changes
   const handleChange = (e) => {
@@ -376,12 +418,16 @@ export default function CheckoutShippingIsland() {
                     </div>
                   )}
                   <div className="flex justify-between text-gray-600">
-                    <span>Tax (8%)</span>
-                    <span>${checkoutData.tax?.toFixed(2)}</span>
+                    <span>Tax</span>
+                    <span className={isCalculating ? 'animate-pulse opacity-50' : ''}>
+                      ${checkoutData.tax?.toFixed(2)}
+                    </span>
                   </div>
                   <div className="border-t border-gray-200 pt-3 flex justify-between text-xl font-bold text-gray-900">
                     <span>Total</span>
-                    <span>${checkoutData.total?.toFixed(2)}</span>
+                    <span className={isCalculating ? 'animate-pulse opacity-50' : ''}>
+                      ${checkoutData.total?.toFixed(2)}
+                    </span>
                   </div>
                 </div>
               </div>

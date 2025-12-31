@@ -4,6 +4,7 @@ import {
   TextField,
   ImageField,
   NumberField,
+  BooleanField,
 } from '@hubspot/cms-components/fields';
 import ProductDetailIsland from '../../islands/ProductDetailIsland.jsx?island';
 
@@ -16,6 +17,10 @@ export function Component({ fieldValues }) {
     gallery1,
     gallery2,
     gallery3,
+    showBadges,
+    badge1Text,
+    badge2Text,
+    badge3Text,
   } = fieldValues;
   
   // Build fallback data from field values (used if no product ID in URL)
@@ -31,6 +36,10 @@ export function Component({ fieldValues }) {
     <Island 
       module={ProductDetailIsland}
       fallbackData={fallbackData}
+      showBadges={showBadges}
+      badge1Text={badge1Text}
+      badge2Text={badge2Text}
+      badge3Text={badge3Text}
     />
   );
 }
@@ -75,6 +84,30 @@ export const fields = (
       name="gallery3"
       label="Gallery Image 4 (Fallback)"
       resizable={true}
+    />
+
+    <BooleanField
+      name="showBadges"
+      label="Show Trust Badges"
+      default={true}
+    />
+    <TextField
+      name="badge1Text"
+      label="Badge 1 Text"
+      default="Free Shipping"
+      helpText="First trust badge label"
+    />
+    <TextField
+      name="badge2Text"
+      label="Badge 2 Text"
+      default="1 Year Warranty"
+      helpText="Second trust badge label"
+    />
+    <TextField
+      name="badge3Text"
+      label="Badge 3 Text"
+      default="30-Day Returns"
+      helpText="Third trust badge label"
     />
   </ModuleFields>
 );

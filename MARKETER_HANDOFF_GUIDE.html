@@ -1,0 +1,220 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title></title>
+  <meta name="Generator" content="Cocoa HTML Writer">
+  <meta name="CocoaVersion" content="2685.3">
+  <style type="text/css">
+    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px 'Helvetica Light'}
+    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px 'Helvetica Light'; min-height: 14.0px}
+  </style>
+</head>
+<body>
+<p class="p1"># Marketer Handoff Guide (Rainy Day Merchandise)</p>
+<p class="p2"><br></p>
+<p class="p1">This guide is for day-to-day site management **without touching code**: updating copy, swapping images, featuring products, managing inventory, and sending emails/campaigns.</p>
+<p class="p2"><br></p>
+<p class="p1">If you ever feel unsure, the safe rule is:</p>
+<p class="p1">- **Edit content in HubSpot** (pages + modules) ✅</p>
+<p class="p1">- **Manage products/inventory in Square** ✅</p>
+<p class="p1">- **Anything involving “code”, “Vercel”, “API”, “tokens”, or “deploys” → escalate to the site owner/developer** ✅</p>
+<p class="p2"><br></p>
+<p class="p1">---</p>
+<p class="p2"><br></p>
+<p class="p1">## How the site works (1 minute mental model)</p>
+<p class="p2"><br></p>
+<p class="p1">- **HubSpot CMS**: hosts the site pages + the editable “sections” (modules) like Hero, About, Testimonials, Category Banner, etc.</p>
+<p class="p1">- **Square**: is the source of truth for products (name, price, description, images), categories, and inventory.</p>
+<p class="p1">- **Vercel API**: a small backend the site calls to fetch products/categories from Square and to process payments.</p>
+<p class="p2"><br></p>
+<p class="p1">What that means for you:</p>
+<p class="p1">- Changing a **product** happens in **Square**.</p>
+<p class="p1">- Changing **homepage/shop page text and images** usually happens in **HubSpot page editor**.</p>
+<p class="p2"><br></p>
+<p class="p1">---</p>
+<p class="p2"><br></p>
+<p class="p1">## Access you’ll likely need (ask the owner for logins)</p>
+<p class="p2"><br></p>
+<p class="p1">- **HubSpot**: to edit pages, modules, emails, lists, workflows.</p>
+<p class="p1">- **Square Dashboard**: to manage products, pricing, images, inventory, categories.</p>
+<p class="p1">- (Optional / view-only) **Vercel**: to view API logs if something breaks during checkout.</p>
+<p class="p2"><br></p>
+<p class="p1">---</p>
+<p class="p2"><br></p>
+<p class="p1">## Daily / weekly tasks</p>
+<p class="p2"><br></p>
+<p class="p1">## Update homepage content (HubSpot)</p>
+<p class="p2"><br></p>
+<p class="p1">The homepage is built from editable “modules”. In HubSpot:</p>
+<p class="p1">- Go to **Marketing → Website → Website pages**</p>
+<p class="p1">- Find the homepage (usually named something like “Home”)</p>
+<p class="p1">- Click **Edit**</p>
+<p class="p2"><br></p>
+<p class="p1">Common homepage modules you can edit:</p>
+<p class="p1">- **Hero Section**</p>
+<p class="p1"><span class="Apple-converted-space">  </span>- Update: headline, description, hero image, badge text, CTA text/link</p>
+<p class="p1">- **Category Grid**</p>
+<p class="p1"><span class="Apple-converted-space">  </span>- Update: up to 4 category cards (image, label, link)</p>
+<p class="p1">- **Trending Products**</p>
+<p class="p1"><span class="Apple-converted-space">  </span>- Update: title/subtitle, “View All” link</p>
+<p class="p1"><span class="Apple-converted-space">  </span>- Optional: pick specific products by entering their **Square Product IDs** (more on this below)</p>
+<p class="p1">- **About Story**</p>
+<p class="p1"><span class="Apple-converted-space">  </span>- Update: badge, title, description, stats, CTA, image</p>
+<p class="p1">- **Testimonials**</p>
+<p class="p1"><span class="Apple-converted-space">  </span>- Update: title/subtitle and up to 3 testimonials</p>
+<p class="p1">- **Newsletter Signup**</p>
+<p class="p1"><span class="Apple-converted-space">  </span>- Update: title/subtitle/placeholder/button label (see “Newsletter note” below)</p>
+<p class="p2"><br></p>
+<p class="p1">When you’re done:</p>
+<p class="p1">- Click **Publish** (or schedule) in HubSpot.</p>
+<p class="p2"><br></p>
+<p class="p1">---</p>
+<p class="p2"><br></p>
+<p class="p1">## Update the Shop page banner (HubSpot) — category text + images</p>
+<p class="p2"><br></p>
+<p class="p1">The Shop page has a **Category Banner** at the top that changes based on the selected category (via URL).</p>
+<p class="p2"><br></p>
+<p class="p1">To update banner copy/images per category:</p>
+<p class="p1">- In HubSpot, edit the **Shop** page</p>
+<p class="p1">- Click the **Category Banner** module</p>
+<p class="p1">- Find **Category Custom Content**</p>
+<p class="p1">- Add an entry for each category you want to customize:</p>
+<p class="p1"><span class="Apple-converted-space">  </span>- **Category Name**: must match the Square category name exactly (example: `Bracelets`)</p>
+<p class="p1"><span class="Apple-converted-space">  </span>- **Custom Description**: your banner text</p>
+<p class="p1"><span class="Apple-converted-space">  </span>- **Custom Banner Image (Optional)**: upload an image if you want to override the Square category image</p>
+<p class="p2"><br></p>
+<p class="p1">Notes:</p>
+<p class="p1">- If there’s no override, the banner tries to use **Square’s category description/image** (if provided), otherwise it falls back to the site defaults.</p>
+<p class="p2"><br></p>
+<p class="p1">---</p>
+<p class="p2"><br></p>
+<p class="p1">## Feature specific products in “Trending” (HubSpot + Square Product IDs)</p>
+<p class="p2"><br></p>
+<p class="p1">Trending Products can be random, or you can pin specific products using their Square Product IDs.</p>
+<p class="p2"><br></p>
+<p class="p1">To pin products:</p>
+<p class="p1">- In HubSpot, edit the page with the **Trending Products** module (usually Home)</p>
+<p class="p1">- In the module settings, look for **Specific Products (Optional)** and add product IDs</p>
+<p class="p2"><br></p>
+<p class="p1">Where to find a Square Product ID:</p>
+<p class="p1">- Ask the owner/dev to show you once (fastest)</p>
+<p class="p1">- Or in Square Catalog, the item will have an internal ID (exact location depends on Square UI)</p>
+<p class="p2"><br></p>
+<p class="p1">If you don’t set any product IDs, the site shows a random selection.</p>
+<p class="p2"><br></p>
+<p class="p1">---</p>
+<p class="p2"><br></p>
+<p class="p1">## Manage products, pricing, inventory, images (Square)</p>
+<p class="p2"><br></p>
+<p class="p1">Square is the source of truth. Typical workflow:</p>
+<p class="p2"><br></p>
+<p class="p1">- **Add / update a product**</p>
+<p class="p1"><span class="Apple-converted-space">  </span>- Update product **name**</p>
+<p class="p1"><span class="Apple-converted-space">  </span>- Update **price**</p>
+<p class="p1"><span class="Apple-converted-space">  </span>- Update **description**</p>
+<p class="p1"><span class="Apple-converted-space">  </span>- Add strong **images**</p>
+<p class="p1"><span class="Apple-converted-space">  </span>- Ensure it’s **available online** (otherwise it may not show on the site)</p>
+<p class="p2"><br></p>
+<p class="p1">- **Inventory**</p>
+<p class="p1"><span class="Apple-converted-space">  </span>- Track inventory in Square as you normally would</p>
+<p class="p1"><span class="Apple-converted-space">  </span>- If an item is out of stock or not available online, it may not be purchasable / visible</p>
+<p class="p2"><br></p>
+<p class="p1">- **Categories**</p>
+<p class="p1"><span class="Apple-converted-space">  </span>- Assign products to the right Square category</p>
+<p class="p1"><span class="Apple-converted-space">  </span>- If you add a new category, also:</p>
+<p class="p1"><span class="Apple-converted-space">    </span>- Add it to the homepage **Category Grid** (so shoppers can find it)</p>
+<p class="p1"><span class="Apple-converted-space">    </span>- Add a **Category Banner override** on the Shop page if you want custom copy</p>
+<p class="p2"><br></p>
+<p class="p1">---</p>
+<p class="p2"><br></p>
+<p class="p1">## Emails (HubSpot) — what you manage vs what you don’t</p>
+<p class="p2"><br></p>
+<p class="p1">## Marketing emails (you manage)</p>
+<p class="p1">Use HubSpot’s marketing tools for campaigns:</p>
+<p class="p1">- **Marketing → Email**</p>
+<p class="p1">- **Lists** and **Workflows** as needed</p>
+<p class="p2"><br></p>
+<p class="p1">## Magic-link login emails (usually not you)</p>
+<p class="p1">The site supports passwordless login (“magic links”). Those emails are **transactional** and require backend configuration (tokens + an email provider).</p>
+<p class="p2"><br></p>
+<p class="p1">If customers report “I never got the login email”, escalate to the owner/dev.</p>
+<p class="p2"><br></p>
+<p class="p1">## Newsletter signup note (important)</p>
+<p class="p1">The on-site Newsletter form UI is present, but the current implementation is a **placeholder** (it simulates success and does not actually add contacts anywhere).</p>
+<p class="p2"><br></p>
+<p class="p1">If you want newsletter signups to go into HubSpot automatically, ask the owner/dev to:</p>
+<p class="p1">- Replace the newsletter module with a native **HubSpot Form**, or</p>
+<p class="p1">- Wire the form to a real subscription endpoint / HubSpot Forms API.</p>
+<p class="p2"><br></p>
+<p class="p1">---</p>
+<p class="p2"><br></p>
+<p class="p1">## Common “how do I…”</p>
+<p class="p2"><br></p>
+<p class="p1">## “I want a category tile on the homepage to link to a category”</p>
+<p class="p1">Edit the **Category Grid** module and set the link like:</p>
+<p class="p1">- `/shop?category=Bracelets`</p>
+<p class="p2"><br></p>
+<p class="p1">Tip: use the **exact category name** as it appears on the site/Square.</p>
+<p class="p2"><br></p>
+<p class="p1">## “I want to update the big banner text for Bracelets”</p>
+<p class="p1">Edit the **Shop** page → **Category Banner** module → add/update the `Bracelets` override.</p>
+<p class="p2"><br></p>
+<p class="p1">## “I want to run a sale”</p>
+<p class="p1">Best low-risk approach:</p>
+<p class="p1">- Change **prices** in Square (and optionally the banner copy in HubSpot)</p>
+<p class="p2"><br></p>
+<p class="p1">If you want promo codes / more advanced discounting:</p>
+<p class="p1">- That may require development depending on how it’s set up.</p>
+<p class="p2"><br></p>
+<p class="p1">---</p>
+<p class="p2"><br></p>
+<p class="p1">## Troubleshooting (quick checks)</p>
+<p class="p2"><br></p>
+<p class="p1">## Products not showing up</p>
+<p class="p1">- Check in **Square**:</p>
+<p class="p1"><span class="Apple-converted-space">  </span>- Product is **available online**</p>
+<p class="p1"><span class="Apple-converted-space">  </span>- Product has a **price**</p>
+<p class="p1"><span class="Apple-converted-space">  </span>- Product is not archived/deleted</p>
+<p class="p1"><span class="Apple-converted-space">  </span>- Product has at least one image (site falls back to a placeholder, but images are better)</p>
+<p class="p2"><br></p>
+<p class="p1">## Category banner image looks wrong</p>
+<p class="p1">- If you uploaded a custom image in HubSpot override, confirm you picked the right override category name.</p>
+<p class="p1">- Otherwise check the Square category image (if one is set).</p>
+<p class="p2"><br></p>
+<p class="p1">## Checkout/payment failing</p>
+<p class="p1">- Try again with a different card (could be issuer decline)</p>
+<p class="p1">- If it’s consistent for everyone, escalate to owner/dev and share:</p>
+<p class="p1"><span class="Apple-converted-space">  </span>- The time it happened</p>
+<p class="p1"><span class="Apple-converted-space">  </span>- What page/step</p>
+<p class="p1"><span class="Apple-converted-space">  </span>- Any error message shown</p>
+<p class="p2"><br></p>
+<p class="p1">---</p>
+<p class="p2"><br></p>
+<p class="p1">## What requires a developer (don’t spend time fighting it)</p>
+<p class="p2"><br></p>
+<p class="p1">- Connecting newsletter signup to HubSpot lists</p>
+<p class="p1">- Changing how checkout/tax/shipping is calculated</p>
+<p class="p1">- Adding new product categories that must appear in hardcoded dropdowns</p>
+<p class="p1">- Changing domain, SSL, API URLs, environment variables</p>
+<p class="p1">- Anything that mentions: Vercel, API, tokens, `.env`, deploys, “hs project upload”</p>
+<p class="p2"><br></p>
+<p class="p1">---</p>
+<p class="p2"><br></p>
+<p class="p1">## Handoff checklist (for your walkthrough)</p>
+<p class="p2"><br></p>
+<p class="p1">- Confirm she can log into **HubSpot** and publish a small copy change</p>
+<p class="p1">- Confirm she can log into **Square** and edit a product price</p>
+<p class="p1">- Show her:</p>
+<p class="p1"><span class="Apple-converted-space">  </span>- Editing homepage modules</p>
+<p class="p1"><span class="Apple-converted-space">  </span>- Editing Shop banner overrides</p>
+<p class="p1"><span class="Apple-converted-space">  </span>- Finding and updating category links (`/shop?category=...`)</p>
+<p class="p1">- Agree on an escalation path for:</p>
+<p class="p1"><span class="Apple-converted-space">  </span>- Checkout issues</p>
+<p class="p1"><span class="Apple-converted-space">  </span>- Login/magic link issues</p>
+<p class="p1"><span class="Apple-converted-space">  </span>- Newsletter capture needs</p>
+<p class="p2"><br></p>
+<p class="p2"><br></p>
+</body>
+</html>

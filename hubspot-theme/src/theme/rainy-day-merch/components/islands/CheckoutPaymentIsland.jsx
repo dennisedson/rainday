@@ -370,7 +370,7 @@ export default function CheckoutPaymentIsland({ squareApplicationId, squareLocat
                     </div>
                   )}
                   <div className="flex justify-between text-gray-600">
-                    <span>Tax (8%)</span>
+                    <span>Tax</span>
                     <span>${checkoutData.tax?.toFixed(2)}</span>
                   </div>
                   <div className="border-t border-gray-200 pt-3 flex justify-between text-xl font-bold text-gray-900">

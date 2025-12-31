@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Marketer Handoff Guide</title>
+  <style>
+    :root { --text:#111827; --muted:#4b5563; --border:#e5e7eb; --codebg:#f3f4f6; }
+    @page { margin: 0.75in; }
+    html, body { padding:0; margin:0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Inter, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; color: var(--text); }
+    .page { max-width: 8.5in; margin: 0 auto; padding: 0.75in; }
+    h1 { font-size: 26px; margin: 0 0 14px; }
+    h2 { font-size: 18px; margin: 22px 0 10px; padding-top: 8px; }
+    h3 { font-size: 14px; margin: 18px 0 8px; }
+    p { margin: 10px 0; line-height: 1.45; }
+    ul { margin: 8px 0 10px 22px; padding: 0; }
+    li { margin: 6px 0; line-height: 1.4; }
+    hr { border: 0; border-top: 1px solid var(--border); margin: 18px 0; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; background: var(--codebg); padding: 1px 6px; border-radius: 6px; font-size: 0.95em; }
+    .hint { color: var(--muted); font-size: 12px; margin-top: 18px; }
+  </style>
+</head>
+<body>
+  <div class="page">
+<h1>Marketer Handoff Guide (Rainy Day Merchandise)</h1>
+<p>This guide is for day-to-day site management <strong>without touching code</strong>: updating copy, swapping images, featuring products, managing inventory, and sending emails/campaigns.</p>
+<p>If you ever feel unsure, the safe rule is:</p>
+<ul>
+<li><strong>Edit content in HubSpot</strong> (pages + modules) ✅</li>
+<li><strong>Manage products/inventory in Square</strong> ✅</li>
+<li><strong>Anything involving “code”, “Vercel”, “API”, “tokens”, or “deploys” → escalate to the site owner/developer</strong> ✅</li>
+</ul>
+<hr />
+<h2>How the site works (1 minute mental model)</h2>
+<ul>
+<li><strong>HubSpot CMS</strong>: hosts the site pages + the editable “sections” (modules) like Hero, About, Testimonials, Category Banner, etc.</li>
+<li><strong>Square</strong>: is the source of truth for products (name, price, description, images), categories, and inventory.</li>
+<li><strong>Vercel API</strong>: a small backend the site calls to fetch products/categories from Square and to process payments.</li>
+</ul>
+<p>What that means for you:</p>
+<ul>
+<li>Changing a <strong>product</strong> happens in <strong>Square</strong>.</li>
+<li>Changing <strong>homepage/shop page text and images</strong> usually happens in <strong>HubSpot page editor</strong>.</li>
+</ul>
+<hr />
+<h2>Access you’ll likely need (ask the owner for logins)</h2>
+<ul>
+<li><strong>HubSpot</strong>: to edit pages, modules, emails, lists, workflows.</li>
+<li><strong>Square Dashboard</strong>: to manage products, pricing, images, inventory, categories.</li>
+<li>(Optional / view-only) <strong>Vercel</strong>: to view API logs if something breaks during checkout.</li>
+</ul>
+<hr />
+<h2>Daily / weekly tasks</h2>
+<h2>Update homepage content (HubSpot)</h2>
+<p>The homepage is built from editable “modules”. In HubSpot:</p>
+<ul>
+<li>Go to <strong>Marketing → Website → Website pages</strong></li>
+<li>Find the homepage (usually named something like “Home”)</li>
+<li>Click <strong>Edit</strong></li>
+</ul>
+<p>Common homepage modules you can edit:</p>
+<ul>
+<li><strong>Hero Section</strong></li>
+<li>Update: headline, description, hero image, badge text, CTA text/link</li>
+<li><strong>Category Grid</strong></li>
+<li>Update: up to 4 category cards (image, label, link)</li>
+<li><strong>Trending Products</strong></li>
+<li>Update: title/subtitle, “View All” link</li>
+<li>Optional: pick specific products by entering their <strong>Square Product IDs</strong> (more on this below)</li>
+<li><strong>About Story</strong></li>
+<li>Update: badge, title, description, stats, CTA, image</li>
+<li><strong>Testimonials</strong></li>
+<li>Update: title/subtitle and up to 3 testimonials</li>
+<li><strong>Newsletter Signup</strong></li>
+<li>Update: title/subtitle/placeholder/button label (see “Newsletter note” below)</li>
+</ul>
+<p>When you’re done:</p>
+<ul>
+<li>Click <strong>Publish</strong> (or schedule) in HubSpot.</li>
+</ul>
+<hr />
+<h2>Update the Shop page banner (HubSpot) — category text + images</h2>
+<p>The Shop page has a <strong>Category Banner</strong> at the top that changes based on the selected category (via URL).</p>
+<p>To update banner copy/images per category:</p>
+<ul>
+<li>In HubSpot, edit the <strong>Shop</strong> page</li>
+<li>Click the <strong>Category Banner</strong> module</li>
+<li>Find <strong>Category Custom Content</strong></li>
+<li>Add an entry for each category you want to customize:</li>
+<li><strong>Category Name</strong>: must match the Square category name exactly (example: <code>Bracelets</code>)</li>
+<li><strong>Custom Description</strong>: your banner text</li>
+<li><strong>Custom Banner Image (Optional)</strong>: upload an image if you want to override the Square category image</li>
+</ul>
+<p>Notes:</p>
+<ul>
+<li>If there’s no override, the banner tries to use <strong>Square’s category description/image</strong> (if provided), otherwise it falls back to the site defaults.</li>
+</ul>
+<hr />
+<h2>Feature specific products in “Trending” (HubSpot + Square Product IDs)</h2>
+<p>Trending Products can be random, or you can pin specific products using their Square Product IDs.</p>
+<p>To pin products:</p>
+<ul>
+<li>In HubSpot, edit the page with the <strong>Trending Products</strong> module (usually Home)</li>
+<li>In the module settings, look for <strong>Specific Products (Optional)</strong> and add product IDs</li>
+</ul>
+<p>Where to find a Square Product ID:</p>
+<ul>
+<li>Ask the owner/dev to show you once (fastest)</li>
+<li>Or in Square Catalog, the item will have an internal ID (exact location depends on Square UI)</li>
+</ul>
+<p>If you don’t set any product IDs, the site shows a random selection.</p>
+<hr />
+<h2>Manage products, pricing, inventory, images (Square)</h2>
+<p>Square is the source of truth. Typical workflow:</p>
+<ul>
+<li><strong>Add / update a product</strong></li>
+<li>Update product <strong>name</strong></li>
+<li>Update <strong>price</strong></li>
+<li>Update <strong>description</strong></li>
+<li>Add strong <strong>images</strong></li>
+<li>Ensure it’s <strong>available online</strong> (otherwise it may not show on the site)</li>
+</ul>
+<ul>
+<li><strong>Inventory</strong></li>
+<li>Track inventory in Square as you normally would</li>
+<li>If an item is out of stock or not available online, it may not be purchasable / visible</li>
+</ul>
+<ul>
+<li><strong>Categories</strong></li>
+<li>Assign products to the right Square category</li>
+<li>If you add a new category, also:</li>
+<li>Add it to the homepage <strong>Category Grid</strong> (so shoppers can find it)</li>
+<li>Add a <strong>Category Banner override</strong> on the Shop page if you want custom copy</li>
+</ul>
+<hr />
+<h2>Emails (HubSpot) — what you manage vs what you don’t</h2>
+<h2>Marketing emails (you manage)</h2>
+<p>Use HubSpot’s marketing tools for campaigns:</p>
+<ul>
+<li><strong>Marketing → Email</strong></li>
+<li><strong>Lists</strong> and <strong>Workflows</strong> as needed</li>
+</ul>
+<h2>Magic-link login emails (usually not you)</h2>
+<p>The site supports passwordless login (“magic links”). Those emails are <strong>transactional</strong> and require backend configuration (tokens + an email provider).</p>
+<p>If customers report “I never got the login email”, escalate to the owner/dev.</p>
+<h2>Newsletter signup note (important)</h2>
+<p>The on-site Newsletter form UI is present, but the current implementation is a <strong>placeholder</strong> (it simulates success and does not actually add contacts anywhere).</p>
+<p>If you want newsletter signups to go into HubSpot automatically, ask the owner/dev to:</p>
+<ul>
+<li>Replace the newsletter module with a native <strong>HubSpot Form</strong>, or</li>
+<li>Wire the form to a real subscription endpoint / HubSpot Forms API.</li>
+</ul>
+<hr />
+<h2>Common “how do I…”</h2>
+<h2>“I want a category tile on the homepage to link to a category”</h2>
+<p>Edit the <strong>Category Grid</strong> module and set the link like:</p>
+<ul>
+<li><code>/shop?category=Bracelets</code></li>
+</ul>
+<p>Tip: use the <strong>exact category name</strong> as it appears on the site/Square.</p>
+<h2>“I want to update the big banner text for Bracelets”</h2>
+<p>Edit the <strong>Shop</strong> page → <strong>Category Banner</strong> module → add/update the <code>Bracelets</code> override.</p>
+<h2>“I want to run a sale”</h2>
+<p>Best low-risk approach:</p>
+<ul>
+<li>Change <strong>prices</strong> in Square (and optionally the banner copy in HubSpot)</li>
+</ul>
+<p>If you want promo codes / more advanced discounting:</p>
+<ul>
+<li>That may require development depending on how it’s set up.</li>
+</ul>
+<hr />
+<h2>Troubleshooting (quick checks)</h2>
+<h2>Products not showing up</h2>
+<ul>
+<li>Check in <strong>Square</strong>:</li>
+<li>Product is <strong>available online</strong></li>
+<li>Product has a <strong>price</strong></li>
+<li>Product is not archived/deleted</li>
+<li>Product has at least one image (site falls back to a placeholder, but images are better)</li>
+</ul>
+<h2>Category banner image looks wrong</h2>
+<ul>
+<li>If you uploaded a custom image in HubSpot override, confirm you picked the right override category name.</li>
+<li>Otherwise check the Square category image (if one is set).</li>
+</ul>
+<h2>Checkout/payment failing</h2>
+<ul>
+<li>Try again with a different card (could be issuer decline)</li>
+<li>If it’s consistent for everyone, escalate to owner/dev and share:</li>
+<li>The time it happened</li>
+<li>What page/step</li>
+<li>Any error message shown</li>
+</ul>
+<hr />
+<h2>What requires a developer (don’t spend time fighting it)</h2>
+<ul>
+<li>Connecting newsletter signup to HubSpot lists</li>
+<li>Changing how checkout/tax/shipping is calculated</li>
+<li>Adding new product categories that must appear in hardcoded dropdowns</li>
+<li>Changing domain, SSL, API URLs, environment variables</li>
+<li>Anything that mentions: Vercel, API, tokens, <code>.env</code>, deploys, “hs project upload”</li>
+</ul>
+<hr />
+<h2>Handoff checklist (for your walkthrough)</h2>
+<ul>
+<li>Confirm she can log into <strong>HubSpot</strong> and publish a small copy change</li>
+<li>Confirm she can log into <strong>Square</strong> and edit a product price</li>
+<li>Show her:</li>
+<li>Editing homepage modules</li>
+<li>Editing Shop banner overrides</li>
+<li>Finding and updating category links (<code>/shop?category=...</code>)</li>
+<li>Agree on an escalation path for:</li>
+<li>Checkout issues</li>
+<li>Login/magic link issues</li>
+<li>Newsletter capture needs</li>
+</ul>
+    <p class="hint">Generated from <code>MARKETER_HANDOFF_GUIDE.md</code>.</p>
+  </div>
+</body>
+</html>

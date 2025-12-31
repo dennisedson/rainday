@@ -52,6 +52,8 @@ Common homepage modules you can edit:
   - Update: title/subtitle and up to 3 testimonials
 - **Newsletter Signup**
   - Update: title/subtitle/placeholder/button label (see “Newsletter note” below)
+- **Product Detail** (on individual product pages)
+  - Update: Trust Badges (e.g., “Free Shipping”, “1 Year Warranty”, “30-Day Returns”) and toggle their visibility.
 
 When you’re done:
 - Click **Publish** (or schedule) in HubSpot.
@@ -112,6 +114,10 @@ Square is the source of truth. Typical workflow:
   - If you add a new category, also:
     - Add it to the homepage **Category Grid** (so shoppers can find it)
     - Add a **Category Banner override** on the Shop page if you want custom copy
+
+- **Shipping & Tax**
+  - Taxes are calculated automatically by Square based on your Square account settings and the customer's shipping address.
+  - Shipping rates currently use a $12 flat rate fallback, but will pull from Square if you have "Service Charges" configured in your Square Catalog.
 
 ---
 

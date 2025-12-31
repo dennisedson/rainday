@@ -1,10 +1,19 @@
 import { useState, useEffect } from 'react';
+import { post } from '../../utils/api';
 
 export default function ShoppingCartIsland() {
   // Cart state - in production this would come from localStorage or API
   const [cartItems, setCartItems] = useState([]);
   const [promoCode, setPromoCode] = useState('');
   const [appliedPromo, setAppliedPromo] = useState(null);
+  const [calculation, setCalculation] = useState({
+    subtotal: 0,
+    shipping: 0,
+    tax: 0,
+    discount: 0,
+    total: 0,
+    loading: true
+  });
 
   // Load cart from localStorage on mount
   useEffect(() => {
@@ -18,6 +27,54 @@ export default function ShoppingCartIsland() {
     }
   }, []);
 
+  // Update calculation whenever cart or promo changes
+  useEffect(() => {
+    const calculateTotals = async () => {
+      if (cartItems.length === 0) {
+        setCalculation({
+          subtotal: 0,
+          shipping: 0,
+          tax: 0,
+          discount: 0,
+          total: 0,
+          loading: false
+        });
+        return;
+      }
+
+      setCalculation(prev => ({ ...prev, loading: true }));
+      try {
+        const result = await post('/calculate-order', {
+          cartItems,
+          // We don't have shipping address yet
+        });
+
+        setCalculation({
+          subtotal: result.subtotal,
+          shipping: result.shipping,
+          tax: result.tax,
+          discount: result.discount,
+          total: result.total,
+          loading: false
+        });
+      } catch (error) {
+        console.error('[Cart] Calculation failed:', error);
+        // Fallback to local calculation if API fails
+        const sub = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        setCalculation({
+          subtotal: sub,
+          shipping: 12.00,
+          tax: sub * 0.08,
+          discount: 0,
+          total: sub + 12.00 + (sub * 0.08),
+          loading: false
+        });
+      }
+    };
+
+    calculateTotals();
+  }, [cartItems]);
+
   // Save cart to localStorage whenever it changes
   useEffect(() => {
     if (cartItems.length > 0) {
@@ -27,22 +84,7 @@ export default function ShoppingCartIsland() {
     }
   }, [cartItems]);
 
-  // Calculate subtotal
-  const subtotal = cartItems.reduce((sum, item) => {
-    return sum + (item.price * item.quantity);
-  }, 0);
-
-  // Calculate shipping (flat rate for now)
-  const shipping = cartItems.length > 0 ? 12.00 : 0;
-
-  // Calculate discount from promo code
-  const discount = appliedPromo ? (subtotal * appliedPromo.percentage / 100) : 0;
-
-  // Calculate tax (8%)
-  const tax = (subtotal - discount + shipping) * 0.08;
-
-  // Calculate total
-  const total = subtotal - discount + shipping + tax;
+  const { subtotal, shipping, tax, discount, total, loading } = calculation;
 
   // Update quantity for an item
   const updateQuantity = (itemId, newQuantity) => {
@@ -69,6 +111,7 @@ export default function ShoppingCartIsland() {
 
     if (promoCodes[promoCode.toUpperCase()]) {
       setAppliedPromo(promoCodes[promoCode.toUpperCase()]);
+      // The useEffect will trigger recalculation
     } else {
       alert('Invalid promo code');
     }
@@ -265,8 +308,10 @@ export default function ShoppingCartIsland() {
                   </div>
                 )}
                 <div className="flex justify-between text-gray-600">
-                  <span>Tax (8%)</span>
-                  <span>${tax.toFixed(2)}</span>
+                  <span>Tax</span>
+                  <span className={loading ? 'animate-pulse opacity-50' : ''}>
+                    ${tax.toFixed(2)}
+                  </span>
                 </div>
                 <div className="border-t border-gray-200 pt-3 flex justify-between text-xl font-bold text-gray-900">
                   <span>Total</span>
