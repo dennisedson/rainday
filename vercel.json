@@ -5,6 +5,19 @@
       "maxDuration": 30
     }
   },
+  "rewrites": [
+    { "source": "/api/square-products", "destination": "/api/square" },
+    { "source": "/api/square-product", "destination": "/api/square" },
+    { "source": "/api/square-categories", "destination": "/api/square" },
+    { "source": "/api/calculate-order", "destination": "/api/square" },
+    { "source": "/api/process-payment", "destination": "/api/square" },
+    { "source": "/api/auth/magic-link", "destination": "/api/auth" },
+    { "source": "/api/auth/verify-link", "destination": "/api/auth" },
+    { "source": "/api/auth/verify-session", "destination": "/api/auth" },
+    { "source": "/api/create-deal", "destination": "/api/hubspot" },
+    { "source": "/api/sync-categories", "destination": "/api/hubspot" },
+    { "source": "/api/favorites", "destination": "/api/hubspot" }
+  ],
   "crons": [
     {
       "path": "/api/sync-categories",
