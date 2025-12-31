@@ -40,17 +40,31 @@ export default function CheckoutPaymentIsland({ squareApplicationId, squareLocat
   useEffect(() => {
     if (!isMounted || !squareApplicationId || !squareLocationId || !checkoutData) return;
 
-    const initializeSquare = async () => {
-      console.log('[Square] Attempting init with Application ID:', squareApplicationId);
-      
-      if (!window.Square) {
-        console.error('Square.js not loaded');
-        setErrors({ general: 'Square Payments SDK failed to load. Please refresh the page.' });
-        return;
-      }
+    const loadSquareScript = () => {
+      return new Promise((resolve, reject) => {
+        if (window.Square) {
+          resolve(window.Square);
+          return;
+        }
+        
+        const isSandbox = squareApplicationId.startsWith('sandbox-');
+        const script = document.createElement('script');
+        script.src = isSandbox 
+          ? 'https://sandbox.web.squarecdn.com/v1/square.js' 
+          : 'https://web.squarecdn.com/v1/square.js';
+        script.onload = () => resolve(window.Square);
+        script.onerror = () => reject(new Error('Failed to load Square SDK'));
+        document.head.appendChild(script);
+      });
+    };
 
+    const initializeSquare = async () => {
+      console.log('[Square] Loading SDK for Application ID:', squareApplicationId);
+      
       try {
-        const payments = window.Square.payments(squareApplicationId, squareLocationId);
+        const Square = await loadSquareScript();
+        
+        const payments = Square.payments(squareApplicationId, squareLocationId);
         paymentsRef.current = payments;
 
         const card = await payments.card();

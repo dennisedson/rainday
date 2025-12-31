@@ -405,11 +405,15 @@ export default function CheckoutShippingIsland() {
                 <div className="space-y-3 mb-6">
                   <div className="flex justify-between text-gray-600">
                     <span>Subtotal</span>
-                    <span>${checkoutData.subtotal?.toFixed(2)}</span>
+                    <span className={isCalculating ? 'animate-pulse opacity-50' : ''}>
+                      ${checkoutData.subtotal?.toFixed(2)}
+                    </span>
                   </div>
                   <div className="flex justify-between text-gray-600">
                     <span>Shipping</span>
-                    <span>${checkoutData.shipping?.toFixed(2)}</span>
+                    <span className={isCalculating ? 'animate-pulse opacity-50' : ''}>
+                      ${checkoutData.shipping?.toFixed(2)}
+                    </span>
                   </div>
                   {checkoutData.discount > 0 && (
                     <div className="flex justify-between text-green-600">

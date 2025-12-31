@@ -295,11 +295,15 @@ export default function ShoppingCartIsland() {
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between text-gray-600">
                   <span>Subtotal</span>
-                  <span>${subtotal.toFixed(2)}</span>
+                  <span className={loading ? 'animate-pulse opacity-50' : ''}>
+                    ${subtotal.toFixed(2)}
+                  </span>
                 </div>
                 <div className="flex justify-between text-gray-600">
                   <span>Shipping</span>
-                  <span>${shipping.toFixed(2)}</span>
+                  <span className={loading ? 'animate-pulse opacity-50' : ''}>
+                    ${shipping.toFixed(2)}
+                  </span>
                 </div>
                 {discount > 0 && (
                   <div className="flex justify-between text-green-600">
@@ -315,7 +319,9 @@ export default function ShoppingCartIsland() {
                 </div>
                 <div className="border-t border-gray-200 pt-3 flex justify-between text-xl font-bold text-gray-900">
                   <span>Total</span>
-                  <span>${total.toFixed(2)}</span>
+                  <span className={loading ? 'animate-pulse opacity-50' : ''}>
+                    ${total.toFixed(2)}
+                  </span>
                 </div>
               </div>
 

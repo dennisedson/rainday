@@ -179,12 +179,24 @@ async function handleCalculateOrder(req, res) {
 
     const order = {
       location_id: SQUARE_LOCATION_ID,
-      line_items: cartItems.map(item => ({
-        catalog_object_id: item.id.startsWith('item_') ? null : item.id,
-        name: item.name,
-        quantity: item.quantity.toString(),
-        base_price_money: { amount: Math.round(item.price * 100), currency: 'USD' }
-      }))
+      line_items: cartItems.map(item => {
+        const lineItem = {
+          name: item.name,
+          quantity: item.quantity.toString(),
+          base_price_money: { amount: Math.round(item.price * 100), currency: 'USD' }
+        };
+        
+        // Only attach catalog_object_id if it's a known variation ID
+        // (Square variation IDs usually start with 'item_variation_' or are specific IDs from the catalog)
+        if (item.id && (item.id.includes('variation') || !item.id.startsWith('item_'))) {
+          // If it looks like a variation ID, we can try to use it
+          // But for now, to be safe and ensure the price we have is used, we'll favor ad-hoc
+          // unless the user specifically wants catalog-linked items.
+          // lineItem.catalog_object_id = item.id; 
+        }
+        
+        return lineItem;
+      })
     };
 
     if (shippingAddress) {
@@ -203,16 +215,35 @@ async function handleCalculateOrder(req, res) {
     const data = await response.json();
     if (!response.ok) return res.status(response.status).json({ error: 'Calculation failed', details: data.errors });
 
-    const subtotal = (data.order.net_amounts.subtotal_money?.amount || 0) / 100;
+    // Ensure we have a valid subtotal. If Square returns 0 but we sent items, 
+    // it likely didn't recognize them or their prices.
+    const manualSubtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    
+    // Square returns values in cents. We convert to dollars.
+    const sqSubtotal = (data.order.net_amounts.subtotal_money?.amount || 0) / 100;
+    const subtotal = sqSubtotal > 0 ? sqSubtotal : manualSubtotal;
+    
     const tax = (data.order.net_amounts.tax_money?.amount || 0) / 100;
     const discount = (data.order.net_amounts.discount_money?.amount || 0) / 100;
-    let shipping = data.order.service_charges ? 
-      data.order.service_charges.reduce((sum, charge) => sum + (charge.amount_money?.amount || 0), 0) / 100 : 
-      0; // Remove the $12 hardcoded fallback to see Square's actual value
+    
+    let shipping = data.order.service_charges 
+      ? data.order.service_charges.reduce((sum, charge) => sum + (charge.amount_money?.amount || 0), 0) / 100 
+      : 0;
 
-    const total = (data.order.net_amounts.total_money?.amount || 0) / 100 + (data.order.service_charges ? 0 : shipping);
+    // Calculate total: subtotal + shipping + tax - discount
+    // We prioritize Square's total if it's non-zero, otherwise we calculate it manually.
+    const sqTotal = (data.order.net_amounts.total_money?.amount || 0) / 100;
+    const total = sqTotal > 0 ? sqTotal : (subtotal + tax + shipping - discount);
 
-    return res.status(200).json({ success: true, subtotal, tax, discount, shipping, total, orderId: data.order.id });
+    return res.status(200).json({ 
+      success: true, 
+      subtotal, 
+      tax, 
+      discount, 
+      shipping, 
+      total, 
+      orderId: data.order.id 
+    });
   } catch (error) {
     return res.status(500).json({ error: 'Internal server error', message: error.message });
   }
