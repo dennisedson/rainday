@@ -16,6 +16,15 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      /* Hide HubSpot "Built on HubSpot" branding for free accounts */
+      hs-cmsf-branding {
+        display: none !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+        opacity: 0 !important;
+      }
+    </style>
     {# Square Web Payments SDK #}
     <script src="https://sandbox.web.squarecdn.com/v1/square.js"></script>
     <script>

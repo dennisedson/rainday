@@ -6,23 +6,37 @@
 {% extends "./layouts/base.hubl.html" %}
 
 {% block body %}
+  <main>
+    {% dnd_area "product_content"
+      label="Product Content Area"
+    %}
+      {# Product Detail - Default #}
+      {% dnd_section %}
+        {% dnd_column %}
+          {% dnd_row %}
+            {% dnd_module "product_detail"
+              path="../components/modules/ProductDetail"
+            %}
+            {% end_dnd_module %}
+          {% end_dnd_row %}
+        {% end_dnd_column %}
+      {% end_dnd_section %}
 
-
-
-{# Product Detail #}
-{% module "product_detail"
-  path="../components/modules/ProductDetail"
-%}
-
-{# Related Products / You May Also Like #}
-{% module "related_products"
-  path="../components/modules/TrendingProducts"
-  sectionTitle="You May Also Like"
-  subtitle="Explore similar handcrafted pieces"
-  maxProducts=4
-%}
-
-
-
+      {# Related Products / You May Also Like - Default #}
+      {% dnd_section %}
+        {% dnd_column %}
+          {% dnd_row %}
+            {% dnd_module "related_products"
+              path="../components/modules/TrendingProducts"
+              sectionTitle="You May Also Like"
+              subtitle="Explore similar handcrafted pieces"
+              maxProducts=4
+            %}
+            {% end_dnd_module %}
+          {% end_dnd_row %}
+        {% end_dnd_column %}
+      {% end_dnd_section %}
+    {% end_dnd_area %}
+  </main>
 {% endblock %}
 

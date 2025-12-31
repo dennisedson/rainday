@@ -111,6 +111,7 @@ npm run keep-alive
 
 - [Square Setup Guide](./hubspot-theme/SQUARE_SETUP_GUIDE.md) - Detailed Square integration guide
 - [HubSpot Project README](./hubspot-theme/README.md) - Theme development guide
+- [Marketer Handoff Guide](./MARKETER_HANDOFF_GUIDE.md) - Day-to-day guide for non-developers (copy, banners, inventory, emails)
 
 ## 🔒 Security Notes
 

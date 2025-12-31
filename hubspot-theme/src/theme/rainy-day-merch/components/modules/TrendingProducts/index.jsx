@@ -4,11 +4,20 @@ import {
   TextField,
   NumberField,
   BooleanField,
+  RepeatedFieldGroup,
 } from '@hubspot/cms-components/fields';
 import TrendingProductsIsland from '../../islands/TrendingProductsIsland.jsx?island';
 
 export function Component({ fieldValues }) {
-  const { sectionTitle, subtitle, showViewAll, viewAllLink, viewAllText, maxProducts } = fieldValues;
+  const { 
+    sectionTitle, 
+    subtitle, 
+    showViewAll, 
+    viewAllLink, 
+    viewAllText, 
+    maxProducts,
+    manualProducts 
+  } = fieldValues;
 
   return (
     <Island
@@ -19,6 +28,7 @@ export function Component({ fieldValues }) {
       viewAllLink={viewAllLink}
       viewAllText={viewAllText}
       maxProducts={maxProducts}
+      manualProducts={manualProducts}
     />
   );
 }
@@ -37,6 +47,21 @@ export const fields = (
       default="See what popular items are hot this month"
       helpText="Description text below the title"
     />
+
+    <RepeatedFieldGroup
+      name="manualProducts"
+      label="Specific Products (Optional)"
+      helpText="Add specific Square Product IDs to show. If left empty, random products will be shown."
+      itemLabel={(item) => item.productId || 'New Product'}
+      default={[]}
+    >
+      <TextField
+        name="productId"
+        label="Square Product ID"
+        placeholder="e.g. 5R3B... "
+      />
+    </RepeatedFieldGroup>
+
     <BooleanField
       name="showViewAll"
       label="Show 'View All' Link"
@@ -60,7 +85,7 @@ export const fields = (
       default={4}
       min={1}
       max={12}
-      helpText="Maximum number of products to show"
+      helpText="Maximum number of products to show (only used for random selection)"
     />
   </ModuleFields>
 );

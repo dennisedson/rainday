@@ -6,21 +6,46 @@
 {% extends "./layouts/base.hubl.html" %}
 
 {% block body %}
+  <main>
+    {% dnd_area "page_content"
+      label="Page Content Area"
+    %}
+      {# Hero Section - Default #}
+      {% dnd_section %}
+        {% dnd_column %}
+          {% dnd_row %}
+            {% dnd_module "hero"
+              path="../components/modules/Hero"
+            %}
+            {% end_dnd_module %}
+          {% end_dnd_row %}
+        {% end_dnd_column %}
+      {% end_dnd_section %}
 
-  {% module
-    "hero"
-    path="../components/modules/Hero"
-  %}
+      {# Product Showcase - Default #}
+      {% dnd_section %}
+        {% dnd_column %}
+          {% dnd_row %}
+            {% dnd_module "productShowcase"
+              path="../components/modules/ProductShowcase"
+            %}
+            {% end_dnd_module %}
+          {% end_dnd_row %}
+        {% end_dnd_column %}
+      {% end_dnd_section %}
 
-  {% module
-    "productShowcase"
-    path="../components/modules/ProductShowcase"
-  %}
-
-  {% module
-    "gettingStarted"
-    path="../components/modules/GettingStarted",
-    brandColors="{{ theme.brand_color }}",
-  %}
-
+      {# Getting Started - Default #}
+      {% dnd_section %}
+        {% dnd_column %}
+          {% dnd_row %}
+            {% dnd_module "gettingStarted"
+              path="../components/modules/GettingStarted",
+              brandColors="{{ theme.brand_color }}",
+            %}
+            {% end_dnd_module %}
+          {% end_dnd_row %}
+        {% end_dnd_column %}
+      {% end_dnd_section %}
+    {% end_dnd_area %}
+  </main>
 {% endblock body %}

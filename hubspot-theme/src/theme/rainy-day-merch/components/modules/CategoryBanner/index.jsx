@@ -33,14 +33,14 @@ export const fields = (
         name="categoryName"
         label="Category Name"
         required={true}
-        default=""
+        default="All Products"
         helpText="Must exactly match Square category (e.g., 'Bracelets', 'Necklaces') or use 'All Products' for the Shop All page"
       />
       <TextField
         name="customDescription"
         label="Custom Description"
         required={true}
-        default=""
+        default="Explore our handcrafted jewelry collection."
         helpText="Custom description text for this category banner"
       />
       <ImageField

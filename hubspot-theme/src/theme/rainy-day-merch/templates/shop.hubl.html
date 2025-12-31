@@ -6,16 +6,34 @@
 {% extends "./layouts/base.hubl.html" %}
 
 {% block body %}
+  <main>
+    {% dnd_area "shop_content"
+      label="Shop Content Area"
+    %}
+      {# Category Banner - Default #}
+      {% dnd_section %}
+        {% dnd_column %}
+          {% dnd_row %}
+            {% dnd_module "categoryBanner"
+              path="../components/modules/CategoryBanner"
+            %}
+            {% end_dnd_module %}
+          {% end_dnd_row %}
+        {% end_dnd_column %}
+      {% end_dnd_section %}
 
-  {% module
-    "categoryBanner"
-    path="../components/modules/CategoryBanner"
-  %}
-
-  {% module
-    "productGrid"
-    path="../components/modules/ProductGrid"
-  %}
-
+      {# Product Grid - Default #}
+      {% dnd_section %}
+        {% dnd_column %}
+          {% dnd_row %}
+            {% dnd_module "productGrid"
+              path="../components/modules/ProductGrid"
+            %}
+            {% end_dnd_module %}
+          {% end_dnd_row %}
+        {% end_dnd_column %}
+      {% end_dnd_section %}
+    {% end_dnd_area %}
+  </main>
 {% endblock body %}
 

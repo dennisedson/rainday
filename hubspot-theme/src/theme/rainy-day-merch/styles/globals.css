@@ -84,6 +84,14 @@
   }
 }
 
+/* Hide HubSpot "Built on HubSpot" branding for free accounts */
+hs-cmsf-branding {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+}
+
 /* Utility classes */
 @layer utilities {
   .text-balance {

@@ -13,6 +13,7 @@ export default function TrendingProductsIsland({
   viewAllLink,
   viewAllText,
   maxProducts,
+  manualProducts,
 }) {
   // State for products, loading, and errors
   const [products, setProducts] = useState([]);
@@ -74,19 +75,34 @@ export default function TrendingProductsIsland({
         setLoading(true);
         const data = await get('/square-products');
 
-        // Transform Square products to our format and limit to maxProducts
-        const transformedProducts = data.products
-          .slice(0, maxProducts || 4)
-          .map(product => ({
-            id: product.id,
-            image: product.image,
-            title: product.name,
-            category: product.category === 'uncategorized' ? '' : product.category,
-            price: product.price,
-            rating: 0,
-            reviewCount: 0,
-            available: product.available,
-          }));
+        let finalProducts = [];
+        const manualIds = (manualProducts || [])
+          .map(p => p.productId)
+          .filter(id => !!id);
+
+        if (manualIds.length > 0) {
+          // 1. Manual Selection: Filter and maintain the order specified in manualProducts
+          manualIds.forEach(id => {
+            const found = data.products.find(p => p.id === id);
+            if (found) finalProducts.push(found);
+          });
+        } else {
+          // 2. Random Selection fallback
+          const shuffled = [...data.products].sort(() => 0.5 - Math.random());
+          finalProducts = shuffled.slice(0, maxProducts || 4);
+        }
+
+        // Transform products to our UI format
+        const transformedProducts = finalProducts.map(product => ({
+          id: product.id,
+          image: product.image,
+          title: product.name,
+          category: product.category === 'uncategorized' ? '' : product.category,
+          price: product.price,
+          rating: 0,
+          reviewCount: 0,
+          available: product.available,
+        }));
 
         setProducts(transformedProducts);
         setError(null);
@@ -99,7 +115,7 @@ export default function TrendingProductsIsland({
     };
 
     fetchProducts();
-  }, [maxProducts]);
+  }, [maxProducts, manualProducts]);
 
   return (
     <section className="py-16 bg-beige">

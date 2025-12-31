@@ -6,43 +6,70 @@
 {% extends "./layouts/base.hubl.html" %}
 
 {% block body %}
+  <main>
+    {% dnd_area "main_content"
+      label="Main Content Area"
+    %}
+      {# Hero Section - Default #}
+      {% dnd_section %}
+        {% dnd_column %}
+          {% dnd_row %}
+            {% dnd_module "hero"
+              path="../components/modules/Hero"
+            %}
+            {% end_dnd_module %}
+          {% end_dnd_row %}
+        {% end_dnd_column %}
+      {% end_dnd_section %}
 
-  {# Hero Section - Same as category page #}
-  {% module
-    "hero"
-    path="../components/modules/Hero"
-  %}
+      {# Category Grid - Default #}
+      {% dnd_section %}
+        {% dnd_column %}
+          {% dnd_row %}
+            {% dnd_module "categoryGrid"
+              path="../components/modules/CategoryGrid"
+            %}
+            {% end_dnd_module %}
+          {% end_dnd_row %}
+        {% end_dnd_column %}
+      {% end_dnd_section %}
 
+      {# Trending Products - Default #}
+      {% dnd_section %}
+        {% dnd_column %}
+          {% dnd_row %}
+            {% dnd_module "trendingProducts"
+              path="../components/modules/TrendingProducts"
+            %}
+            {% end_dnd_module %}
+          {% end_dnd_row %}
+        {% end_dnd_column %}
+      {% end_dnd_section %}
 
-  {# Category Grid - Shop by Category #}
-  {% module
-    "categoryGrid"
-    path="../components/modules/CategoryGrid"
-  %}
+      {# About/Story Section - Default #}
+      {% dnd_section %}
+        {% dnd_column %}
+          {% dnd_row %}
+            {% dnd_module "aboutStory"
+              path="../components/modules/AboutStory"
+            %}
+            {% end_dnd_module %}
+          {% end_dnd_row %}
+        {% end_dnd_column %}
+      {% end_dnd_section %}
 
-  {# Trending Products #}
-  {% module
-    "trendingProducts"
-    path="../components/modules/TrendingProducts"
-  %}
-
-  {# About/Story Section #}
-  {% module
-    "aboutStory"
-    path="../components/modules/AboutStory"
-  %}
-
-  {# Testimonials #}
-  {% module
-    "testimonials"
-    path="../components/modules/Testimonials"
-  %}
-
-  {# Newsletter Signup #}
-  {# {% module
-    "newsletter"
-    path="../components/modules/Newsletter"
-  %} #}
-
+      {# Testimonials - Default #}
+      {% dnd_section %}
+        {% dnd_column %}
+          {% dnd_row %}
+            {% dnd_module "testimonials"
+              path="../components/modules/Testimonials"
+            %}
+            {% end_dnd_module %}
+          {% end_dnd_row %}
+        {% end_dnd_column %}
+      {% end_dnd_section %}
+    {% end_dnd_area %}
+  </main>
 {% endblock body %}
 
