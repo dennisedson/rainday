@@ -232,6 +232,46 @@ async function handleCalculateOrder(req, res) {
 
     if (!response.ok) {
       console.error('[Square Calculate] API Error:', JSON.stringify(data, null, 2));
+      
+      // Check if we failed because of a NOT_FOUND variation ID
+      const isNotFound = data.errors?.some(e => e.code === 'NOT_FOUND');
+      
+      if (isNotFound) {
+        console.warn('[Square Calculate] Variation ID not found. Retrying as ad-hoc items...');
+        // Create an ad-hoc version of the order (no catalog IDs)
+        const adHocOrder = {
+          location_id: activeLocationId,
+          line_items: cartItems.map(item => ({
+            name: item.name,
+            quantity: item.quantity.toString(),
+            base_price_money: { amount: Math.round(item.price * 100), currency: 'USD' }
+          }))
+        };
+        
+        const retryResponse = await fetch(`${activeApiBase}/v2/orders/calculate`, {
+          method: 'POST',
+          headers: { 'Square-Version': '2024-12-18', 'Authorization': `Bearer ${activeAccessToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ order: adHocOrder })
+        });
+        
+        const retryData = await retryResponse.json();
+        if (retryResponse.ok) {
+          const sqSubtotal = (retryData.order.net_amounts.subtotal_money?.amount || 0) / 100;
+          const subtotal = sqSubtotal > 0 ? sqSubtotal : manualSubtotal;
+          const tax = (retryData.order.net_amounts.tax_money?.amount || 0) / 100;
+          const total = (retryData.order.net_amounts.total_money?.amount || 0) / 100;
+          
+          return res.status(200).json({ 
+            success: true, 
+            subtotal, 
+            tax, 
+            total, 
+            warning: 'Item ID not found in Square. Tax may be estimated.',
+            env: isProdReq ? 'production' : 'sandbox'
+          });
+        }
+      }
+
       const detail = data.errors ? data.errors[0].detail : 'Unknown error';
       return res.status(200).json({ 
         success: true, 
@@ -241,7 +281,8 @@ async function handleCalculateOrder(req, res) {
         discount: 0,
         total: manualSubtotal,
         warning: `Square Error: ${detail}`,
-        details: data.errors
+        details: data.errors,
+        env: isProdReq ? 'production' : 'sandbox'
       });
     }
 
@@ -260,7 +301,8 @@ async function handleCalculateOrder(req, res) {
       shipping, 
       total, 
       taxes: data.order.taxes || [],
-      orderId: data.order.id 
+      orderId: data.order.id,
+      env: isProdReq ? 'production' : 'sandbox' // Add environment info to response
     });
   } catch (error) {
     console.error('[Square Calculate] System Error:', error);
