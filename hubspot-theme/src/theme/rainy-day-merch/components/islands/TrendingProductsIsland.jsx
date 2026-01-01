@@ -50,6 +50,7 @@ export default function TrendingProductsIsland({
       // Add new item
       cart.push({
         id: product.id,
+        variationId: product.variationId, // ADDED: include variationId
         name: product.title,
         price: product.price,
         quantity: 1,
@@ -95,6 +96,7 @@ export default function TrendingProductsIsland({
         // Transform products to our UI format
         const transformedProducts = finalProducts.map(product => ({
           id: product.id,
+          variationId: product.variationId, // ADDED: include variationId
           image: product.image,
           title: product.name,
           category: product.category === 'uncategorized' ? '' : product.category,

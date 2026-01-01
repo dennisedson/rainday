@@ -224,7 +224,14 @@ async function handleCalculateOrder(req, res) {
     const data = await response.json();
     console.log('[Square Calculate] Response:', JSON.stringify(data, null, 2));
 
-    if (!response.ok) return res.status(response.status).json({ error: 'Calculation failed', details: data.errors });
+    if (!response.ok) {
+      console.error('[Square Calculate] Error:', JSON.stringify(data, null, 2));
+      return res.status(response.status).json({ 
+        error: 'Calculation failed', 
+        details: data.errors,
+        squareResponse: data 
+      });
+    }
 
     // Extract tax details for logging/debugging
     const taxes = data.order.taxes || [];

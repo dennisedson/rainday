@@ -317,6 +317,7 @@ export default function ProductDetailIsland({
                     // Add new item
                     cart.push({
                       id: product.id,
+                      variationId: product.variationId, // ADDED: save the variation ID for tax calculation
                       name: product.name,
                       price: product.price,
                       quantity: quantity,

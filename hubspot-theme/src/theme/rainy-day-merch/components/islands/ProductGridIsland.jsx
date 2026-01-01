@@ -44,6 +44,7 @@ export default function ProductGridIsland({ sectionTitle, category, sortBy, colu
       // Add new item
       cart.push({
         id: product.id,
+        variationId: product.variationId, // ADDED: include variationId
         name: product.title,
         price: product.price,
         quantity: 1,
@@ -152,6 +153,7 @@ export default function ProductGridIsland({ sectionTitle, category, sortBy, colu
         // Transform Square products to our format
         const transformedProducts = data.products.map(product => ({
           id: product.id,
+          variationId: product.variationId, // ADDED: include variationId
           image: product.image,
           title: product.name,
           description: product.description || '',
