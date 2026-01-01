@@ -260,11 +260,15 @@ async function handleCalculateOrder(req, res) {
           const subtotal = sqSubtotal > 0 ? sqSubtotal : manualSubtotal;
           const tax = (retryData.order.net_amounts.tax_money?.amount || 0) / 100;
           const total = (retryData.order.net_amounts.total_money?.amount || 0) / 100;
+          const discount = (retryData.order.net_amounts.discount_money?.amount || 0) / 100;
+          const shipping = retryData.order.service_charges ? retryData.order.service_charges.reduce((sum, charge) => sum + (charge.amount_money?.amount || 0), 0) / 100 : 0;
           
           return res.status(200).json({ 
             success: true, 
             subtotal, 
             tax, 
+            shipping,
+            discount,
             total, 
             warning: 'Item ID not found in Square. Tax may be estimated.',
             env: isProdReq ? 'production' : 'sandbox'
