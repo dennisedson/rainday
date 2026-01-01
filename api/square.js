@@ -185,18 +185,13 @@ async function handleCalculateOrder(req, res) {
     const { cartItems, shippingAddress, squareApplicationId, squareLocationId } = req.body;
     if (!cartItems || !Array.isArray(cartItems) || cartItems.length === 0) return res.status(400).json({ error: 'Cart items are required' });
 
-    // Detect environment from application ID if provided, otherwise fallback to env var
+    // Detect environment
     const isProdReq = squareApplicationId ? !squareApplicationId.startsWith('sandbox-') : isProduction;
     const activeAccessToken = isProdReq ? process.env.SQUARE_PRODUCTION_ACCESS_TOKEN : process.env.SQUARE_SANDBOX_ACCESS_TOKEN;
     const activeLocationId = squareLocationId || (isProdReq ? process.env.SQUARE_PRODUCTION_LOCATION_ID : process.env.SQUARE_SANDBOX_LOCATION_ID);
     const activeApiBase = isProdReq ? 'https://connect.squareup.com' : 'https://connect.squareupsandbox.com';
 
-    if (!activeAccessToken || !activeLocationId) {
-      return res.status(500).json({ 
-        error: 'Credentials missing', 
-        message: `Missing ${isProdReq ? 'Production' : 'Sandbox'} credentials in Vercel environment variables.`
-      });
-    }
+    console.log(`[Square Calculate] Env: ${isProdReq ? 'PROD' : 'SANDBOX'}, Location: ${activeLocationId}`);
 
     const order = {
       location_id: activeLocationId,
@@ -207,17 +202,20 @@ async function handleCalculateOrder(req, res) {
           base_price_money: { amount: Math.round(item.price * 100), currency: 'USD' }
         };
         
-        // Link to catalog variation if we have it
-        if (item.variationId) {
-          lineItem.catalog_object_id = item.variationId;
-        } else if (item.id && !item.id.startsWith('item_') && !item.id.startsWith('variation_')) {
-          // If ID looks like a custom string, it might be a variation ID
-          lineItem.catalog_object_id = item.id;
+        // ONLY attach catalog_object_id if it's a valid-looking Square ID (long alphanumeric)
+        // Dummy IDs like "item_123" will cause Square to return a 400 error.
+        const vid = item.variationId || item.id;
+        if (vid && vid.length > 10 && !vid.includes('item_') && !vid.includes('variation_')) {
+          lineItem.catalog_object_id = vid;
         }
         
         return lineItem;
       })
     };
+
+    // NOTE: We deliberately DO NOT send shippingAddress here.
+    // This forces Square to use "Origin-based" tax (your Kansas rule) 
+    // instead of trying to calculate destination-based tax for NY/CA/etc.
 
     const response = await fetch(`${activeApiBase}/v2/orders/calculate`, {
       method: 'POST',
@@ -226,14 +224,11 @@ async function handleCalculateOrder(req, res) {
     });
 
     const data = await response.json();
-    
-    // Always calculate a manual fallback subtotal
     const manualSubtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
     if (!response.ok) {
-      console.error('[Square Calculate] Error:', JSON.stringify(data, null, 2));
-      // Return the specific Square error message so we can read it in the console
-      const errorMsg = data.errors ? data.errors[0].detail : 'Unknown Square error';
+      console.error('[Square Calculate] API Error:', JSON.stringify(data, null, 2));
+      const detail = data.errors ? data.errors[0].detail : 'Unknown error';
       return res.status(200).json({ 
         success: true, 
         subtotal: manualSubtotal,
@@ -241,24 +236,17 @@ async function handleCalculateOrder(req, res) {
         shipping: 0,
         discount: 0,
         total: manualSubtotal,
-        warning: `Square Error: ${errorMsg}`,
+        warning: `Square Error: ${detail}`,
         details: data.errors
       });
     }
 
-    // Square returns values in cents. We convert to dollars.
     const sqSubtotal = (data.order.net_amounts.subtotal_money?.amount || 0) / 100;
     const subtotal = sqSubtotal > 0 ? sqSubtotal : manualSubtotal;
-    
     const tax = (data.order.net_amounts.tax_money?.amount || 0) / 100;
     const discount = (data.order.net_amounts.discount_money?.amount || 0) / 100;
-    
-    let shipping = data.order.service_charges 
-      ? data.order.service_charges.reduce((sum, charge) => sum + (charge.amount_money?.amount || 0), 0) / 100 
-      : 0;
-
-    const sqTotal = (data.order.net_amounts.total_money?.amount || 0) / 100;
-    const total = sqTotal > 0 ? sqTotal : (subtotal + tax + shipping - discount);
+    let shipping = data.order.service_charges ? data.order.service_charges.reduce((sum, charge) => sum + (charge.amount_money?.amount || 0), 0) / 100 : 0;
+    const total = (data.order.net_amounts.total_money?.amount || 0) / 100 + (data.order.service_charges ? 0 : shipping);
 
     return res.status(200).json({ 
       success: true, 
