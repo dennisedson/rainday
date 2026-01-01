@@ -18,6 +18,7 @@ const ProductCard = ({
   reviewCount = 0,
   onSale = false,
   featured = false,
+  available = true,
   onAddToCart,
   productUrl,
   className = '',
@@ -106,6 +107,7 @@ const ProductCard = ({
         <div className="absolute top-3 left-3 flex flex-col gap-2">
           {onSale && <Badge variant="sale">Sale</Badge>}
           {featured && <Badge variant="featured">Featured</Badge>}
+          {!available && <Badge variant="outline" className="bg-gray-100 text-gray-600 border-gray-300">Out of Stock</Badge>}
         </div>
         
         {/* Favorites Button */}
@@ -128,9 +130,10 @@ const ProductCard = ({
         <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
           <button
             onClick={handleAddToCart}
-            className="w-full bg-white text-gray-900 py-2 rounded-lg font-medium hover:bg-gray-100 transition-colors duration-200"
+            disabled={!available}
+            className={`w-full ${available ? 'bg-white text-gray-900 hover:bg-gray-100' : 'bg-gray-200 text-gray-400 cursor-not-allowed'} py-2 rounded-lg font-medium transition-colors duration-200`}
           >
-            Add to Cart
+            {available ? 'Add to Cart' : 'Out of Stock'}
           </button>
         </div>
       </div>

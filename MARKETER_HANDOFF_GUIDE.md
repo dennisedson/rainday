@@ -106,8 +106,11 @@ Square is the source of truth. Typical workflow:
   - Ensure it’s **available online** (otherwise it may not show on the site)
 
 - **Inventory**
-  - Track inventory in Square as you normally would
-  - If an item is out of stock or not available online, it may not be purchasable / visible
+  - **Automatic Tracking**: The site is now configured to officially **Create Orders** in Square. When a customer completes a purchase, Square will automatically decrease your inventory.
+  - **Out of Stock**: If a product's inventory hits zero (or if you turn off "Available Online"), the site will automatically:
+    - Display an **"Out of Stock"** badge on the product grid and product pages.
+    - **Disable** the "Add to Cart" and "Buy Now" buttons.
+  - **Manual Edits**: You can manually adjust stock levels in Square anytime, and the site will update instantly.
 
 - **Categories**
   - Assign products to the right Square category

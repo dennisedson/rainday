@@ -56,15 +56,21 @@ async function handleGetProducts(req, res) {
       const categoryInfo = categoryId ? categoryMap[categoryId] : null;
       const productImageUrl = itemData.image_ids?.[0] ? imageMap[itemData.image_ids[0]] : null;
       
+      // Determine availability based on Square's available_online flag
+      // and check if track_inventory is enabled but alert is triggered
+      const isAvailable = !itemData.is_deleted && itemData.available_online && 
+        (!variation?.item_variation_data?.track_inventory || variation?.item_variation_data?.inventory_alert_type !== 'LOW_QUANTITY');
+
       return {
         id: item.id,
+        variationId: variation?.id,
         name: itemData.name || 'Untitled Product',
         description: itemData.description || '',
         category: categoryInfo?.name || 'Uncategorized',
         categoryImage: categoryInfo?.image || null,
         price: price / 100,
         image: productImageUrl || DEFAULT_PRODUCT_IMAGE,
-        available: !itemData.is_deleted && itemData.available_online,
+        available: isAvailable,
         variations: itemData.variations || [],
       };
     });
@@ -113,6 +119,7 @@ async function handleGetProduct(req, res) {
 
     const product = {
       id: item.id,
+      variationId: variations[0]?.id,
       name: itemData.name || 'Untitled Product',
       description: itemData.description || '',
       category: itemData.category_id || 'uncategorized',
@@ -120,7 +127,8 @@ async function handleGetProduct(req, res) {
       images: images,
       mainImage: images[0],
       galleryImages: images.slice(1, 4),
-      available: !itemData.is_deleted && itemData.available_online,
+      available: !itemData.is_deleted && itemData.available_online && 
+        (!variations[0]?.item_variation_data?.track_inventory || variations[0]?.item_variation_data?.inventory_alert_type !== 'LOW_QUANTITY'),
       variations,
     };
 
@@ -253,10 +261,47 @@ async function handleCalculateOrder(req, res) {
  * Handle POST /api/process-payment
  */
 async function handleProcessPayment(req, res) {
-  const { sourceId, amount, currency = 'USD', orderId, buyerEmail, billingDetails } = req.body;
+  const { sourceId, amount, currency = 'USD', orderId, buyerEmail, billingDetails, cartItems } = req.body;
   if (!sourceId || !amount) return res.status(400).json({ error: 'sourceId and amount are required' });
 
   try {
+    // 1. Create a Square Order first if we have cart items
+    let squareOrderId = null;
+    if (cartItems && cartItems.length > 0) {
+      try {
+        const orderData = {
+          location_id: SQUARE_LOCATION_ID,
+          reference_id: orderId,
+          line_items: cartItems.map(item => ({
+            catalog_object_id: item.variationId || (item.id.includes('variation') ? item.id : null),
+            name: item.name,
+            quantity: item.quantity.toString(),
+            base_price_money: { amount: Math.round(item.price * 100), currency }
+          }))
+        };
+
+        const orderResponse = await fetch(`${SQUARE_API_BASE}/v2/orders`, {
+          method: 'POST',
+          headers: { 'Square-Version': '2024-12-18', 'Authorization': `Bearer ${SQUARE_ACCESS_TOKEN}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            order: orderData,
+            idempotency_key: `order-${orderId || Date.now()}-${Math.random().toString(36).substr(2, 5)}`
+          }),
+        });
+
+        const orderResult = await orderResponse.json();
+        if (orderResponse.ok) {
+          squareOrderId = orderResult.order.id;
+          console.log('[Square] Created order:', squareOrderId);
+        } else {
+          console.error('[Square] Failed to create order:', orderResult);
+        }
+      } catch (err) {
+        console.error('[Square] Order creation error:', err);
+      }
+    }
+
+    // 2. Prepare payment request
     const paymentData = {
       source_id: sourceId,
       idempotency_key: `${orderId || Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -264,6 +309,8 @@ async function handleProcessPayment(req, res) {
       location_id: SQUARE_LOCATION_ID,
       buyer_email_address: buyerEmail,
       reference_id: orderId,
+      order_id: squareOrderId, // Link payment to the order for inventory tracking
+      autocomplete: true, // Automatically complete the payment
     };
 
     if (billingDetails) {
@@ -289,7 +336,7 @@ async function handleProcessPayment(req, res) {
     return res.status(200).json({
       success: true,
       paymentId: p.id,
-      orderId: p.order_id,
+      orderId: p.order_id || squareOrderId,
       receiptNumber: p.receipt_number,
       receiptUrl: p.receipt_url,
       status: p.status,

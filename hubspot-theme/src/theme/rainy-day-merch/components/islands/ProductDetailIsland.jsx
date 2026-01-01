@@ -236,9 +236,16 @@ export default function ProductDetailIsland({
 
             {/* Price */}
             <div className="mb-6">
-              <span className="text-4xl font-bold text-gray-900">
-                ${product.price.toFixed(2)}
-              </span>
+              <div className="flex items-center gap-4">
+                <span className="text-4xl font-bold text-gray-900">
+                  ${product.price.toFixed(2)}
+                </span>
+                {!product.available && (
+                  <span className="px-3 py-1 bg-gray-100 text-gray-600 font-semibold rounded-full text-sm border border-gray-300">
+                    Out of Stock
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Description */}
@@ -250,14 +257,15 @@ export default function ProductDetailIsland({
 
             {/* Quantity Selector */}
             <div className="mb-6">
-              <label className="block text-sm font-semibold text-gray-900 mb-3">
+              <label className={`block text-sm font-semibold ${product.available ? 'text-gray-900' : 'text-gray-400'} mb-3`}>
                 Quantity
               </label>
               <div className="flex items-center gap-3">
                 <button
                   type="button"
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="w-10 h-10 flex items-center justify-center border border-gray-300 rounded hover:bg-gray-50 transition-colors bg-white text-gray-700 font-normal"
+                  disabled={!product.available}
+                  className={`w-10 h-10 flex items-center justify-center border border-gray-300 rounded ${product.available ? 'hover:bg-gray-50 bg-white text-gray-700' : 'bg-gray-50 text-gray-300 cursor-not-allowed'} transition-colors font-normal`}
                   aria-label="Decrease quantity"
                   style={{ WebkitAppearance: 'none', MozAppearance: 'none', appearance: 'none' }}
                 >
@@ -267,13 +275,14 @@ export default function ProductDetailIsland({
                   type="text"
                   value={quantity}
                   readOnly
-                  className="w-16 h-10 text-center border border-gray-300 rounded font-semibold bg-white text-gray-900"
-                  style={{ MozAppearance: 'textfield', WebkitAppearance: 'none', appearance: 'none', color: '#111827' }}
+                  className={`w-16 h-10 text-center border border-gray-300 rounded font-semibold ${product.available ? 'bg-white text-gray-900' : 'bg-gray-50 text-gray-400'}`}
+                  style={{ MozAppearance: 'textfield', WebkitAppearance: 'none', appearance: 'none' }}
                 />
                 <button
                   type="button"
                   onClick={() => setQuantity(quantity + 1)}
-                  className="w-10 h-10 flex items-center justify-center border border-gray-300 rounded hover:bg-gray-50 transition-colors bg-white text-gray-700 font-normal"
+                  disabled={!product.available}
+                  className={`w-10 h-10 flex items-center justify-center border border-gray-300 rounded ${product.available ? 'hover:bg-gray-50 bg-white text-gray-700' : 'bg-gray-50 text-gray-300 cursor-not-allowed'} transition-colors font-normal`}
                   aria-label="Increase quantity"
                   style={{ WebkitAppearance: 'none', MozAppearance: 'none', appearance: 'none' }}
                 >
@@ -285,6 +294,7 @@ export default function ProductDetailIsland({
             {/* Action Buttons */}
             <div className="flex gap-3 mb-6">
               <button
+                disabled={!product.available}
                 onClick={() => {
                   // Get existing cart
                   let cart = [];
@@ -324,12 +334,12 @@ export default function ProductDetailIsland({
                   // Show success message
                   alert(`Added ${quantity} x ${product.name} to cart!`);
                 }}
-                className="flex-1 bg-orange-500 text-white py-3 px-6 rounded-lg font-semibold hover:bg-orange-600 transition-colors flex items-center justify-center gap-2"
+                className={`flex-1 ${product.available ? 'bg-orange-500 hover:bg-orange-600 text-white' : 'bg-gray-200 text-gray-400 cursor-not-allowed'} py-3 px-6 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2`}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                 </svg>
-                Add to Cart
+                {product.available ? 'Add to Cart' : 'Out of Stock'}
               </button>
               <button
                 className={`w-12 h-12 flex items-center justify-center border rounded-lg transition-colors ${
@@ -364,6 +374,7 @@ export default function ProductDetailIsland({
 
             {/* Buy Now Button */}
             <button
+              disabled={!product.available}
               onClick={() => {
                 // Add to cart
                 let cart = [];
@@ -397,7 +408,7 @@ export default function ProductDetailIsland({
                 // Redirect to cart
                 window.location.href = '/cart';
               }}
-              className="w-full bg-white border-2 border-gray-900 text-gray-900 py-3 px-6 rounded-lg font-semibold hover:bg-gray-50 transition-colors mb-6"
+              className={`w-full ${product.available ? 'bg-white border-gray-900 text-gray-900 hover:bg-gray-50' : 'bg-gray-50 border-gray-200 text-gray-300 cursor-not-allowed'} border-2 py-3 px-6 rounded-lg font-semibold transition-colors mb-6`}
             >
               Buy Now
             </button>
