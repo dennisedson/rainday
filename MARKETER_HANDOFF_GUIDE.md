@@ -121,6 +121,10 @@ Square is the source of truth. Typical workflow:
 - **Shipping & Tax**
   - Taxes and shipping are calculated automatically by Square.
   - **If you see $0.00**: ensure you have configured your **Tax Rules** and **Shipping Rates** (as Service Charges) in your Square Dashboard under Settings.
+  - **Debugging Taxes**: 
+    - Open your browser's Developer Console (Right-click anywhere on the page -> Inspect -> Console).
+    - When you enter your Zip Code on the Shipping page, you will see a message like: `[Shipping] Tax Applied: Sales Tax (8.875%) - $0.80`.
+    - If you see `[Shipping] No taxes returned from Square`, double-check that your items in Square have the "Taxes" toggle turned **ON**.
   - The site pulls exactly what Square returns for the customer's location.
 
 ---

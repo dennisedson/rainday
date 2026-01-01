@@ -49,6 +49,13 @@ export default function ShoppingCartIsland() {
           // We don't have shipping address yet
         });
 
+        console.log('[Cart] Order Calculation Result:', result);
+        if (result.taxes && result.taxes.length > 0) {
+          result.taxes.forEach(t => {
+            console.log(`[Cart] Tax Applied: ${t.name} (${t.percentage}%) - $${(t.applied_money.amount / 100).toFixed(2)}`);
+          });
+        }
+
         setCalculation({
           subtotal: result.subtotal,
           shipping: result.shipping,

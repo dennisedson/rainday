@@ -194,18 +194,19 @@ async function handleCalculateOrder(req, res) {
           base_price_money: { amount: Math.round(item.price * 100), currency: 'USD' }
         };
         
-        // Only attach catalog_object_id if it's a known variation ID
-        // (Square variation IDs usually start with 'item_variation_' or are specific IDs from the catalog)
-        if (item.id && (item.id.includes('variation') || !item.id.startsWith('item_'))) {
-          // If it looks like a variation ID, we can try to use it
-          // But for now, to be safe and ensure the price we have is used, we'll favor ad-hoc
-          // unless the user specifically wants catalog-linked items.
-          // lineItem.catalog_object_id = item.id; 
+        // CRITICAL: Attach catalog_object_id (variation ID) so Square applies tax rules
+        if (item.variationId) {
+          lineItem.catalog_object_id = item.variationId;
+        } else if (item.id && !item.id.startsWith('item_')) {
+          // Fallback if variationId isn't explicitly set but id looks like one
+          lineItem.catalog_object_id = item.id;
         }
         
         return lineItem;
       })
     };
+
+    console.log('[Square Calculate] Request:', JSON.stringify({ order }, null, 2));
 
     if (shippingAddress) {
       order.fulfillments = [{
@@ -221,7 +222,13 @@ async function handleCalculateOrder(req, res) {
     });
 
     const data = await response.json();
+    console.log('[Square Calculate] Response:', JSON.stringify(data, null, 2));
+
     if (!response.ok) return res.status(response.status).json({ error: 'Calculation failed', details: data.errors });
+
+    // Extract tax details for logging/debugging
+    const taxes = data.order.taxes || [];
+    console.log('[Square Calculate] Taxes found:', taxes.length, JSON.stringify(taxes));
 
     // Ensure we have a valid subtotal. If Square returns 0 but we sent items, 
     // it likely didn't recognize them or their prices.
@@ -250,6 +257,7 @@ async function handleCalculateOrder(req, res) {
       discount, 
       shipping, 
       total, 
+      taxes, // Pass back raw tax details for frontend console logging
       orderId: data.order.id 
     });
   } catch (error) {

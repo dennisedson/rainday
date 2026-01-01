@@ -54,6 +54,15 @@ export default function CheckoutShippingIsland() {
           }
         });
 
+        console.log('[Shipping] Order Calculation Result:', result);
+        if (result.taxes && result.taxes.length > 0) {
+          result.taxes.forEach(t => {
+            console.log(`[Shipping] Tax Applied: ${t.name} (${t.percentage}%) - $${(t.applied_money.amount / 100).toFixed(2)}`);
+          });
+        } else {
+          console.log('[Shipping] No taxes returned from Square. Check your Tax Rules in Square Dashboard.');
+        }
+
         setCheckoutData(prev => ({
           ...prev,
           subtotal: result.subtotal,
