@@ -124,7 +124,12 @@ Square is the source of truth. Typical workflow:
   - **Debugging Taxes**: 
     - Open your browser's Developer Console (Right-click anywhere on the page -> Inspect -> Console).
     - When you enter your Zip Code on the Shipping page, you will see a message like: `[Shipping] Tax Applied: Sales Tax (8.875%) - $0.80`.
+    - If you see `[Shipping] Square Error Details`, look for the "detail" message. This tells you exactly why Square rejected the calculation.
     - If you see `[Shipping] No taxes returned from Square`, double-check that your items in Square have the "Taxes" toggle turned **ON**.
+
+- **Shopping Cart**
+  - Cart count in the navigation badge updates automatically when items are added, removed, or quantities are changed.
+
   - The site pulls exactly what Square returns for the customer's location.
 
 ---

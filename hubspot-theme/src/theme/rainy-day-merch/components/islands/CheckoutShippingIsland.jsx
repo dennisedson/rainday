@@ -61,6 +61,9 @@ export default function CheckoutShippingIsland({ squareApplicationId, squareLoca
         console.log('[Shipping] Order Calculation Result:', result);
         if (result.warning) {
           console.warn(`[Shipping] ${result.warning}`);
+          if (result.details) {
+            console.error('[Shipping] Square Error Details:', JSON.stringify(result.details, null, 2));
+          }
         }
         
         if (result.taxes && result.taxes.length > 0) {

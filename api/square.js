@@ -191,25 +191,29 @@ async function handleCalculateOrder(req, res) {
     const activeLocationId = squareLocationId || (isProdReq ? process.env.SQUARE_PRODUCTION_LOCATION_ID : process.env.SQUARE_SANDBOX_LOCATION_ID);
     const activeApiBase = isProdReq ? 'https://connect.squareup.com' : 'https://connect.squareupsandbox.com';
 
-    console.log(`[Square Calculate] Env: ${isProdReq ? 'PROD' : 'SANDBOX'}, Location: ${activeLocationId}`);
+    console.log(`[Square Calculate] Env: ${isProdReq ? 'PROD' : 'SANDBOX'}, Token Prefix: ${activeAccessToken?.substring(0, 10)}..., Location: ${activeLocationId}`);
 
     const order = {
       location_id: activeLocationId,
       line_items: cartItems.map(item => {
-        const lineItem = {
+        const vid = item.variationId || item.id;
+        const isValidSqId = vid && vid.length > 10 && !vid.includes('item_') && !vid.includes('variation_');
+
+        if (isValidSqId) {
+          // If we have a valid catalog ID, send ONLY that + quantity
+          // Square will pull the price and tax rules from the catalog
+          return {
+            catalog_object_id: vid,
+            quantity: item.quantity.toString()
+          };
+        }
+
+        // Fallback for custom/ad-hoc items
+        return {
           name: item.name,
           quantity: item.quantity.toString(),
           base_price_money: { amount: Math.round(item.price * 100), currency: 'USD' }
         };
-        
-        // ONLY attach catalog_object_id if it's a valid-looking Square ID (long alphanumeric)
-        // Dummy IDs like "item_123" will cause Square to return a 400 error.
-        const vid = item.variationId || item.id;
-        if (vid && vid.length > 10 && !vid.includes('item_') && !vid.includes('variation_')) {
-          lineItem.catalog_object_id = vid;
-        }
-        
-        return lineItem;
       })
     };
 

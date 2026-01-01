@@ -52,6 +52,12 @@ export default function ShoppingCartIsland({ squareApplicationId, squareLocation
         });
 
         console.log('[Cart] Order Calculation Result:', result);
+        if (result.warning) {
+          console.warn(`[Cart] ${result.warning}`);
+          if (result.details) {
+            console.error('[Cart] Square Error Details:', JSON.stringify(result.details, null, 2));
+          }
+        }
         if (result.taxes && result.taxes.length > 0) {
           result.taxes.forEach(t => {
             console.log(`[Cart] Tax Applied: ${t.name} (${t.percentage}%) - $${(t.applied_money.amount / 100).toFixed(2)}`);
@@ -91,6 +97,8 @@ export default function ShoppingCartIsland({ squareApplicationId, squareLocation
     } else {
       localStorage.removeItem('cart');
     }
+    // Dispatch event so the header badge updates
+    window.dispatchEvent(new Event('cartUpdated'));
   }, [cartItems]);
 
   const { subtotal, shipping, tax, discount, total, loading } = calculation;
