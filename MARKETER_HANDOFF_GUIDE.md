@@ -31,6 +31,20 @@ What that means for you:
 
 ## Daily / weekly tasks
 
+## Update Global Settings (Square & Theme)
+
+To keep things simple, we use **Global Theme Settings** for the major stuff like your Square account IDs and test modes. You only have to set these **once** for the whole site.
+
+- Go to **Marketing → Website → Website pages**
+- Click **Edit** on any page (like Home)
+- In the top menu, click the **Design** tab (gear icon)
+- Click **Edit theme settings**
+- Find the **Square Integration Settings** group:
+  - **Square Environment**: Toggle between **Sandbox (Testing)** and **Production (Live)**.
+  - **IDs**: Your Sandbox and Production Application/Location IDs are stored here.
+
+---
+
 ## Update homepage content (HubSpot)
 
 The homepage is built from editable “modules”. In HubSpot:

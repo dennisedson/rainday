@@ -7,5 +7,46 @@
       "color": "#2d3e50",
       "opacity": 100
     }
+  },
+  {
+    "name": "square_settings",
+    "label": "Square Integration Settings",
+    "type": "group",
+    "children": [
+      {
+        "name": "environment",
+        "label": "Square Environment",
+        "type": "choice",
+        "choices": [
+          ["sandbox", "Sandbox (Testing)"],
+          ["production", "Production (Live)"]
+        ],
+        "default": "sandbox"
+      },
+      {
+        "name": "sandbox_application_id",
+        "label": "Sandbox Application ID",
+        "type": "text",
+        "default": "sandbox-sq0idb-vzMCT08FEX4vNU_c0Yri6w"
+      },
+      {
+        "name": "sandbox_location_id",
+        "label": "Sandbox Location ID",
+        "type": "text",
+        "default": "L63B6R6N6VHHM"
+      },
+      {
+        "name": "production_application_id",
+        "label": "Production Application ID",
+        "type": "text",
+        "default": "sq0idp-JxeW0Ff9fzObldQDlpzhRQ"
+      },
+      {
+        "name": "production_location_id",
+        "label": "Production Location ID",
+        "type": "text",
+        "default": "LW249CNFMBBA0"
+      }
+    ]
   }
 ]
