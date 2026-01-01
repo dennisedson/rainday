@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { post } from '../../utils/api';
 
-export default function CheckoutShippingIsland() {
+export default function CheckoutShippingIsland({ squareApplicationId, squareLocationId }) {
   const [checkoutData, setCheckoutData] = useState(null);
   const [isCalculating, setIsCalculating] = useState(false);
   const [formData, setFormData] = useState({
@@ -46,6 +46,8 @@ export default function CheckoutShippingIsland() {
       try {
         const result = await post('/calculate-order', {
           cartItems: checkoutData.cartItems,
+          squareApplicationId,
+          squareLocationId,
           shippingAddress: {
             address: formData.address,
             city: formData.city,

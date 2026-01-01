@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { post } from '../../utils/api';
 
-export default function ShoppingCartIsland() {
+export default function ShoppingCartIsland({ squareApplicationId, squareLocationId }) {
   // Cart state - in production this would come from localStorage or API
   const [cartItems, setCartItems] = useState([]);
   const [promoCode, setPromoCode] = useState('');
@@ -46,6 +46,8 @@ export default function ShoppingCartIsland() {
       try {
         const result = await post('/calculate-order', {
           cartItems,
+          squareApplicationId,
+          squareLocationId
           // We don't have shipping address yet
         });
 

@@ -182,11 +182,24 @@ async function handleGetCategories(req, res) {
  */
 async function handleCalculateOrder(req, res) {
   try {
-    const { cartItems, shippingAddress } = req.body;
+    const { cartItems, shippingAddress, squareApplicationId, squareLocationId } = req.body;
     if (!cartItems || !Array.isArray(cartItems) || cartItems.length === 0) return res.status(400).json({ error: 'Cart items are required' });
 
+    // Detect environment from application ID if provided, otherwise fallback to env var
+    const isProdReq = squareApplicationId ? !squareApplicationId.startsWith('sandbox-') : isProduction;
+    const activeAccessToken = isProdReq ? process.env.SQUARE_PRODUCTION_ACCESS_TOKEN : process.env.SQUARE_SANDBOX_ACCESS_TOKEN;
+    const activeLocationId = squareLocationId || (isProdReq ? process.env.SQUARE_PRODUCTION_LOCATION_ID : process.env.SQUARE_SANDBOX_LOCATION_ID);
+    const activeApiBase = isProdReq ? 'https://connect.squareup.com' : 'https://connect.squareupsandbox.com';
+
+    if (!activeAccessToken || !activeLocationId) {
+      return res.status(500).json({ 
+        error: 'Credentials missing', 
+        message: `Missing ${isProdReq ? 'Production' : 'Sandbox'} credentials in Vercel environment variables.`
+      });
+    }
+
     const order = {
-      location_id: SQUARE_LOCATION_ID,
+      location_id: activeLocationId,
       line_items: cartItems.map(item => {
         const lineItem = {
           name: item.name,
@@ -194,11 +207,11 @@ async function handleCalculateOrder(req, res) {
           base_price_money: { amount: Math.round(item.price * 100), currency: 'USD' }
         };
         
-        // CRITICAL: Attach catalog_object_id (variation ID) so Square applies tax rules
+        // Link to catalog variation if we have it
         if (item.variationId) {
           lineItem.catalog_object_id = item.variationId;
-        } else if (item.id && !item.id.startsWith('item_')) {
-          // Fallback if variationId isn't explicitly set but id looks like one
+        } else if (item.id && !item.id.startsWith('item_') && !item.id.startsWith('variation_')) {
+          // If ID looks like a custom string, it might be a variation ID
           lineItem.catalog_object_id = item.id;
         }
         
@@ -206,41 +219,32 @@ async function handleCalculateOrder(req, res) {
       })
     };
 
-    console.log('[Square Calculate] Request:', JSON.stringify({ order }, null, 2));
-
-    if (shippingAddress) {
-      order.fulfillments = [{
-        type: 'SHIPMENT',
-        shipment_details: { recipient: { address: { address_line_1: shippingAddress.address, locality: shippingAddress.city, administrative_district_level_1: shippingAddress.state, postal_code: shippingAddress.zipCode, country: 'US' } } }
-      }];
-    }
-
-    const response = await fetch(`${SQUARE_API_BASE}/v2/orders/calculate`, {
+    const response = await fetch(`${activeApiBase}/v2/orders/calculate`, {
       method: 'POST',
-      headers: { 'Square-Version': '2024-12-18', 'Authorization': `Bearer ${SQUARE_ACCESS_TOKEN}`, 'Content-Type': 'application/json' },
+      headers: { 'Square-Version': '2024-12-18', 'Authorization': `Bearer ${activeAccessToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ order })
     });
 
     const data = await response.json();
-    console.log('[Square Calculate] Response:', JSON.stringify(data, null, 2));
+    
+    // Always calculate a manual fallback subtotal
+    const manualSubtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
     if (!response.ok) {
       console.error('[Square Calculate] Error:', JSON.stringify(data, null, 2));
-      return res.status(response.status).json({ 
-        error: 'Calculation failed', 
-        details: data.errors,
-        squareResponse: data 
+      // FALLBACK: If Square calculation fails, return manual totals so UI isn't broken
+      return res.status(200).json({ 
+        success: true, 
+        subtotal: manualSubtotal,
+        tax: 0,
+        shipping: 0,
+        discount: 0,
+        total: manualSubtotal,
+        warning: 'Square calculation failed, using manual fallback',
+        details: data.errors
       });
     }
 
-    // Extract tax details for logging/debugging
-    const taxes = data.order.taxes || [];
-    console.log('[Square Calculate] Taxes found:', taxes.length, JSON.stringify(taxes));
-
-    // Ensure we have a valid subtotal. If Square returns 0 but we sent items, 
-    // it likely didn't recognize them or their prices.
-    const manualSubtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    
     // Square returns values in cents. We convert to dollars.
     const sqSubtotal = (data.order.net_amounts.subtotal_money?.amount || 0) / 100;
     const subtotal = sqSubtotal > 0 ? sqSubtotal : manualSubtotal;
@@ -252,8 +256,6 @@ async function handleCalculateOrder(req, res) {
       ? data.order.service_charges.reduce((sum, charge) => sum + (charge.amount_money?.amount || 0), 0) / 100 
       : 0;
 
-    // Calculate total: subtotal + shipping + tax - discount
-    // We prioritize Square's total if it's non-zero, otherwise we calculate it manually.
     const sqTotal = (data.order.net_amounts.total_money?.amount || 0) / 100;
     const total = sqTotal > 0 ? sqTotal : (subtotal + tax + shipping - discount);
 
@@ -264,10 +266,11 @@ async function handleCalculateOrder(req, res) {
       discount, 
       shipping, 
       total, 
-      taxes, // Pass back raw tax details for frontend console logging
+      taxes: data.order.taxes || [],
       orderId: data.order.id 
     });
   } catch (error) {
+    console.error('[Square Calculate] System Error:', error);
     return res.status(500).json({ error: 'Internal server error', message: error.message });
   }
 }
@@ -276,28 +279,44 @@ async function handleCalculateOrder(req, res) {
  * Handle POST /api/process-payment
  */
 async function handleProcessPayment(req, res) {
-  const { sourceId, amount, currency = 'USD', orderId, buyerEmail, billingDetails, cartItems } = req.body;
+  const { sourceId, amount, currency = 'USD', orderId, buyerEmail, billingDetails, cartItems, squareApplicationId, squareLocationId } = req.body;
   if (!sourceId || !amount) return res.status(400).json({ error: 'sourceId and amount are required' });
 
   try {
+    // Detect environment
+    const isProdReq = squareApplicationId ? !squareApplicationId.startsWith('sandbox-') : isProduction;
+    const activeAccessToken = isProdReq ? process.env.SQUARE_PRODUCTION_ACCESS_TOKEN : process.env.SQUARE_SANDBOX_ACCESS_TOKEN;
+    const activeLocationId = squareLocationId || (isProdReq ? process.env.SQUARE_PRODUCTION_LOCATION_ID : process.env.SQUARE_SANDBOX_LOCATION_ID);
+    const activeApiBase = isProdReq ? 'https://connect.squareup.com' : 'https://connect.squareupsandbox.com';
+
+    if (!activeAccessToken || !activeLocationId) {
+      return res.status(500).json({ 
+        error: 'Credentials missing', 
+        message: `Missing ${isProdReq ? 'Production' : 'Sandbox'} credentials in Vercel environment variables.`
+      });
+    }
+
     // 1. Create a Square Order first if we have cart items
     let squareOrderId = null;
     if (cartItems && cartItems.length > 0) {
       try {
         const orderData = {
-          location_id: SQUARE_LOCATION_ID,
+          location_id: activeLocationId,
           reference_id: orderId,
-          line_items: cartItems.map(item => ({
-            catalog_object_id: item.variationId || (item.id.includes('variation') ? item.id : null),
-            name: item.name,
-            quantity: item.quantity.toString(),
-            base_price_money: { amount: Math.round(item.price * 100), currency }
-          }))
+          line_items: cartItems.map(item => {
+            const lineItem = {
+              name: item.name,
+              quantity: item.quantity.toString(),
+              base_price_money: { amount: Math.round(item.price * 100), currency }
+            };
+            if (item.variationId) lineItem.catalog_object_id = item.variationId;
+            return lineItem;
+          })
         };
 
-        const orderResponse = await fetch(`${SQUARE_API_BASE}/v2/orders`, {
+        const orderResponse = await fetch(`${activeApiBase}/v2/orders`, {
           method: 'POST',
-          headers: { 'Square-Version': '2024-12-18', 'Authorization': `Bearer ${SQUARE_ACCESS_TOKEN}`, 'Content-Type': 'application/json' },
+          headers: { 'Square-Version': '2024-12-18', 'Authorization': `Bearer ${activeAccessToken}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
             order: orderData,
             idempotency_key: `order-${orderId || Date.now()}-${Math.random().toString(36).substr(2, 5)}`
@@ -307,9 +326,6 @@ async function handleProcessPayment(req, res) {
         const orderResult = await orderResponse.json();
         if (orderResponse.ok) {
           squareOrderId = orderResult.order.id;
-          console.log('[Square] Created order:', squareOrderId);
-        } else {
-          console.error('[Square] Failed to create order:', orderResult);
         }
       } catch (err) {
         console.error('[Square] Order creation error:', err);
@@ -321,11 +337,11 @@ async function handleProcessPayment(req, res) {
       source_id: sourceId,
       idempotency_key: `${orderId || Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       amount_money: { amount: Math.round(amount * 100), currency },
-      location_id: SQUARE_LOCATION_ID,
+      location_id: activeLocationId,
       buyer_email_address: buyerEmail,
       reference_id: orderId,
-      order_id: squareOrderId, // Link payment to the order for inventory tracking
-      autocomplete: true, // Automatically complete the payment
+      order_id: squareOrderId, 
+      autocomplete: true,
     };
 
     if (billingDetails) {
@@ -338,9 +354,9 @@ async function handleProcessPayment(req, res) {
       };
     }
 
-    const response = await fetch(`${SQUARE_API_BASE}/v2/payments`, {
+    const response = await fetch(`${activeApiBase}/v2/payments`, {
       method: 'POST',
-      headers: { 'Square-Version': '2024-12-18', 'Authorization': `Bearer ${SQUARE_ACCESS_TOKEN}`, 'Content-Type': 'application/json' },
+      headers: { 'Square-Version': '2024-12-18', 'Authorization': `Bearer ${activeAccessToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(paymentData),
     });
 

@@ -118,6 +118,9 @@ export default function CheckoutPaymentIsland({ squareApplicationId, squareLocat
             currency: 'USD',
             orderId: `ORD-${Date.now()}`,
             buyerEmail: checkoutData.shippingInfo.email,
+            cartItems: checkoutData.cartItems,
+            squareApplicationId,
+            squareLocationId,
             billingDetails: {
               address1: checkoutData.shippingInfo.address,
               city: checkoutData.shippingInfo.city,
