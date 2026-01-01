@@ -202,6 +202,24 @@ If you want promo codes / more advanced discounting:
 
 ---
 
+## Developer & Testing Environments
+
+To keep the live site safe, we use two separate "worlds":
+
+1.  **The Production World (Branch: `mom`)**:
+    *   This is the real site that customers see.
+    *   Linked to your **Main HubSpot Portal** and **Square Production**.
+2.  **The Testing World (Branch: `dev`)**:
+    *   This is a "sandbox" for testing new changes.
+    *   Linked to your **HubSpot Developer Test Account** and **Square Sandbox**.
+
+**Workflow for new changes:**
+*   Changes are first pushed to the `dev` branch.
+*   We test them on the **Developer Test Site**.
+*   Once everything is perfect, we merge them into `mom`, and they go live on the real site.
+
+---
+
 ## Handoff checklist (for your walkthrough)
 
 - Confirm she can log into **HubSpot** and publish a small copy change

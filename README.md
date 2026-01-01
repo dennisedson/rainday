@@ -122,19 +122,36 @@ npm run keep-alive
 
 ## 📝 Development Workflow
 
-1. **Theme Development:**
-   - Edit components in `hubspot-theme/src/theme/rainy-day-merch/`
-   - Upload changes: `hs project upload`
-   - Preview: `hs project open`
+1.  **Branching Strategy:**
+    *   `mom`: **Production** branch. Only merge here when ready to go live.
+    *   `dev`: **Development** branch. All daily production and new features happen here.
 
-2. **API Development:**
-   - Edit functions in `api/`
-   - Test locally: `vercel dev`
-   - Deploy: `vercel --prod`
+2.  **Theme Development:**
+    *   Checkout the `dev` branch: `git checkout dev`
+    *   Edit components in `hubspot-theme/src/theme/rainy-day-merch/`
+    *   Upload to **Test Portal**: `hs project upload --portal=test-account` (see below)
+    *   Preview: `hs project open --portal=test-account`
 
-3. **Deployment:**
-   - Theme → HubSpot (via `hs project upload`)
-   - API → Vercel (via `vercel` CLI)
+3.  **API Development:**
+    *   Edit functions in `api/`
+    *   Test locally: `vercel dev`
+    *   Deploy to **Preview**: `git push origin dev` (Vercel automatically deploys dev branch to preview)
+    *   Deploy to **Production**: Merge `dev` into `mom` and `git push origin mom`
+
+## 🌐 CI/CD & Environments
+
+We use a two-portal and two-branch system to keep production safe.
+
+| Environment | Git Branch | HubSpot Portal | Square Env | Vercel URL |
+| :--- | :--- | :--- | :--- | :--- |
+| **Production** | `mom` | Main Portal | Production | `rainydaymerchandise.com` |
+| **Sandbox/Dev** | `dev` | Dev Test Account | Sandbox | Vercel Preview URL |
+
+### Vercel Setup:
+In Vercel Project Settings, set these Environment Variables:
+*   `HUBSPOT_ACCESS_TOKEN`: Set a specific value for **Production** (Real Portal) and **Preview/Development** (Dev Portal).
+*   `SQUARE_ENVIRONMENT`: Set to `production` for Production and `sandbox` for Preview.
+*   `BASE_URL`: Set to your live domain for Production and your preview/dev portal URL for Preview.
 
 ## 🎨 Design
 
