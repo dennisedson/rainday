@@ -44,7 +44,7 @@ export default function CheckoutShippingIsland({ squareApplicationId, squareLoca
     const updateTotals = async () => {
       setIsCalculating(true);
       try {
-        const result = await post('/calculate-order', {
+        const payload = {
           cartItems: checkoutData.cartItems,
           squareApplicationId,
           squareLocationId,
@@ -54,15 +54,19 @@ export default function CheckoutShippingIsland({ squareApplicationId, squareLoca
             state: formData.state,
             zipCode: formData.zipCode
           }
-        });
+        };
+        
+        const result = await post('/calculate-order', payload);
 
         console.log('[Shipping] Order Calculation Result:', result);
+        if (result.warning) {
+          console.warn(`[Shipping] ${result.warning}`);
+        }
+        
         if (result.taxes && result.taxes.length > 0) {
           result.taxes.forEach(t => {
             console.log(`[Shipping] Tax Applied: ${t.name} (${t.percentage}%) - $${(t.applied_money.amount / 100).toFixed(2)}`);
           });
-        } else {
-          console.log('[Shipping] No taxes returned from Square. Check your Tax Rules in Square Dashboard.');
         }
 
         setCheckoutData(prev => ({
@@ -82,7 +86,7 @@ export default function CheckoutShippingIsland({ squareApplicationId, squareLoca
 
     const timer = setTimeout(updateTotals, 1000); // Debounce
     return () => clearTimeout(timer);
-  }, [formData.zipCode, formData.state, checkoutData?.cartItems]);
+  }, [formData.zipCode, formData.state, squareApplicationId, squareLocationId]); // Removed checkoutData dependency to prevent update loops
 
   // Handle form input changes
   const handleChange = (e) => {

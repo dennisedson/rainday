@@ -232,7 +232,8 @@ async function handleCalculateOrder(req, res) {
 
     if (!response.ok) {
       console.error('[Square Calculate] Error:', JSON.stringify(data, null, 2));
-      // FALLBACK: If Square calculation fails, return manual totals so UI isn't broken
+      // Return the specific Square error message so we can read it in the console
+      const errorMsg = data.errors ? data.errors[0].detail : 'Unknown Square error';
       return res.status(200).json({ 
         success: true, 
         subtotal: manualSubtotal,
@@ -240,7 +241,7 @@ async function handleCalculateOrder(req, res) {
         shipping: 0,
         discount: 0,
         total: manualSubtotal,
-        warning: 'Square calculation failed, using manual fallback',
+        warning: `Square Error: ${errorMsg}`,
         details: data.errors
       });
     }
