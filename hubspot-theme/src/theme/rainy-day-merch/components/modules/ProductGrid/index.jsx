@@ -42,6 +42,8 @@ export const fields = (
         ['Necklaces', 'Necklaces'],
         ['Earrings', 'Earrings'],
         ['Bracelets', 'Bracelets'],
+        ['Braceletes', 'Braceletes'],
+        ['Charm Bracelets', 'Charm Bracelets'],
         ['Keychains', 'Keychains'],
         ['Lanyards', 'Lanyards'],
       ]}
