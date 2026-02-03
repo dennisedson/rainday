@@ -278,6 +278,7 @@ export default function ProductGridIsland({ sectionTitle, category, sortBy, colu
                 price={product.price}
                 rating={product.rating}
                 reviewCount={product.reviewCount}
+                available={product.available}
                 onAddToCart={handleAddToCart}
                 productUrl={`/product?id=${encodeURIComponent(product.id)}`}
               />

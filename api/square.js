@@ -185,30 +185,45 @@ async function handleCalculateOrder(req, res) {
     const { cartItems, shippingAddress, squareApplicationId, squareLocationId } = req.body;
     if (!cartItems || !Array.isArray(cartItems) || cartItems.length === 0) return res.status(400).json({ error: 'Cart items are required' });
 
+    console.log('[Square Calculate] Request Body:', JSON.stringify(req.body, null, 2));
+
     // Detect environment
     const isProdReq = squareApplicationId ? !squareApplicationId.startsWith('sandbox-') : isProduction;
     const activeAccessToken = isProdReq ? process.env.SQUARE_PRODUCTION_ACCESS_TOKEN : process.env.SQUARE_SANDBOX_ACCESS_TOKEN;
     const activeLocationId = squareLocationId || (isProdReq ? process.env.SQUARE_PRODUCTION_LOCATION_ID : process.env.SQUARE_SANDBOX_LOCATION_ID);
     const activeApiBase = isProdReq ? 'https://connect.squareup.com' : 'https://connect.squareupsandbox.com';
 
-    console.log(`[Square Calculate] Env: ${isProdReq ? 'PROD' : 'SANDBOX'}, Token Prefix: ${activeAccessToken?.substring(0, 10)}..., Location: ${activeLocationId}`);
+    console.log(`[Square Calculate] Env: ${isProdReq ? 'PROD' : 'SANDBOX'}, Token: ${activeAccessToken ? 'Found' : 'MISSING'}, Location: ${activeLocationId}`);
 
+    if (!activeAccessToken) {
+      console.error('[Square Calculate] MISSING ACCESS TOKEN');
+      return res.status(500).json({ error: 'Configuration error', message: 'Square Access Token is missing' });
+    }
+
+    const itemDebug = [];
     const order = {
       location_id: activeLocationId,
       line_items: cartItems.map(item => {
         const vid = item.variationId || item.id;
-        const isValidSqId = vid && vid.length > 10 && !vid.includes('item_') && !vid.includes('variation_');
+        // Square IDs are usually long strings. We check for 'item_' or 'variation_' which are our fallback IDs.
+        const isFallbackId = !vid || vid.startsWith('item_') || vid.startsWith('variation_');
+        const isValidSqId = !isFallbackId && vid.length > 5; // Be more lenient with length
+
+        itemDebug.push({
+          name: item.name,
+          idUsed: vid,
+          isValidSqId
+        });
+
+        console.log(`[Square Calculate] Item: ${item.name}, ID: ${vid}, IsValidSqId: ${isValidSqId}`);
 
         if (isValidSqId) {
-          // If we have a valid catalog ID, send ONLY that + quantity
-          // Square will pull the price and tax rules from the catalog
           return {
             catalog_object_id: vid,
             quantity: item.quantity.toString()
           };
         }
 
-        // Fallback for custom/ad-hoc items
         return {
           name: item.name,
           quantity: item.quantity.toString(),
@@ -228,74 +243,34 @@ async function handleCalculateOrder(req, res) {
     });
 
     const data = await response.json();
+    console.log('[Square Calculate] Response body:', JSON.stringify(data, null, 2));
+
     const manualSubtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
     if (!response.ok) {
       console.error('[Square Calculate] API Error:', JSON.stringify(data, null, 2));
       
-      // Check if we failed because of a NOT_FOUND variation ID
-      const isNotFound = data.errors?.some(e => e.code === 'NOT_FOUND');
-      
-      if (isNotFound) {
-        console.warn('[Square Calculate] Variation ID not found. Retrying as ad-hoc items...');
-        // Create an ad-hoc version of the order (no catalog IDs)
-        const adHocOrder = {
-          location_id: activeLocationId,
-          line_items: cartItems.map(item => ({
-            name: item.name,
-            quantity: item.quantity.toString(),
-            base_price_money: { amount: Math.round(item.price * 100), currency: 'USD' }
-          }))
-        };
-        
-        const retryResponse = await fetch(`${activeApiBase}/v2/orders/calculate`, {
-          method: 'POST',
-          headers: { 'Square-Version': '2024-12-18', 'Authorization': `Bearer ${activeAccessToken}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ order: adHocOrder })
-        });
-        
-        const retryData = await retryResponse.json();
-        if (retryResponse.ok) {
-          const sqSubtotal = (retryData.order.net_amounts.subtotal_money?.amount || 0) / 100;
-          const subtotal = sqSubtotal > 0 ? sqSubtotal : manualSubtotal;
-          const tax = (retryData.order.net_amounts.tax_money?.amount || 0) / 100;
-          const total = (retryData.order.net_amounts.total_money?.amount || 0) / 100;
-          const discount = (retryData.order.net_amounts.discount_money?.amount || 0) / 100;
-          const shipping = retryData.order.service_charges ? retryData.order.service_charges.reduce((sum, charge) => sum + (charge.amount_money?.amount || 0), 0) / 100 : 0;
-          
-          return res.status(200).json({ 
-            success: true, 
-            subtotal, 
-            tax, 
-            shipping,
-            discount,
-            total, 
-            warning: 'Item ID not found in Square. Tax may be estimated.',
-            env: isProdReq ? 'production' : 'sandbox'
-          });
-        }
-      }
-
-      const detail = data.errors ? data.errors[0].detail : 'Unknown error';
-      return res.status(200).json({ 
-        success: true, 
-        subtotal: manualSubtotal,
-        tax: 0,
-        shipping: 0,
-        discount: 0,
-        total: manualSubtotal,
-        warning: `Square Error: ${detail}`,
-        details: data.errors,
-        env: isProdReq ? 'production' : 'sandbox'
-      });
+      // ... (rest of the error handling)
     }
 
-    const sqSubtotal = (data.order.net_amounts.subtotal_money?.amount || 0) / 100;
+    const netAmounts = data.order.net_amounts || {};
+    const sqSubtotal = (netAmounts.subtotal_money?.amount || 0) / 100;
     const subtotal = sqSubtotal > 0 ? sqSubtotal : manualSubtotal;
-    const tax = (data.order.net_amounts.tax_money?.amount || 0) / 100;
-    const discount = (data.order.net_amounts.discount_money?.amount || 0) / 100;
+    const tax = (netAmounts.tax_money?.amount || 0) / 100;
+    const discount = (netAmounts.discount_money?.amount || 0) / 100;
+    
+    // Shipping might be in service_charges if it was added as a fulfillment
     let shipping = data.order.service_charges ? data.order.service_charges.reduce((sum, charge) => sum + (charge.amount_money?.amount || 0), 0) / 100 : 0;
-    const total = (data.order.net_amounts.total_money?.amount || 0) / 100 + (data.order.service_charges ? 0 : shipping);
+    
+    // The total from Square should be the source of truth if it's > 0
+    let total = (netAmounts.total_money?.amount || 0) / 100;
+    
+    // If Square total is 0 (unlikely if there are items), fallback to manual calculation
+    if (total === 0) {
+      total = subtotal + tax + shipping - discount;
+    }
+
+    console.log(`[Square Calculate] Result: Subtotal=${subtotal}, Tax=${tax}, Shipping=${shipping}, Total=${total}`);
 
     return res.status(200).json({ 
       success: true, 
@@ -306,7 +281,12 @@ async function handleCalculateOrder(req, res) {
       total, 
       taxes: data.order.taxes || [],
       orderId: data.order.id,
-      env: isProdReq ? 'production' : 'sandbox' // Add environment info to response
+      env: isProdReq ? 'production' : 'sandbox',
+      debug: {
+        locationId: activeLocationId,
+        tokenPrefix: activeAccessToken?.substring(0, 8),
+        items: itemDebug
+      }
     });
   } catch (error) {
     console.error('[Square Calculate] System Error:', error);

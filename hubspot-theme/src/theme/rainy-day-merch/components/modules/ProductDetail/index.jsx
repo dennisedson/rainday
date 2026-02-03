@@ -8,7 +8,7 @@ import {
 } from '@hubspot/cms-components/fields';
 import ProductDetailIsland from '../../islands/ProductDetailIsland.jsx?island';
 
-export function Component({ fieldValues }) {
+export function Component({ fieldValues, themeSettings }) {
   const {
     productName,
     price,
@@ -21,13 +21,16 @@ export function Component({ fieldValues }) {
     badge1Text,
     badge2Text,
     badge3Text,
+    descriptionOverride,
   } = fieldValues;
+  
+  const theme = themeSettings || {};
   
   // Build fallback data from field values (used if no product ID in URL)
   const fallbackData = productName ? {
     name: productName,
     price: price || 0,
-    description: description,
+    description: descriptionOverride || description,
     mainImage: mainImage?.src || 'https://via.placeholder.com/800',
     galleryImages: [gallery1?.src, gallery2?.src, gallery3?.src].filter(Boolean),
   } : null;
@@ -37,9 +40,10 @@ export function Component({ fieldValues }) {
       module={ProductDetailIsland}
       fallbackData={fallbackData}
       showBadges={showBadges}
-      badge1Text={badge1Text}
-      badge2Text={badge2Text}
-      badge3Text={badge3Text}
+      badge1Text={badge1Text || 'Free Shipping'}
+      badge2Text={badge2Text || '1 Year Warranty'}
+      badge3Text={badge3Text || '30-Day Returns'}
+      descriptionOverride={descriptionOverride}
     />
   );
 }
@@ -86,6 +90,7 @@ export const fields = (
       resizable={true}
     />
 
+    {/* Badge Settings */}
     <BooleanField
       name="showBadges"
       label="Show Trust Badges"
@@ -108,6 +113,14 @@ export const fields = (
       label="Badge 3 Text"
       default="30-Day Returns"
       helpText="Third trust badge label"
+    />
+
+    {/* Content Overrides */}
+    <TextField
+      name="descriptionOverride"
+      label="Override Product Description"
+      default=""
+      helpText="If provided, this will replace the description from Square."
     />
   </ModuleFields>
 );

@@ -62,7 +62,8 @@ export default function ProductDetailIsland({
   showBadges = true, 
   badge1Text = 'Free Shipping', 
   badge2Text = '1 Year Warranty', 
-  badge3Text = '30-Day Returns' 
+  badge3Text = '30-Day Returns',
+  descriptionOverride = ''
 }) {
   const [product, setProduct] = useState(fallbackData || null);
   const [loading, setLoading] = useState(true);
@@ -71,6 +72,9 @@ export default function ProductDetailIsland({
   const [selectedImage, setSelectedImage] = useState(0);
   const [isFavorited, setIsFavorited] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
+  
+  // Use override if provided
+  const displayDescription = descriptionOverride || product?.description;
   
   // Get product ID from URL parameters
   useEffect(() => {
@@ -249,9 +253,9 @@ export default function ProductDetailIsland({
             </div>
 
             {/* Description */}
-            {product.description && (
+            {displayDescription && (
               <p className="text-gray-600 mb-6 leading-relaxed">
-                {product.description}
+                {displayDescription}
               </p>
             )}
 

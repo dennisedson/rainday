@@ -79,16 +79,19 @@ export default function SiteHeaderIsland({
   // Update cart count from localStorage
   const updateCartCount = () => {
     try {
+      console.log('[Header] Updating cart count...');
       const cart = localStorage.getItem('cart');
       if (cart) {
         const items = JSON.parse(cart);
         const count = items.reduce((sum, item) => sum + item.quantity, 0);
+        console.log('[Header] Cart count:', count);
         setCartCount(count);
       } else {
+        console.log('[Header] Cart empty');
         setCartCount(0);
       }
     } catch (e) {
-      console.error('Failed to parse cart:', e);
+      console.error('[Header] Failed to parse cart:', e);
       setCartCount(0);
     }
   };

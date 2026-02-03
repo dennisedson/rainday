@@ -92,13 +92,18 @@ export default function ShoppingCartIsland({ squareApplicationId, squareLocation
 
   // Save cart to localStorage whenever it changes
   useEffect(() => {
+    console.log('[Cart] Items changed, saving to localStorage:', cartItems.length);
     if (cartItems.length > 0) {
       localStorage.setItem('cart', JSON.stringify(cartItems));
     } else {
       localStorage.removeItem('cart');
     }
-    // Dispatch event so the header badge updates
-    window.dispatchEvent(new Event('cartUpdated'));
+    
+    // Small timeout to ensure localStorage is written before header reads it
+    setTimeout(() => {
+      console.log('[Cart] Dispatching cartUpdated event');
+      window.dispatchEvent(new Event('cartUpdated'));
+    }, 0);
   }, [cartItems]);
 
   const { subtotal, shipping, tax, discount, total, loading } = calculation;
