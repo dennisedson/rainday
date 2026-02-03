@@ -57,8 +57,9 @@ async function handleGetProducts(req, res) {
       const productImageUrl = itemData.image_ids?.[0] ? imageMap[itemData.image_ids[0]] : null;
       
       // Determine availability based on Square's available_online flag
-      // and check if track_inventory is enabled but alert is triggered
-      const isAvailable = !itemData.is_deleted && itemData.available_online && 
+      // Default to available (true) if available_online is not explicitly set to false
+      // Also check if track_inventory is enabled with low quantity alert
+      const isAvailable = !itemData.is_deleted && (itemData.available_online !== false) &&
         (!variation?.item_variation_data?.track_inventory || variation?.item_variation_data?.inventory_alert_type !== 'LOW_QUANTITY');
 
       return {
@@ -127,7 +128,7 @@ async function handleGetProduct(req, res) {
       images: images,
       mainImage: images[0],
       galleryImages: images.slice(1, 4),
-      available: !itemData.is_deleted && itemData.available_online && 
+      available: !itemData.is_deleted && (itemData.available_online !== false) &&
         (!variations[0]?.item_variation_data?.track_inventory || variations[0]?.item_variation_data?.inventory_alert_type !== 'LOW_QUANTITY'),
       variations,
     };
