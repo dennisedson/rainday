@@ -39,14 +39,14 @@ export const fields = (
       default="all"
       choices={[
         ['all', 'All Products'],
-        ['necklace', 'Necklaces'],
-        ['earring', 'Earrings'],
-        ['bracelet', 'Bracelets'],
-        ['keychain', 'Keychains'],
-        ['lanyard', 'Lanyards'],
+        ['Necklaces', 'Necklaces'],
+        ['Earrings', 'Earrings'],
+        ['Bracelets', 'Bracelets'],
+        ['Keychains', 'Keychains'],
+        ['Lanyards', 'Lanyards'],
       ]}
       display="select"
-      helpText="Filter products by category (based on Square catalog)"
+      helpText="Filter products by category (must exactly match Square category names)"
     />
     
     <ChoiceField

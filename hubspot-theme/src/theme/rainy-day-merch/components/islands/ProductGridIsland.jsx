@@ -190,8 +190,20 @@ export default function ProductGridIsland({ sectionTitle, category, sortBy, colu
   // Filter by category (from URL or prop)
   if (filterCategory && filterCategory !== 'all') {
     filteredProducts = filteredProducts.filter(p => {
-      // Exact match comparison (case-insensitive)
-      const match = p.category.toLowerCase() === filterCategory.toLowerCase();
+      // Flexible match: exact match OR singular/plural variations
+      const productCat = p.category.toLowerCase();
+      const filterCat = filterCategory.toLowerCase();
+
+      // Exact match
+      let match = productCat === filterCat;
+
+      // Also match if one is singular and other is plural (e.g., "necklace" matches "necklaces")
+      if (!match) {
+        const productCatSingular = productCat.replace(/s$/, '');
+        const filterCatSingular = filterCat.replace(/s$/, '');
+        match = productCatSingular === filterCatSingular;
+      }
+
       console.log(`[ProductGridIsland] Checking "${p.title}" (${p.category}) against "${filterCategory}": ${match}`);
       return match;
     });
