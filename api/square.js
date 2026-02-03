@@ -22,7 +22,20 @@ const SQUARE_API_BASE = isProduction
  */
 async function handleGetProducts(req, res) {
   try {
-    const response = await fetch(`${SQUARE_API_BASE}/v2/catalog/list?types=ITEM,CATEGORY,IMAGE`, {
+    // Fetch categories separately to avoid pagination issues
+    const catResponse = await fetch(`${SQUARE_API_BASE}/v2/catalog/list?types=CATEGORY`, {
+      method: 'GET',
+      headers: {
+        'Square-Version': '2024-12-18',
+        'Authorization': `Bearer ${SQUARE_ACCESS_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    const catData = await catResponse.json();
+    if (!catResponse.ok) return res.status(catResponse.status).json({ error: 'Failed to fetch categories', details: catData });
+
+    // Fetch items and images
+    const response = await fetch(`${SQUARE_API_BASE}/v2/catalog/list?types=ITEM,IMAGE`, {
       method: 'GET',
       headers: {
         'Square-Version': '2024-12-18',
@@ -34,12 +47,15 @@ async function handleGetProducts(req, res) {
     const data = await response.json();
     if (!response.ok) return res.status(response.status).json({ error: 'Failed to fetch products', details: data });
 
+    // Combine category objects with item/image objects
+    const allObjects = [...(catData.objects || []), ...(data.objects || [])];
+
     const imageMap = {};
-    (data.objects || []).filter(obj => obj.type === 'IMAGE').forEach(image => {
+    allObjects.filter(obj => obj.type === 'IMAGE').forEach(image => {
       imageMap[image.id] = image.image_data?.url || null;
     });
-    
-    const categories = (data.objects || []).filter(obj => obj.type === 'CATEGORY');
+
+    const categories = allObjects.filter(obj => obj.type === 'CATEGORY');
     console.log('[Square API] Found categories:', categories.length);
 
     const categoryMap = {};
@@ -51,8 +67,8 @@ async function handleGetProducts(req, res) {
       };
       console.log('[Square API] Mapped category:', category.id, '→', category.category_data?.name);
     });
-    
-    const products = (data.objects || []).filter(obj => obj.type === 'ITEM').map(item => {
+
+    const products = allObjects.filter(obj => obj.type === 'ITEM').map(item => {
       const itemData = item.item_data;
       const variation = itemData.variations?.[0];
       const price = variation?.item_variation_data?.price_money?.amount || 0;
