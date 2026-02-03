@@ -22,33 +22,51 @@ const SQUARE_API_BASE = isProduction
  */
 async function handleGetProducts(req, res) {
   try {
-    // Fetch categories separately to avoid pagination issues
-    const catResponse = await fetch(`${SQUARE_API_BASE}/v2/catalog/list?types=CATEGORY`, {
-      method: 'GET',
-      headers: {
-        'Square-Version': '2024-12-18',
-        'Authorization': `Bearer ${SQUARE_ACCESS_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-    });
-    const catData = await catResponse.json();
+    // Fetch categories, images, and items separately to avoid pagination issues
+    // Square API returns max 100 objects per request
+    const [catResponse, imgResponse, itemResponse] = await Promise.all([
+      fetch(`${SQUARE_API_BASE}/v2/catalog/list?types=CATEGORY`, {
+        method: 'GET',
+        headers: {
+          'Square-Version': '2024-12-18',
+          'Authorization': `Bearer ${SQUARE_ACCESS_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+      }),
+      fetch(`${SQUARE_API_BASE}/v2/catalog/list?types=IMAGE`, {
+        method: 'GET',
+        headers: {
+          'Square-Version': '2024-12-18',
+          'Authorization': `Bearer ${SQUARE_ACCESS_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+      }),
+      fetch(`${SQUARE_API_BASE}/v2/catalog/list?types=ITEM`, {
+        method: 'GET',
+        headers: {
+          'Square-Version': '2024-12-18',
+          'Authorization': `Bearer ${SQUARE_ACCESS_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+      }),
+    ]);
+
+    const [catData, imgData, itemData] = await Promise.all([
+      catResponse.json(),
+      imgResponse.json(),
+      itemResponse.json(),
+    ]);
+
     if (!catResponse.ok) return res.status(catResponse.status).json({ error: 'Failed to fetch categories', details: catData });
+    if (!imgResponse.ok) return res.status(imgResponse.status).json({ error: 'Failed to fetch images', details: imgData });
+    if (!itemResponse.ok) return res.status(itemResponse.status).json({ error: 'Failed to fetch items', details: itemData });
 
-    // Fetch items and images
-    const response = await fetch(`${SQUARE_API_BASE}/v2/catalog/list?types=ITEM,IMAGE`, {
-      method: 'GET',
-      headers: {
-        'Square-Version': '2024-12-18',
-        'Authorization': `Bearer ${SQUARE_ACCESS_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    const data = await response.json();
-    if (!response.ok) return res.status(response.status).json({ error: 'Failed to fetch products', details: data });
-
-    // Combine category objects with item/image objects
-    const allObjects = [...(catData.objects || []), ...(data.objects || [])];
+    // Combine all objects
+    const allObjects = [
+      ...(catData.objects || []),
+      ...(imgData.objects || []),
+      ...(itemData.objects || []),
+    ];
 
     const imageMap = {};
     allObjects.filter(obj => obj.type === 'IMAGE').forEach(image => {
