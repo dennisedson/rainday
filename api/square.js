@@ -39,13 +39,17 @@ async function handleGetProducts(req, res) {
       imageMap[image.id] = image.image_data?.url || null;
     });
     
+    const categories = (data.objects || []).filter(obj => obj.type === 'CATEGORY');
+    console.log('[Square API] Found categories:', categories.length);
+
     const categoryMap = {};
-    (data.objects || []).filter(obj => obj.type === 'CATEGORY').forEach(category => {
+    categories.forEach(category => {
       const imageId = category.category_data?.image_ids?.[0];
       categoryMap[category.id] = {
         name: category.category_data?.name || 'Uncategorized',
         image: imageId ? imageMap[imageId] : null,
       };
+      console.log('[Square API] Mapped category:', category.id, '→', category.category_data?.name);
     });
     
     const products = (data.objects || []).filter(obj => obj.type === 'ITEM').map(item => {
@@ -55,6 +59,10 @@ async function handleGetProducts(req, res) {
       const categoryId = itemData.reporting_category?.id;
       const categoryInfo = categoryId ? categoryMap[categoryId] : null;
       const productImageUrl = itemData.image_ids?.[0] ? imageMap[itemData.image_ids[0]] : null;
+
+      if (!categoryId) {
+        console.log('[Square API] Product has no category:', itemData.name);
+      }
       
       // Determine availability based on Square's available_online flag
       // Default to available (true) if available_online is not explicitly set to false
