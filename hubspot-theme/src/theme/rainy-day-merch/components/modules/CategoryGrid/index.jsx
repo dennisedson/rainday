@@ -91,7 +91,7 @@ export const fields = (
       <TextField
         name="categoryName"
         label="Category Name"
-        required={true}
+        required={false}
         default=""
         helpText="Name of the category (e.g., 'Bracelets', 'Necklaces')"
       />

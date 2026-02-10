@@ -118,14 +118,35 @@ async function handleGetProducts(req, res) {
       };
     });
 
-    // Extract unique categories from products
-    const uniqueCategories = [...new Set(products.map(p => p.category))]
-      .filter(cat => cat && cat !== 'Uncategorized')
-      .sort((a, b) => a.localeCompare(b));
+    // Extract unique categories from products with their images
+    const categoryNames = [...new Set(products.map(p => p.category))]
+      .filter(cat => cat && cat !== 'Uncategorized');
+
+    // Build full category objects with images
+    const categoryObjects = categoryNames.map(name => {
+      // Find the category ID from categoryMap
+      const categoryEntry = Object.entries(categoryMap).find(([id, info]) => info.name === name);
+      if (categoryEntry) {
+        const [id, info] = categoryEntry;
+        return {
+          id,
+          name: info.name,
+          image: info.image,
+          slug: info.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+        };
+      }
+      // Fallback if no match found
+      return {
+        id: null,
+        name,
+        image: null,
+        slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+      };
+    }).sort((a, b) => a.name.localeCompare(b.name));
 
     return res.status(200).json({
       products,
-      categories: uniqueCategories,
+      categories: categoryObjects,
       count: products.length
     });
   } catch (error) {

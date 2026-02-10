@@ -278,15 +278,15 @@ export default function ProductGridIsland({ sectionTitle, sortBy, columnsDesktop
           </button>
           {categories.map((category) => (
             <button
-              key={category}
-              onClick={() => setActiveCategory(category)}
+              key={category.name}
+              onClick={() => setActiveCategory(category.name)}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                activeCategory === category
+                activeCategory === category.name
                   ? 'bg-primary text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
-              {category}
+              {category.name}
             </button>
           ))}
         </div>

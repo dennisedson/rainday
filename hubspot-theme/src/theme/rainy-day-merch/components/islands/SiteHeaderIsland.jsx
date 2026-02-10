@@ -150,15 +150,15 @@ export default function SiteHeaderIsland({
     const fetchCategoriesViaAPI = async () => {
       try {
         console.log('[Nav] Fetching categories via API');
-        const data = await get('/square-categories');
-        
+        const data = await get('/square-products');
+
         // Store in window for future use
         if (typeof window !== 'undefined') {
           window.__CATEGORIES__ = data.categories || [];
         }
-        
-        // Map categories to navigation items
-        const categoryNavItems = data.categories.map(cat => ({
+
+        // Map categories to navigation items (use categories from products endpoint)
+        const categoryNavItems = (data.categories || []).map(cat => ({
           label: cat.name,
           href: `/shop?category=${encodeURIComponent(cat.name)}`,
         }));

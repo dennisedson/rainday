@@ -87,8 +87,10 @@ export default function TrendingProductsIsland({
             const found = data.products.find(p => p.id === id);
             if (found) finalProducts.push(found);
           });
-        } else {
-          // 2. Random Selection fallback
+        }
+
+        // 2. Random Selection fallback (if no manual products OR manual products didn't match)
+        if (finalProducts.length === 0) {
           const shuffled = [...data.products].sort(() => 0.5 - Math.random());
           finalProducts = shuffled.slice(0, maxProducts || 4);
         }
