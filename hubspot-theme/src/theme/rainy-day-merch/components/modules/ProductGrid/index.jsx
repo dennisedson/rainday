@@ -7,16 +7,15 @@ import {
 import ProductGridIsland from '../../islands/ProductGridIsland.jsx?island';
 
 export function Component({ fieldValues, ...props }) {
-  const { sectionTitle, category, sortBy, columnsDesktop } = fieldValues;
-  
+  const { sectionTitle, sortBy, columnsDesktop } = fieldValues;
+
   // Get site name from HubSpot settings
   const siteName = props.content?.website_settings?.website_header?.company_name || 'Rainy Day Merchandise';
-  
+
   return (
-    <Island 
+    <Island
       module={ProductGridIsland}
       sectionTitle={sectionTitle}
-      category={category}
       sortBy={sortBy}
       columnsDesktop={columnsDesktop}
       siteName={siteName}
@@ -32,25 +31,7 @@ export const fields = (
       default="Our Products"
       helpText="Main heading for the product grid"
     />
-    
-    <ChoiceField
-      name="category"
-      label="Filter by Category"
-      default="all"
-      choices={[
-        ['all', 'All Products'],
-        ['Necklaces', 'Necklaces'],
-        ['Earrings', 'Earrings'],
-        ['Bracelets', 'Bracelets'],
-        ['Braceletes', 'Braceletes'],
-        ['Charm Bracelets', 'Charm Bracelets'],
-        ['Keychains', 'Keychains'],
-        ['Lanyards', 'Lanyards'],
-      ]}
-      display="select"
-      helpText="Filter products by category (must exactly match Square category names)"
-    />
-    
+
     <ChoiceField
       name="sortBy"
       label="Sort Products By"
@@ -63,7 +44,7 @@ export const fields = (
       display="select"
       helpText="Sort order for displayed products"
     />
-    
+
     <ChoiceField
       name="columnsDesktop"
       label="Columns on Desktop"

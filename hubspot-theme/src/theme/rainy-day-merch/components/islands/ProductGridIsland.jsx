@@ -6,12 +6,13 @@ import { get } from '../../utils/api';
  * ProductGridIsland - Client-side component for fetching and displaying products
  * This runs in the browser as an island
  */
-export default function ProductGridIsland({ sectionTitle, category, sortBy, columnsDesktop, siteName = 'Rainy Day Merchandise' }) {
+export default function ProductGridIsland({ sectionTitle, sortBy, columnsDesktop, siteName = 'Rainy Day Merchandise' }) {
   // State for products, loading, and errors
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeCategory, setActiveCategory] = useState(category || null);
+  const [activeCategory, setActiveCategory] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   // Handle add to cart
@@ -149,11 +150,11 @@ export default function ProductGridIsland({ sectionTitle, category, sortBy, colu
         setLoading(true);
         const data = await get('/square-products');
         console.log('[ProductGridIsland] Fetched data:', data);
-        
+
         // Transform Square products to our format
         const transformedProducts = data.products.map(product => ({
           id: product.id,
-          variationId: product.variationId, // ADDED: include variationId
+          variationId: product.variationId,
           image: product.image,
           title: product.name,
           description: product.description || '',
@@ -163,10 +164,12 @@ export default function ProductGridIsland({ sectionTitle, category, sortBy, colu
           reviewCount: 0,
           available: product.available,
         }));
-        
+
         setProducts(transformedProducts);
+        setCategories(data.categories || []);
         setError(null);
         console.log('[ProductGridIsland] Successfully set', transformedProducts.length, 'products');
+        console.log('[ProductGridIsland] Available categories:', data.categories);
       } catch (err) {
         console.error('[ProductGridIsland] Error fetching products:', err);
         setError(err.message);
@@ -174,25 +177,24 @@ export default function ProductGridIsland({ sectionTitle, category, sortBy, colu
         setLoading(false);
       }
     };
-    
+
     console.log('[ProductGridIsland] useEffect running, fetching products...');
     fetchProducts();
   }, []);
   
   // Filter products by category and search query
   let filteredProducts = products;
-  const filterCategory = activeCategory || category;
-  
-  console.log('[ProductGridIsland] Filter category:', filterCategory);
+
+  console.log('[ProductGridIsland] Filter category:', activeCategory);
   console.log('[ProductGridIsland] Search query:', searchQuery);
   console.log('[ProductGridIsland] Total products:', products.length);
-  
-  // Filter by category (from URL or prop)
-  if (filterCategory && filterCategory !== 'all') {
+
+  // Filter by category (from URL or state)
+  if (activeCategory && activeCategory !== 'all') {
     filteredProducts = filteredProducts.filter(p => {
       // Flexible match: exact match OR singular/plural variations
       const productCat = p.category.toLowerCase();
-      const filterCat = filterCategory.toLowerCase();
+      const filterCat = activeCategory.toLowerCase();
 
       // Exact match
       let match = productCat === filterCat;
@@ -204,7 +206,7 @@ export default function ProductGridIsland({ sectionTitle, category, sortBy, colu
         match = productCatSingular === filterCatSingular;
       }
 
-      console.log(`[ProductGridIsland] Checking "${p.title}" (${p.category}) against "${filterCategory}": ${match}`);
+      console.log(`[ProductGridIsland] Checking "${p.title}" (${p.category}) against "${activeCategory}": ${match}`);
       return match;
     });
   }
@@ -244,7 +246,7 @@ export default function ProductGridIsland({ sectionTitle, category, sortBy, colu
           </h2>
         </div>
       )}
-      
+
       {/* Search Results Header */}
       {searchQuery && (
         <div className="mb-8">
@@ -252,14 +254,44 @@ export default function ProductGridIsland({ sectionTitle, category, sortBy, colu
             Search Results for "{searchQuery}"
           </h2>
           <p className="text-gray-600">
-            {filteredProducts.length === 0 
+            {filteredProducts.length === 0
               ? 'No products found matching your search.'
               : `Found ${filteredProducts.length} product${filteredProducts.length === 1 ? '' : 's'}.`
             }
           </p>
         </div>
       )}
-      
+
+      {/* Category Filter */}
+      {!loading && !error && categories.length > 0 && (
+        <div className="mb-8 flex flex-wrap items-center gap-2">
+          <span className="text-sm font-medium text-gray-700">Filter by:</span>
+          <button
+            onClick={() => setActiveCategory(null)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              !activeCategory
+                ? 'bg-primary text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            All Products
+          </button>
+          {categories.map((category) => (
+            <button
+              key={category}
+              onClick={() => setActiveCategory(category)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                activeCategory === category
+                  ? 'bg-primary text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              {category}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Loading State */}
       {loading && (
         <div className="text-center py-16">

@@ -97,7 +97,7 @@ async function handleGetProducts(req, res) {
       if (!categoryId) {
         console.log('[Square API] Product has no category:', itemData.name);
       }
-      
+
       // Determine availability based on Square's available_online flag
       // Default to available (true) if available_online is not explicitly set to false
       // Also check if track_inventory is enabled with low quantity alert
@@ -118,7 +118,16 @@ async function handleGetProducts(req, res) {
       };
     });
 
-    return res.status(200).json({ products, count: products.length });
+    // Extract unique categories from products
+    const uniqueCategories = [...new Set(products.map(p => p.category))]
+      .filter(cat => cat && cat !== 'Uncategorized')
+      .sort((a, b) => a.localeCompare(b));
+
+    return res.status(200).json({
+      products,
+      categories: uniqueCategories,
+      count: products.length
+    });
   } catch (error) {
     return res.status(500).json({ error: 'Internal server error', message: error.message });
   }
