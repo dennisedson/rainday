@@ -76,7 +76,6 @@ async function handleGetProducts(req, res) {
       imageMap[image.id] = image.image_data?.url || null;
     });
 
-    const categories = allObjects.filter(obj => obj.type === 'CATEGORY');
     console.log('[Square API] Found categories:', categories.length);
 
     const categoryMap = {};
