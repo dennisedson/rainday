@@ -7,21 +7,52 @@ const DEFAULT_PRODUCT_IMAGE = 'https://images.unsplash.com/photo-1560393464-5c69
 
 const SQUARE_ENVIRONMENT = process.env.SQUARE_ENVIRONMENT || 'sandbox';
 const isProduction = SQUARE_ENVIRONMENT === 'production';
-const SQUARE_ACCESS_TOKEN = isProduction 
-  ? process.env.SQUARE_PRODUCTION_ACCESS_TOKEN 
+const SQUARE_ACCESS_TOKEN = isProduction
+  ? process.env.SQUARE_PRODUCTION_ACCESS_TOKEN
   : process.env.SQUARE_SANDBOX_ACCESS_TOKEN;
-const SQUARE_LOCATION_ID = isProduction 
-  ? process.env.SQUARE_PRODUCTION_LOCATION_ID 
+const SQUARE_LOCATION_ID = isProduction
+  ? process.env.SQUARE_PRODUCTION_LOCATION_ID
   : process.env.SQUARE_SANDBOX_LOCATION_ID;
 const SQUARE_API_BASE = isProduction
   ? 'https://connect.squareup.com'
   : 'https://connect.squareupsandbox.com';
+
+// In-memory cache for catalog data
+const catalogCache = {
+  data: null,
+  timestamp: null,
+  ttl: 5 * 60 * 1000, // 5 minutes
+};
+
+function getCachedCatalog() {
+  if (catalogCache.data && catalogCache.timestamp) {
+    const age = Date.now() - catalogCache.timestamp;
+    if (age < catalogCache.ttl) {
+      console.log(`[Square API] Cache hit (age: ${Math.round(age / 1000)}s)`);
+      return catalogCache.data;
+    }
+  }
+  console.log('[Square API] Cache miss');
+  return null;
+}
+
+function setCachedCatalog(data) {
+  catalogCache.data = data;
+  catalogCache.timestamp = Date.now();
+}
 
 /**
  * Handle GET /api/square-products
  */
 async function handleGetProducts(req, res) {
   try {
+    // Check cache first
+    const cached = getCachedCatalog();
+    if (cached) {
+      // Set cache headers for CDN and browser caching
+      res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
+      return res.status(200).json(cached);
+    }
     // Helper function to fetch all pages of a catalog type
     async function fetchAllCatalogPages(type) {
       let allObjects = [];
@@ -155,11 +186,19 @@ async function handleGetProducts(req, res) {
       };
     }).sort((a, b) => a.name.localeCompare(b.name));
 
-    return res.status(200).json({
+    const responseData = {
       products,
       categories: categoryObjects,
       count: products.length
-    });
+    };
+
+    // Cache the response
+    setCachedCatalog(responseData);
+
+    // Set cache headers: cache for 5 minutes, stale-while-revalidate for 10 minutes
+    res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
+
+    return res.status(200).json(responseData);
   } catch (error) {
     return res.status(500).json({ error: 'Internal server error', message: error.message });
   }
@@ -227,6 +266,13 @@ async function handleGetProduct(req, res) {
  */
 async function handleGetCategories(req, res) {
   try {
+    // Try to use cached catalog data first
+    const cached = getCachedCatalog();
+    if (cached && cached.categories) {
+      res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
+      return res.status(200).json({ categories: cached.categories, count: cached.categories.length });
+    }
+
     const response = await fetch(`${SQUARE_API_BASE}/v2/catalog/list?types=CATEGORY,IMAGE`, {
       method: 'GET',
       headers: {
@@ -255,6 +301,7 @@ async function handleGetCategories(req, res) {
       }))
       .sort((a, b) => a.name.localeCompare(b.name));
 
+    res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
     return res.status(200).json({ categories, count: categories.length });
   } catch (error) {
     return res.status(500).json({ error: 'Internal server error', message: error.message });
