@@ -97,6 +97,8 @@ const ProductCard = ({
         <img
           src={image}
           alt={title}
+          loading="lazy"
+          decoding="async"
           className={`w-full h-full object-cover transition-opacity duration-300 ${
             imageLoaded ? 'opacity-100' : 'opacity-0'
           } group-hover:scale-105 transition-transform duration-500`}

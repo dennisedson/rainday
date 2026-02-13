@@ -19,8 +19,8 @@ export default function CategoryBannerIsland({
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const data = await get('/square-categories');
-        
+        const data = await get('/square-products');
+
         // Build map of category name to { image, description }
         const dataMap = {};
         data.categories.forEach(cat => {
@@ -29,14 +29,14 @@ export default function CategoryBannerIsland({
             description: cat.description,
           };
         });
-        
+
         setCategoryData(dataMap);
         console.log('[CategoryBannerIsland] Category data:', dataMap);
       } catch (error) {
         console.error('[CategoryBannerIsland] Error fetching categories:', error);
       }
     };
-    
+
     fetchCategories();
   }, []);
 
@@ -65,7 +65,6 @@ export default function CategoryBannerIsland({
     'Bracelets': {
       title: 'Bracelets',
       description: 'Discover our curated collection of handcrafted bracelets. From delicate chains to statement pieces, each bracelet is meticulously designed to elevate your style.',
-      image: 'https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=1200&auto=format&fit=crop&q=80', // Default bracelet image
     },
     'Necklaces': {
       title: 'Necklaces',
@@ -190,11 +189,17 @@ export default function CategoryBannerIsland({
 
           {/* Image */}
           <div className="relative h-full min-h-[400px] lg:min-h-[500px] overflow-hidden">
-            <img
-              src={imageUrl}
-              alt={override?.customImage?.alt || displayTitle}
-              className="w-full h-full object-cover"
-            />
+            {imageUrl ? (
+              <img
+                src={imageUrl}
+                alt={override?.customImage?.alt || displayTitle}
+                loading="lazy"
+                decoding="async"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 animate-pulse" />
+            )}
             <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
           </div>
         </div>
