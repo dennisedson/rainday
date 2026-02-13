@@ -65,6 +65,7 @@ export default function CategoryBannerIsland({
     'Bracelets': {
       title: 'Bracelets',
       description: 'Discover our curated collection of handcrafted bracelets. From delicate chains to statement pieces, each bracelet is meticulously designed to elevate your style.',
+      image: 'https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=1200&auto=format&fit=crop&q=80', // Default bracelet image
     },
     'Necklaces': {
       title: 'Necklaces',

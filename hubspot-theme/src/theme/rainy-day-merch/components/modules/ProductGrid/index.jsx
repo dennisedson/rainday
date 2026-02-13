@@ -36,11 +36,13 @@ export const fields = (
       name="sortBy"
       label="Sort Products By"
       default="default"
-      choices={[
+      choices={
+        [
         ['default', 'Default'],
         ['price-low', 'Price: Low to High'],
         ['price-high', 'Price: High to Low'],
-      ]}
+      ]
+      }
       display="select"
       helpText="Sort order for displayed products"
     />
