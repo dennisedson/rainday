@@ -22,50 +22,53 @@ const SQUARE_API_BASE = isProduction
  */
 async function handleGetProducts(req, res) {
   try {
-    // Fetch categories, images, and items separately to avoid pagination issues
-    // Square API returns max 100 objects per request
-    const [catResponse, imgResponse, itemResponse] = await Promise.all([
-      fetch(`${SQUARE_API_BASE}/v2/catalog/list?types=CATEGORY`, {
-        method: 'GET',
-        headers: {
-          'Square-Version': '2024-12-18',
-          'Authorization': `Bearer ${SQUARE_ACCESS_TOKEN}`,
-          'Content-Type': 'application/json',
-        },
-      }),
-      fetch(`${SQUARE_API_BASE}/v2/catalog/list?types=IMAGE`, {
-        method: 'GET',
-        headers: {
-          'Square-Version': '2024-12-18',
-          'Authorization': `Bearer ${SQUARE_ACCESS_TOKEN}`,
-          'Content-Type': 'application/json',
-        },
-      }),
-      fetch(`${SQUARE_API_BASE}/v2/catalog/list?types=ITEM`, {
-        method: 'GET',
-        headers: {
-          'Square-Version': '2024-12-18',
-          'Authorization': `Bearer ${SQUARE_ACCESS_TOKEN}`,
-          'Content-Type': 'application/json',
-        },
-      }),
+    // Helper function to fetch all pages of a catalog type
+    async function fetchAllCatalogPages(type) {
+      let allObjects = [];
+      let cursor = null;
+
+      do {
+        const url = cursor
+          ? `${SQUARE_API_BASE}/v2/catalog/list?types=${type}&cursor=${cursor}`
+          : `${SQUARE_API_BASE}/v2/catalog/list?types=${type}`;
+
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Square-Version': '2024-12-18',
+            'Authorization': `Bearer ${SQUARE_ACCESS_TOKEN}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        const data = await response.json();
+        if (!response.ok) throw new Error(`Failed to fetch ${type}: ${JSON.stringify(data)}`);
+
+        allObjects = allObjects.concat(data.objects || []);
+        cursor = data.cursor;
+      } while (cursor);
+
+      return allObjects;
+    }
+
+    // Fetch categories, images, and items with pagination support
+    const [categories, images, items] = await Promise.all([
+      fetchAllCatalogPages('CATEGORY'),
+      fetchAllCatalogPages('IMAGE'),
+      fetchAllCatalogPages('ITEM'),
     ]);
 
-    const [catData, imgData, itemData] = await Promise.all([
-      catResponse.json(),
-      imgResponse.json(),
-      itemResponse.json(),
-    ]);
-
-    if (!catResponse.ok) return res.status(catResponse.status).json({ error: 'Failed to fetch categories', details: catData });
-    if (!imgResponse.ok) return res.status(imgResponse.status).json({ error: 'Failed to fetch images', details: imgData });
-    if (!itemResponse.ok) return res.status(itemResponse.status).json({ error: 'Failed to fetch items', details: itemData });
+    console.log('[Square API] Fetched:', {
+      categories: categories.length,
+      images: images.length,
+      items: items.length,
+    });
 
     // Combine all objects
     const allObjects = [
-      ...(catData.objects || []),
-      ...(imgData.objects || []),
-      ...(itemData.objects || []),
+      ...categories,
+      ...images,
+      ...items,
     ];
 
     const imageMap = {};
@@ -92,10 +95,19 @@ async function handleGetProducts(req, res) {
       const price = variation?.item_variation_data?.price_money?.amount || 0;
       const categoryId = itemData.reporting_category?.id;
       const categoryInfo = categoryId ? categoryMap[categoryId] : null;
-      const productImageUrl = itemData.image_ids?.[0] ? imageMap[itemData.image_ids[0]] : null;
+      const imageId = itemData.image_ids?.[0];
+      const productImageUrl = imageId ? imageMap[imageId] : null;
 
       if (!categoryId) {
         console.log('[Square API] Product has no category:', itemData.name);
+      }
+
+      if (imageId && !productImageUrl) {
+        console.warn('[Square API] Product references missing image:', {
+          product: itemData.name,
+          imageId,
+          category: categoryInfo?.name,
+        });
       }
 
       // Determine availability based on Square's available_online flag
