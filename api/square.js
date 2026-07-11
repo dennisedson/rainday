@@ -3,6 +3,8 @@
  * Handles products, categories, order calculations, and payments
  */
 
+const crypto = require('crypto');
+
 const DEFAULT_PRODUCT_IMAGE = 'https://images.unsplash.com/photo-1560393464-5c69a73c5770?w=800&auto=format&fit=crop&q=80';
 
 const SQUARE_ENVIRONMENT = process.env.SQUARE_ENVIRONMENT || 'sandbox';
@@ -378,10 +380,12 @@ async function handleCalculateOrder(req, res) {
 
     const manualSubtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
-    if (!response.ok) {
+    if (!response.ok || !data.order) {
       console.error('[Square Calculate] API Error:', JSON.stringify(data, null, 2));
-      
-      // ... (rest of the error handling)
+      return res.status(502).json({
+        error: 'Order calculation failed',
+        details: data.errors || data,
+      });
     }
 
     const netAmounts = data.order.net_amounts || {};
@@ -415,7 +419,6 @@ async function handleCalculateOrder(req, res) {
       env: isProdReq ? 'production' : 'sandbox',
       debug: {
         locationId: activeLocationId,
-        tokenPrefix: activeAccessToken?.substring(0, 8),
         items: itemDebug
       }
     });
@@ -427,10 +430,19 @@ async function handleCalculateOrder(req, res) {
 
 /**
  * Handle POST /api/process-payment
+ *
+ * SECURITY: the charge amount is derived entirely on the server. Cart items
+ * must reference Square catalog variations; Square prices the order from the
+ * catalog and applies tax rules. The client-sent `amount` is only compared
+ * against the server total so the shopper is never charged a different
+ * amount than they were shown.
  */
 async function handleProcessPayment(req, res) {
-  const { sourceId, amount, currency = 'USD', orderId, buyerEmail, billingDetails, cartItems, squareApplicationId, squareLocationId } = req.body;
-  if (!sourceId || !amount) return res.status(400).json({ error: 'sourceId and amount are required' });
+  const { sourceId, amount, orderId, buyerEmail, billingDetails, cartItems, squareApplicationId, squareLocationId } = req.body;
+  if (!sourceId) return res.status(400).json({ error: 'sourceId is required' });
+  if (!Array.isArray(cartItems) || cartItems.length === 0) {
+    return res.status(400).json({ error: 'cartItems are required' });
+  }
 
   try {
     // Detect environment
@@ -440,57 +452,87 @@ async function handleProcessPayment(req, res) {
     const activeApiBase = isProdReq ? 'https://connect.squareup.com' : 'https://connect.squareupsandbox.com';
 
     if (!activeAccessToken || !activeLocationId) {
-      return res.status(500).json({ 
-        error: 'Credentials missing', 
+      return res.status(500).json({
+        error: 'Credentials missing',
         message: `Missing ${isProdReq ? 'Production' : 'Sandbox'} credentials in Vercel environment variables.`
       });
     }
 
-    // 1. Create a Square Order first if we have cart items
-    let squareOrderId = null;
-    if (cartItems && cartItems.length > 0) {
-      try {
-        const orderData = {
-          location_id: activeLocationId,
-          reference_id: orderId,
-          line_items: cartItems.map(item => {
-            const lineItem = {
-              name: item.name,
-              quantity: item.quantity.toString(),
-              base_price_money: { amount: Math.round(item.price * 100), currency }
-            };
-            if (item.variationId) lineItem.catalog_object_id = item.variationId;
-            return lineItem;
-          })
-        };
-
-        const orderResponse = await fetch(`${activeApiBase}/v2/orders`, {
-          method: 'POST',
-          headers: { 'Square-Version': '2024-12-18', 'Authorization': `Bearer ${activeAccessToken}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            order: orderData,
-            idempotency_key: `order-${orderId || Date.now()}-${Math.random().toString(36).substr(2, 5)}`
-          }),
+    // 1. Validate cart items: every item must reference a real catalog
+    // variation ('item_'/'variation_' prefixes are client-generated fallback
+    // IDs). Client-sent names/prices are never used for pricing.
+    const lineItems = [];
+    for (const item of cartItems) {
+      const vid = item.variationId || item.id;
+      const quantity = Number(item.quantity);
+      if (!vid || typeof vid !== 'string' || vid.startsWith('item_') || vid.startsWith('variation_')) {
+        return res.status(400).json({
+          error: 'Invalid cart item',
+          message: `Cart item "${item.name || 'unknown'}" has no valid catalog ID. Please remove it and re-add it to your cart.`,
         });
-
-        const orderResult = await orderResponse.json();
-        if (orderResponse.ok) {
-          squareOrderId = orderResult.order.id;
-        }
-      } catch (err) {
-        console.error('[Square] Order creation error:', err);
       }
+      if (!Number.isInteger(quantity) || quantity < 1 || quantity > 999) {
+        return res.status(400).json({
+          error: 'Invalid quantity',
+          message: `Cart item "${item.name || 'unknown'}" has an invalid quantity.`,
+        });
+      }
+      lineItems.push({ catalog_object_id: vid, quantity: quantity.toString() });
     }
 
-    // 2. Prepare payment request
+    const orderRef = orderId || `ORD-${crypto.randomUUID()}`;
+    // Idempotency keys derive from the payment token: unique per checkout
+    // attempt (tokens are single-use), stable if the same request is retried.
+    const attemptKey = crypto.createHash('sha256').update(`${orderRef}:${sourceId}`).digest('hex').slice(0, 24);
+
+    // 2. Create the Square Order — Square prices it from the catalog
+    const orderResponse = await fetch(`${activeApiBase}/v2/orders`, {
+      method: 'POST',
+      headers: { 'Square-Version': '2024-12-18', 'Authorization': `Bearer ${activeAccessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        order: {
+          location_id: activeLocationId,
+          reference_id: orderRef,
+          line_items: lineItems,
+        },
+        idempotency_key: `order-${attemptKey}`,
+      }),
+    });
+
+    const orderResult = await orderResponse.json();
+    if (!orderResponse.ok) {
+      console.error('[Square Payment] Order creation failed:', JSON.stringify(orderResult));
+      return res.status(502).json({ error: 'Order creation failed', details: orderResult.errors || orderResult });
+    }
+
+    const squareOrder = orderResult.order;
+    const totalCents = squareOrder.total_money?.amount;
+    const orderCurrency = squareOrder.total_money?.currency || 'USD';
+    if (!Number.isInteger(totalCents) || totalCents <= 0) {
+      console.error('[Square Payment] Order has no valid total:', JSON.stringify(squareOrder.total_money));
+      return res.status(502).json({ error: 'Order total unavailable' });
+    }
+
+    // 3. Verify the total the shopper saw matches the catalog-priced total
+    const clientCents = Math.round(Number(amount) * 100);
+    if (clientCents !== totalCents) {
+      console.warn(`[Square Payment] Price mismatch: client=${clientCents} server=${totalCents} (order ${orderRef})`);
+      return res.status(409).json({
+        error: 'Price mismatch',
+        message: 'The order total has changed. Please review your cart and try again.',
+        expectedTotal: totalCents / 100,
+      });
+    }
+
+    // 4. Charge the server-derived total against the order
     const paymentData = {
       source_id: sourceId,
-      idempotency_key: `${orderId || Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      amount_money: { amount: Math.round(amount * 100), currency },
+      idempotency_key: `pay-${attemptKey}`,
+      amount_money: { amount: totalCents, currency: orderCurrency },
       location_id: activeLocationId,
       buyer_email_address: buyerEmail,
-      reference_id: orderId,
-      order_id: squareOrderId, 
+      reference_id: orderRef,
+      order_id: squareOrder.id,
       autocomplete: true,
     };
 
@@ -517,7 +559,7 @@ async function handleProcessPayment(req, res) {
     return res.status(200).json({
       success: true,
       paymentId: p.id,
-      orderId: p.order_id || squareOrderId,
+      orderId: p.order_id || squareOrder.id,
       receiptNumber: p.receipt_number,
       receiptUrl: p.receipt_url,
       status: p.status,

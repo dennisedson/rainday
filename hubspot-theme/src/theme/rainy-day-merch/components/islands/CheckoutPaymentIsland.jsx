@@ -104,7 +104,7 @@ export default function CheckoutPaymentIsland({ squareApplicationId, squareLocat
       const result = await cardElementRef.current.tokenize();
       if (result.status === 'OK') {
         const token = result.token;
-        console.log('[Checkout] Payment token received:', token);
+        console.log('[Checkout] Payment token received');
 
         // 2. Call our API to process payment
         const paymentResponse = await fetch('https://hsecommerce-api.vercel.app/api/process-payment', {
@@ -134,7 +134,15 @@ export default function CheckoutPaymentIsland({ squareApplicationId, squareLocat
         const paymentResult = await paymentResponse.json();
 
         if (!paymentResponse.ok) {
-          throw new Error(paymentResult.error || 'Payment processing failed');
+          // Server re-prices the order from the Square catalog; a 409 means
+          // the total we displayed no longer matches current catalog prices.
+          if (paymentResponse.status === 409 && paymentResult.expectedTotal != null) {
+            throw new Error(
+              `The order total has changed to $${paymentResult.expectedTotal.toFixed(2)}. ` +
+              'Prices may have been updated. Please return to your cart to review before paying.'
+            );
+          }
+          throw new Error(paymentResult.message || paymentResult.error || 'Payment processing failed');
         }
 
         console.log('[Checkout] Payment successful:', paymentResult);
