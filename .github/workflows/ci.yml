@@ -35,7 +35,7 @@ jobs:
         run: npm test
       - name: Build check (does it bundle for the Workers runtime?)
         working-directory: workers
-        run: npx wrangler deploy --dry-run --outdir=/tmp/build
+        run: npx wrangler deploy --dry-run --env="" --outdir=/tmp/build
 
   changes:
     name: What changed
@@ -76,7 +76,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           if [ "${{ github.ref_name }}" = "mom" ]; then
-            npx wrangler deploy
+            npx wrangler deploy --env=""
           else
             npx wrangler deploy --env sandbox
           fi
