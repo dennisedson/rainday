@@ -143,12 +143,59 @@ npm run keep-alive
 
 ## 🌐 CI/CD & Environments
 
-We use a two-portal and two-branch system to keep production safe.
+Two branches, two of everything else.
 
-| Environment | Git Branch | HubSpot Portal | Square Env | Vercel URL |
-| :--- | :--- | :--- | :--- | :--- |
-| **Production** | `mom` | Main Portal | Production | `rainydaymerchandise.com` |
-| **Sandbox/Dev** | `dev` | Dev Test Account | Sandbox | Vercel Preview URL |
+| | Production | Sandbox / Dev |
+| :--- | :--- | :--- |
+| Git branch | `mom` | `dev` |
+| HubSpot portal | Main | Test account |
+| Square | Production | Sandbox |
+| Worker | `hsecommerce-api` | `hsecommerce-api-sandbox` |
+| Storefront | `rainydaymerchandise.com` | HubSpot preview URL |
+
+`.github/workflows/ci.yml` runs the Worker tests and a bundle check on every
+pull request, then on a push to `dev` or `mom` deploys whichever halves changed:
+
+- `workers/**` changed → `wrangler deploy` (`--env sandbox` on `dev`), then
+  polls `/api/health` until it reports the expected environment. A deploy that
+  does not answer fails the run.
+- `hubspot-theme/**` changed → `hs project upload` to that branch's portal.
+
+Path filtering means a Worker-only change does not reupload the theme, and a
+change spanning both deploys both — which is the case that used to drift.
+
+**Deploying on merge is the point.** A merged fix cannot sit unreleased; a July
+security fix once sat on `dev` for seven weeks because deploying was a separate
+manual act.
+
+### Which backend the theme talks to
+
+Chosen at runtime from the hostname, in
+`hubspot-theme/src/theme/rainy-day-merch/utils/config.js`, so one build serves
+both portals. Production domains get the production Worker; everything else
+gets sandbox. Unknown hostnames default to **sandbox** on purpose — guessing
+wrong that way shows the wrong catalog, while guessing wrong towards production
+would take real card payments from a test page.
+
+### Required GitHub secrets
+
+Set these per environment under **Settings → Environments** (`production` and
+`sandbox`), not as repo-wide secrets, so the test portal's key can never deploy
+to the live one:
+
+| Secret | Notes |
+| :--- | :--- |
+| `CLOUDFLARE_API_TOKEN` | Scope: *Edit Cloudflare Workers* |
+| `CLOUDFLARE_ACCOUNT_ID` | |
+| `HUBSPOT_ACCOUNT_ID` | Differs per portal |
+| `HUBSPOT_PERSONAL_ACCESS_KEY` | Differs per portal |
+
+The Worker's own secrets (Square tokens, `JWT_SECRET`, HubSpot token) live in
+Cloudflare, not GitHub — `wrangler deploy` does not need them. Set them per
+environment with `wrangler secret put NAME --env sandbox`.
+
+Using GitHub *Environments* also lets you require a manual approval before any
+`mom` deploy, which is worth turning on for production.
 
 ### The API host lives in one place
 
