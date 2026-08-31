@@ -32,7 +32,7 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({
       environment: SQUARE_ENVIRONMENT,
       apiBase: SQUARE_API_BASE,
-      tokenPrefix: SQUARE_ACCESS_TOKEN?.substring(0, 10),
+      hasToken: !!SQUARE_ACCESS_TOKEN,
       categoriesFound: categories.length,
       itemsFound: items.length,
       categories: categories.map(c => ({

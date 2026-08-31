@@ -62,7 +62,7 @@ async function handleGetProducts(req, res) {
 
       do {
         const url = cursor
-          ? `${SQUARE_API_BASE}/v2/catalog/list?types=${type}&cursor=${cursor}`
+          ? `${SQUARE_API_BASE}/v2/catalog/list?types=${type}&cursor=${encodeURIComponent(cursor)}`
           : `${SQUARE_API_BASE}/v2/catalog/list?types=${type}`;
 
         const response = await fetch(url, {
@@ -214,7 +214,7 @@ async function handleGetProduct(req, res) {
   if (!id) return res.status(400).json({ error: 'Product ID is required' });
 
   try {
-    const response = await fetch(`${SQUARE_API_BASE}/v2/catalog/object/${id}?include_related_objects=true`, {
+    const response = await fetch(`${SQUARE_API_BASE}/v2/catalog/object/${encodeURIComponent(id)}?include_related_objects=true`, {
       method: 'GET',
       headers: {
         'Square-Version': '2024-12-18',
@@ -317,8 +317,6 @@ async function handleCalculateOrder(req, res) {
   try {
     const { cartItems, shippingAddress, squareApplicationId, squareLocationId } = req.body;
     if (!cartItems || !Array.isArray(cartItems) || cartItems.length === 0) return res.status(400).json({ error: 'Cart items are required' });
-
-    console.log('[Square Calculate] Request Body:', JSON.stringify(req.body, null, 2));
 
     // Detect environment
     const isProdReq = squareApplicationId ? !squareApplicationId.startsWith('sandbox-') : isProduction;

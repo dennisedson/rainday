@@ -88,28 +88,59 @@ async function handleSyncCategories(req, res) {
 
 /**
  * Handle GET/POST /api/favorites
+ *
+ * The client (utils/favorites.js) identifies users by email (signed-in via
+ * magic link) and sends action 'toggle'. contactId and add/remove are still
+ * accepted for direct API use.
  */
+async function resolveContactId(hubspotClient, { contactId, email }) {
+  if (contactId) return contactId;
+  if (!email) return null;
+
+  const searchResponse = await hubspotClient.crm.contacts.searchApi.doSearch({
+    filterGroups: [{ filters: [{ propertyName: 'email', operator: 'EQ', value: email.toLowerCase().trim() }] }],
+    properties: ['email'],
+    limit: 1,
+  });
+  return searchResponse.results?.[0]?.id || null;
+}
+
 async function handleFavorites(req, res) {
-  const { contactId, productId, action } = req.method === 'POST' ? req.body : req.query;
-  if (!contactId) return res.status(400).json({ error: 'contactId is required' });
+  const { contactId, email, productId, action } = req.method === 'POST' ? req.body : req.query;
 
   try {
     const hubspotClient = new Client({ accessToken: HUBSPOT_ACCESS_TOKEN });
-    const contact = await hubspotClient.crm.contacts.basicApi.getById(contactId, ['favorite_products']);
-    let favorites = contact.properties.favorite_products ? contact.properties.favorite_products.split(',') : [];
+    const resolvedId = await resolveContactId(hubspotClient, { contactId, email });
+
+    if (!resolvedId) {
+      // Unknown/anonymous user: reads return empty, writes require sign-in.
+      if (req.method === 'POST') return res.status(401).json({ error: 'Sign in to save favorites' });
+      return res.status(200).json({ success: true, favorites: [], count: 0 });
+    }
+
+    const contact = await hubspotClient.crm.contacts.basicApi.getById(resolvedId, ['favorite_products']);
+    let favorites = (contact.properties.favorite_products || '').split(',').filter(Boolean);
 
     if (req.method === 'POST') {
       if (!productId || !action) return res.status(400).json({ error: 'productId and action are required' });
-      if (action === 'add' && !favorites.includes(productId)) favorites.push(productId);
-      else if (action === 'remove') favorites = favorites.filter(id => id !== productId);
-      
-      await hubspotClient.crm.contacts.basicApi.update(contactId, {
+
+      if (action === 'toggle') {
+        favorites = favorites.includes(productId)
+          ? favorites.filter(id => id !== productId)
+          : [...favorites, productId];
+      } else if (action === 'add' && !favorites.includes(productId)) {
+        favorites.push(productId);
+      } else if (action === 'remove') {
+        favorites = favorites.filter(id => id !== productId);
+      }
+
+      await hubspotClient.crm.contacts.basicApi.update(resolvedId, {
         properties: { favorite_products: favorites.join(',') }
       });
-      return res.status(200).json({ success: true, favorites });
+      return res.status(200).json({ success: true, favorites, count: favorites.length, isFavorite: favorites.includes(productId) });
     }
 
-    return res.status(200).json({ success: true, favorites });
+    return res.status(200).json({ success: true, favorites, count: favorites.length });
   } catch (error) {
     return res.status(500).json({ error: 'Favorites operation failed', message: error.message });
   }

@@ -34,8 +34,9 @@ Add these to your Vercel environment variables:
 
 ```bash
 # Magic Link Authentication
-JWT_SECRET=3930488cc87cbae6ef3bce7b36fd3d082bcd5bc70f803f1676998202446962a2
-MAGIC_LINK_SECRET=6cd82de2f78d96e80b6399e31e9d4c3d2bb7f43275cbdef06a8490bea6868476
+# Generate each secret with: openssl rand -hex 32
+JWT_SECRET=generate_your_own_secret_here
+MAGIC_LINK_SECRET=generate_your_own_secret_here
 BASE_URL=https://www.rainydaymerchandise.com
 ```
 

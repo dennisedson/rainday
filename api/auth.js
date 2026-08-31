@@ -8,9 +8,9 @@ const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 
 const HUBSPOT_ACCESS_TOKEN = process.env.HUBSPOT_ACCESS_TOKEN;
-const MAGIC_LINK_SECRET = process.env.MAGIC_LINK_SECRET || 'your-secret-key-change-in-production';
 const BASE_URL = process.env.BASE_URL || 'https://www.rainydaymerchandise.com';
-const JWT_SECRET = process.env.JWT_SECRET || 'your-jwt-secret-change-in-production';
+// No fallback: sessions must never be signed with a guessable default secret.
+const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '30d';
 
 const MAGIC_LINK_TOKEN_PROPERTY = 'magic_link_token';
@@ -85,6 +85,7 @@ async function handleVerifyLink(req, res) {
   const token = req.query.token || req.body.token;
   const email = req.query.email || req.body.email;
   if (!token || !email) return res.status(400).json({ error: 'Token and email are required' });
+  if (!JWT_SECRET) return res.status(500).json({ error: 'Auth is not configured (JWT_SECRET missing)' });
 
   try {
     const hubspotClient = new Client({ accessToken: HUBSPOT_ACCESS_TOKEN });
@@ -97,7 +98,13 @@ async function handleVerifyLink(req, res) {
     if (!searchResponse.results || searchResponse.results.length === 0) return res.status(401).json({ error: 'Invalid link' });
 
     const contact = searchResponse.results[0];
-    if (contact.properties[MAGIC_LINK_TOKEN_PROPERTY] !== token) return res.status(401).json({ error: 'Invalid link' });
+    const storedToken = contact.properties[MAGIC_LINK_TOKEN_PROPERTY] || '';
+    const providedBuf = Buffer.from(String(token));
+    const storedBuf = Buffer.from(storedToken);
+    const tokenMatches = storedBuf.length > 0
+      && storedBuf.length === providedBuf.length
+      && crypto.timingSafeEqual(storedBuf, providedBuf);
+    if (!tokenMatches) return res.status(401).json({ error: 'Invalid link' });
     if (new Date(contact.properties[MAGIC_LINK_EXPIRES_PROPERTY]) < new Date()) return res.status(401).json({ error: 'Expired link' });
 
     await hubspotClient.crm.contacts.basicApi.update(contact.id, { properties: { [MAGIC_LINK_TOKEN_PROPERTY]: '', [MAGIC_LINK_EXPIRES_PROPERTY]: '' } });
@@ -116,6 +123,7 @@ async function handleVerifySession(req, res) {
   const authHeader = req.headers.authorization;
   const token = authHeader?.replace('Bearer ', '') || req.body?.token || req.query?.token;
   if (!token) return res.status(401).json({ error: 'No token' });
+  if (!JWT_SECRET) return res.status(500).json({ error: 'Auth is not configured (JWT_SECRET missing)' });
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
