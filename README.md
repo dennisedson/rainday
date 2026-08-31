@@ -152,17 +152,18 @@ We use a two-portal and two-branch system to keep production safe.
 
 ### The API host lives in one place
 
-The theme reaches the API at `https://api.rainydaymerchandise.com/api`, declared
-in `hubspot-theme/src/theme/rainy-day-merch/utils/config.js`. Import
-`API_BASE_URL` from there rather than writing a URL literal.
+The API host is declared in
+`hubspot-theme/src/theme/rainy-day-merch/utils/config.js`. Import `API_BASE_URL`
+from there rather than writing a URL literal.
 
 It was previously hardcoded in nine files, which is why moving off Vercel needed
 a nine-file edit. The one place that still repeats it is the inline script in
 `templates/layouts/base.hubl.html`, which cannot import an ES module; keep the
 two in step.
 
-Using a custom domain rather than a platform hostname (`*.vercel.app`,
-`*.workers.dev`) means the next backend move is a DNS change.
+A custom domain (`api.rainydaymerchandise.com`) would reduce this to a DNS
+change, but it requires moving the whole zone to Cloudflare DNS. That is
+deliberately deferred — see `workers/README.md`.
 
 ### ⚠️ Theme and API deploy separately
 

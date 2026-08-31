@@ -69,13 +69,26 @@ cd .. && npx vercel link && npx vercel env pull .env.production.local --environm
 > value silently logs out every signed-in customer, and the old one cannot be
 > recovered once the Vercel project is deleted.
 
-### Custom domain
+### Hostname
 
-In the Cloudflare dashboard: **Workers & Pages → hsecommerce-api → Settings →
-Domains & Routes → Add custom domain** → `api.rainydaymerchandise.com`.
+Currently the Worker is reached at its generated hostname:
 
-If `rainydaymerchandise.com` is not on Cloudflare DNS, add a CNAME for `api`
-pointing at the worker's `*.workers.dev` hostname at your current DNS provider.
+```
+https://hsecommerce-api.<account-subdomain>.workers.dev
+```
+
+No DNS changes were needed for this. `rainydaymerchandise.com` stays on GoDaddy
+nameservers and the storefront and email records are untouched.
+
+**Later: move to `api.rainydaymerchandise.com`.** A platform hostname is the
+same coupling that made leaving Vercel a nine-file change, so this is worth
+doing once the Worker has proven itself. A Workers custom domain requires the
+zone to be on Cloudflare DNS, which means changing nameservers at GoDaddy — the
+whole zone moves, not just `api`. Before flipping, set the two apex `A` records,
+`www`, and `_domainconnect` to **DNS only**; they point at HubSpot, which
+manages its own certificate and breaks when proxied. Then add the custom domain
+under **Workers & Pages → hsecommerce-api → Settings → Domains & Routes**, and
+change `utils/config.js` plus the inline script in `base.hubl.html`.
 
 ## Deploy
 
@@ -88,7 +101,7 @@ npm run tail      # live logs
 Verify from outside rather than trusting the dashboard:
 
 ```bash
-curl -s https://api.rainydaymerchandise.com/api/health
+curl -s https://hsecommerce-api.<account-subdomain>.workers.dev/api/health
 # {"status":"ok","environment":"production","platform":"cloudflare-workers"}
 ```
 
@@ -97,26 +110,27 @@ returns the same shape without it.
 
 ## Cutover order
 
-The theme now points at `api.rainydaymerchandise.com`, which does not resolve
-until step 2. Do not upload the theme before then.
+`utils/config.js` still points at the Vercel deployment, which is what is live.
+The theme is therefore safe to upload at any point before the switch.
 
-1. `npm run deploy` — Worker live on `*.workers.dev`.
-2. Add the custom domain; confirm `/api/health` answers on it.
-3. Smoke-test against the Worker directly (see below).
+1. `npm run deploy` — note the `*.workers.dev` URL it prints.
+2. Smoke-test against that URL directly (see below). Nothing is switched yet.
+3. Set `API_BASE_URL` to the Worker URL in `utils/config.js` **and** in the
+   inline script in `templates/layouts/base.hubl.html`.
 4. `cd ../hubspot-theme && hs project upload` — storefront switches over.
 5. Watch `npm run tail` and the store for a day.
 6. Only then delete the Vercel project, and with it `../api`, `../vercel.json`,
    `../keep-alive.js` and `../api/cron/keep-alive.js`.
 
-Keeping Vercel alive through steps 1–5 means rollback is a one-line revert of
-`utils/config.js` plus a theme upload.
+Rollback at any point after step 4 is reverting those two lines and uploading
+the theme again. Keep Vercel alive until step 6 so that rollback stays real.
 
 ## Smoke tests
 
 Read-only, no side effects:
 
 ```bash
-BASE=https://api.rainydaymerchandise.com/api
+BASE=https://hsecommerce-api.<account-subdomain>.workers.dev/api
 curl -s $BASE/health
 curl -s $BASE/square-categories | head -c 200
 curl -s $BASE/square-products | python3 -c 'import json,sys; print(len(json.load(sys.stdin)["products"]), "products")'
@@ -136,8 +150,11 @@ payment test against production creates a real charge.
 ## Notes
 
 - The catalog cache is per-isolate with a 5-minute TTL, same as the Vercel
-  version. The `Cache-Control: s-maxage=300` header is what does the real work
-  once the custom domain puts Cloudflare's edge cache in front.
+  version. The `Cache-Control: s-maxage=300` header only earns its keep once the
+  Worker is on a custom domain — `workers.dev` hostnames are not part of a zone,
+  so Cloudflare's edge cache does not sit in front of them. On `workers.dev` the
+  in-memory cache is all you get. Fine at this traffic level, and one more
+  reason to move to the custom domain eventually.
 - `ALLOWED_ORIGINS` in `wrangler.toml` replaces the old blanket
   `Access-Control-Allow-Origin: *`. If it is unset the Worker falls back to `*`,
   so a misconfiguration degrades rather than breaking the store. This is defence
