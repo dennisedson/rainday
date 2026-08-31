@@ -69,6 +69,31 @@ jobs:
       - name: Install
         working-directory: workers
         run: npm install
+      # A bad account id surfaces from wrangler as an opaque
+      # "Could not route to /accounts/***/... [code: 7003]". Check the shape and
+      # the token's access here so the failure names itself.
+      - name: Preflight - Cloudflare credentials
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          echo "account id length: ${#CLOUDFLARE_ACCOUNT_ID}"
+          echo "api token length:  ${#CLOUDFLARE_API_TOKEN}"
+          if ! printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | grep -qE '^[0-9a-f]{32}$'; then
+            echo "::error::CLOUDFLARE_ACCOUNT_ID is not 32 lowercase hex characters - check for whitespace or truncation in the secret"
+            exit 1
+          fi
+          code=$(curl -s -o /tmp/cf.json -w '%{http_code}' \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts")
+          echo "workers/scripts probe: HTTP $code"
+          if [ "$code" != "200" ]; then
+            echo "::error::Token cannot list Workers for this account"
+            cat /tmp/cf.json
+            exit 1
+          fi
+          echo "credentials OK"
+
       - name: Deploy
         working-directory: workers
         env:
@@ -124,9 +149,13 @@ jobs:
               authType: personalaccesskey
               personalAccessKey: $HS_PERSONAL_ACCESS_KEY
           YAML
+      # The package is @hubspot/cli but the binary is `hs`, so `npx @hubspot/cli`
+      # fails with "could not determine executable to run". Install it instead.
+      - name: Install HubSpot CLI
+        run: npm install -g @hubspot/cli@8
       - name: Upload project
         working-directory: hubspot-theme
-        run: npx --yes @hubspot/cli@8 project upload --account=${{ secrets.HUBSPOT_ACCOUNT_ID }}
+        run: hs project upload --account=${{ secrets.HUBSPOT_ACCOUNT_ID }}
       - name: Remove credentials
         if: always()
         run: rm -f hubspot.config.yml
