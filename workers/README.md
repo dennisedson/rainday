@@ -97,6 +97,21 @@ properties and HubSpot rejects the writes with a 400 — and `create-deal`'s
 failure is swallowed by the checkout island, so you get a "successful" checkout
 with no deal and no visible reason.
 
+### Two different HubSpot credentials
+
+Each portal needs **two**, and they are not interchangeable. Mixing them up
+produces confusing failures, because each one works perfectly for the other's
+job's neighbour.
+
+| | Looks like | Used by | Stored in |
+| :--- | :--- | :--- | :--- |
+| CLI personal access key | `CiRuYTEt...` (~107 chars) | `hs project upload` | GitHub secret `HUBSPOT_PERSONAL_ACCESS_KEY` |
+| Private app token | `pat-na1-<uuid>` (44 chars) | the Worker's CRM calls | Cloudflare secret `HUBSPOT_ACCESS_TOKEN` |
+
+The CLI key carries `developer.projects.write` and friends; the private app token
+carries `crm.objects.*`. Neither set covers the other. A private app token in CI
+fails the theme upload; a CLI key in the Worker fails every CRM call.
+
 ### Access key scopes
 
 | Scope | Needed for |
