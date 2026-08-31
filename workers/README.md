@@ -90,6 +90,46 @@ manages its own certificate and breaks when proxied. Then add the custom domain
 under **Workers & Pages → hsecommerce-api → Settings → Domains & Routes**, and
 change `utils/config.js` plus the inline script in `base.hubl.html`.
 
+## HubSpot portal setup
+
+A fresh portal needs both the right scopes and five custom properties. Miss the
+properties and HubSpot rejects the writes with a 400 — and `create-deal`'s
+failure is swallowed by the checkout island, so you get a "successful" checkout
+with no deal and no visible reason.
+
+### Access key scopes
+
+| Scope | Needed for |
+| :--- | :--- |
+| `crm.objects.contacts.read` | contact search, session lookup |
+| `crm.objects.contacts.write` | contact create, magic-link token, favorites |
+| `crm.objects.deals.write` | deal creation on checkout |
+| `crm.objects.deals.read` | not called directly; pairs with write |
+| `crm.schemas.contacts.write` | only to create the properties below via API |
+| `crm.schemas.deals.write` | same |
+
+Schema scopes alone will let you create properties while every CRM object call
+returns 403 — the failure looks like a broken integration rather than a missing
+scope, so check both.
+
+### Custom properties
+
+| Object | Property | Type |
+| :--- | :--- | :--- |
+| contacts | `magic_link_token` | string / text |
+| contacts | `magic_link_expires` | string / **text** |
+| contacts | `favorite_products` | string / textarea |
+| deals | `payment_id` | string / text |
+| deals | `order_id` | string / text |
+
+`magic_link_expires` must be **text, not datetime**. The code writes
+`expiresAt.toISOString()` and reads it back with `new Date()`; HubSpot datetime
+properties return epoch milliseconds through the API, which parses to 1970 and
+makes every magic link look expired.
+
+`handleCreateDeal` also hardcodes pipeline `default` and stage
+`appointmentscheduled`. Both are HubSpot defaults, but confirm they exist.
+
 ## Deploy
 
 ```bash
