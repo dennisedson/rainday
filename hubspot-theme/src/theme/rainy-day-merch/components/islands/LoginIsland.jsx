@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { requestMagicLink } from '../../utils/auth';
 
-const API_BASE_URL = 'https://hsecommerce-api.vercel.app/api';
+import { API_BASE_URL } from '../../utils/config';
 
 export default function LoginIsland() {
   const [email, setEmail] = useState('');

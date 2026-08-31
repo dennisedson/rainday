@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { API_BASE_URL } from '../../utils/config';
 
 export default function CheckoutPaymentIsland({ squareApplicationId, squareLocationId }) {
   const [checkoutData, setCheckoutData] = useState(null);
@@ -107,7 +108,7 @@ export default function CheckoutPaymentIsland({ squareApplicationId, squareLocat
         console.log('[Checkout] Payment token received');
 
         // 2. Call our API to process payment
-        const paymentResponse = await fetch('https://hsecommerce-api.vercel.app/api/process-payment', {
+        const paymentResponse = await fetch(`${API_BASE_URL}/process-payment`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -149,7 +150,7 @@ export default function CheckoutPaymentIsland({ squareApplicationId, squareLocat
 
         // 3. Create Deal in HubSpot
         try {
-          await fetch('https://hsecommerce-api.vercel.app/api/create-deal', {
+          await fetch(`${API_BASE_URL}/create-deal`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

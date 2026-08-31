@@ -3,7 +3,7 @@
  * Handles intermittent failures and retries failed requests
  */
 
-const API_BASE_URL = 'https://hsecommerce-api.vercel.app/api';
+import { API_BASE_URL } from './config';
 
 /**
  * Fetch with retry logic

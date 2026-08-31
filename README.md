@@ -1,6 +1,6 @@
 # HubSpot E-commerce Project
 
-A modern e-commerce storefront built with HubSpot CMS React and Square payments, with serverless functions hosted on Vercel.
+A modern e-commerce storefront built with HubSpot CMS React and Square payments, with serverless functions hosted on Cloudflare Workers.
 
 ## 📁 Project Structure
 
@@ -18,11 +18,13 @@ hsecommerce-project/
 │   ├── hsproject.json
 │   └── package.json
 │
-├── api/                # Vercel Serverless Functions
-│   ├── auth/           # Authentication endpoints
-│   ├── cron/           # Background jobs
-│   └── ...             # Core API endpoints
-├── vercel.json         # Vercel configuration
+├── workers/            # Cloudflare Worker (the API) — see workers/README.md
+│   ├── src/            # Router, Square, HubSpot, auth
+│   ├── test/           # Unit tests (npm test, no credentials needed)
+│   └── wrangler.toml   # Worker config; secrets set via `wrangler secret put`
+│
+├── api/                # LEGACY Vercel functions — delete after cutover
+├── vercel.json         # LEGACY Vercel configuration — delete after cutover
 ├── package.json        # Project dependencies & scripts
 ├── keep-alive.js       # Local keep-alive script
 └── .env                # Local environment variables (not tracked)
@@ -102,10 +104,11 @@ npm run keep-alive
 - **Tailwind CSS** (CDN) - Styling
 - **Square Web Payments SDK** - Client-side payment tokenization
 
-### Backend (Vercel API)
-- **Vercel Serverless Functions** - API endpoints
+### Backend (Cloudflare Worker)
+- **Cloudflare Workers** - API endpoints, no cold starts
 - **Square Connect API** - Product catalog & payment processing
 - **HubSpot CRM API** - Order logging
+- **jose** - Session tokens for magic-link auth
 
 ## 📚 Documentation
 
@@ -146,6 +149,20 @@ We use a two-portal and two-branch system to keep production safe.
 | :--- | :--- | :--- | :--- | :--- |
 | **Production** | `mom` | Main Portal | Production | `rainydaymerchandise.com` |
 | **Sandbox/Dev** | `dev` | Dev Test Account | Sandbox | Vercel Preview URL |
+
+### The API host lives in one place
+
+The theme reaches the API at `https://api.rainydaymerchandise.com/api`, declared
+in `hubspot-theme/src/theme/rainy-day-merch/utils/config.js`. Import
+`API_BASE_URL` from there rather than writing a URL literal.
+
+It was previously hardcoded in nine files, which is why moving off Vercel needed
+a nine-file edit. The one place that still repeats it is the inline script in
+`templates/layouts/base.hubl.html`, which cannot import an ES module; keep the
+two in step.
+
+Using a custom domain rather than a platform hostname (`*.vercel.app`,
+`*.workers.dev`) means the next backend move is a DNS change.
 
 ### ⚠️ Theme and API deploy separately
 
