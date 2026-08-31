@@ -147,6 +147,35 @@ We use a two-portal and two-branch system to keep production safe.
 | **Production** | `mom` | Main Portal | Production | `rainydaymerchandise.com` |
 | **Sandbox/Dev** | `dev` | Dev Test Account | Sandbox | Vercel Preview URL |
 
+### ⚠️ Theme and API deploy separately
+
+Pushing to `mom` deploys **only the API** — Vercel watches the branch, the
+HubSpot theme does not. The theme ships when someone runs:
+
+```bash
+cd hubspot-theme && hs project upload
+```
+
+So a commit touching both halves is only half-live after a push. When a change
+spans `api/` and `hubspot-theme/`, deploy both and verify both, or the deployed
+API and the deployed theme will disagree about the contract between them.
+
+Two failure modes this has actually caused:
+
+- A fix merged to `dev` and never merged to `mom` stays undeployed indefinitely
+  while looking done in the repo. Check `git log origin/mom..origin/dev` before
+  assuming something is live.
+- An API change that tightens what it accepts (for example requiring cart items
+  to carry a catalog `variationId`) breaks checkout for anyone running the older
+  theme until the theme upload lands.
+
+Verify a production API deploy from the outside rather than trusting the
+dashboard:
+
+```bash
+curl -s https://hsecommerce-api.vercel.app/api/health
+```
+
 ### Vercel Setup:
 In Vercel Project Settings, set these Environment Variables:
 *   `HUBSPOT_ACCESS_TOKEN`: Set a specific value for **Production** (Real Portal) and **Preview/Development** (Dev Portal).
