@@ -245,23 +245,21 @@ export async function handleGetCategories(request, env) {
       );
     }
 
-    const response = await squareFetch(cfg, '/v2/catalog/list?types=CATEGORY,IMAGE', {
-      method: 'GET',
-    });
-    const data = await response.json();
-    if (!response.ok) {
-      return json(
-        { error: 'Failed to fetch categories', details: data },
-        { status: response.status }
-      );
-    }
+    // Must paginate. A single `?types=CATEGORY,IMAGE` call returns one page,
+    // and with a few hundred images the CATEGORY objects fall past it — which
+    // returned an empty category list, and so an empty storefront nav, whenever
+    // this ran without a warm catalog cache.
+    const [categoryObjects, imageObjects] = await Promise.all([
+      fetchAllCatalogPages(cfg, 'CATEGORY'),
+      fetchAllCatalogPages(cfg, 'IMAGE'),
+    ]);
 
     const imageMap = {};
-    for (const image of (data.objects || []).filter((o) => o.type === 'IMAGE')) {
+    for (const image of imageObjects) {
       imageMap[image.id] = image.image_data?.url || null;
     }
 
-    const categories = (data.objects || [])
+    const categories = categoryObjects
       .filter((obj) => obj.type === 'CATEGORY' && obj.category_data)
       .map((category) => ({
         id: category.id,
