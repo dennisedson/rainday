@@ -399,6 +399,7 @@ export default function ProductDetailIsland({
                 } else {
                   cart.push({
                     id: product.id,
+                    variationId: product.variationId, // required: orders are priced by catalog variation
                     name: product.name,
                     price: product.price,
                     quantity: quantity,
