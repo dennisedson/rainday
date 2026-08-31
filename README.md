@@ -194,6 +194,25 @@ The Worker's own secrets (Square tokens, `JWT_SECRET`, HubSpot token) live in
 Cloudflare, not GitHub — `wrangler deploy` does not need them. Set them per
 environment with `wrangler secret put NAME --env sandbox`.
 
+Bootstrap them with the `gh` CLI rather than pasting into the web UI. Create the
+two environments, then load a dotenv file into each:
+
+```bash
+gh api -X PUT repos/:owner/:repo/environments/sandbox
+gh api -X PUT repos/:owner/:repo/environments/production
+
+gh secret set -f .env.github.sandbox.local    --env sandbox
+gh secret set -f .env.github.production.local --env production
+```
+
+Those two files are **gitignored and must stay that way** — they hold live
+credentials. `.gitignore` covers them via `.env.*.local`; verify with
+`git check-ignore .env.github.sandbox.local` before committing anything.
+
+The CI HubSpot key needs CMS/content scopes on top of the four CRM scopes, since
+it runs `hs project upload`. A key scoped only for the CRM calls will pass the
+Worker jobs and fail the theme job.
+
 Using GitHub *Environments* also lets you require a manual approval before any
 `mom` deploy, which is worth turning on for production.
 
