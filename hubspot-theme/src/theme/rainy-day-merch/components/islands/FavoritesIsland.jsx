@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import ProductCard from '../shared/ProductCard';
 import { getFavorites } from '../../utils/favorites';
 
-const API_ENDPOINT = 'https://hsecommerce-api.vercel.app/api/square-products';
+import { API_BASE_URL } from '../../utils/config';
+
+const API_ENDPOINT = `${API_BASE_URL}/square-products`;
 
 /**
  * FavoritesIsland - Displays all favorited products

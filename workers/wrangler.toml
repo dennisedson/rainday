@@ -1,0 +1,36 @@
+name = "hsecommerce-api"
+main = "src/index.js"
+compatibility_date = "2026-01-15"
+
+# Non-secret configuration. Secrets go in with `wrangler secret put NAME`
+# (see workers/README.md) and never live in this file.
+[vars]
+SQUARE_ENVIRONMENT = "production"
+BASE_URL = "https://www.rainydaymerchandise.com"
+ALLOWED_ORIGINS = "https://www.rainydaymerchandise.com,https://rainydaymerchandise.com"
+
+# Replaces the nightly Vercel cron. Workers have no cold starts, so the
+# keep-alive job that existed only to keep Vercel warm is gone.
+[triggers]
+crons = ["0 0 * * *"]
+
+# Sandbox environment: deploys as a separate Worker
+# (hsecommerce-api-sandbox) reading the Square *sandbox* catalog.
+#
+# This exists because SQUARE_ENVIRONMENT governs catalog reads and cannot be
+# overridden per request — only orders and payments infer their environment
+# from the client's squareApplicationId. Pointing the dev portal at the
+# production Worker would read production catalog ids and then fail to create
+# a sandbox order from them.
+#
+# Secrets are per-environment: set them with
+#   npx wrangler secret put NAME --env sandbox
+[env.sandbox]
+name = "hsecommerce-api-sandbox"
+
+[env.sandbox.vars]
+SQUARE_ENVIRONMENT = "sandbox"
+BASE_URL = "https://www.rainydaymerchandise.com"
+# Left empty so CORS falls back to '*'. The dev portal is served from a
+# HubSpot preview hostname that varies; locking it down is not worth it here.
+ALLOWED_ORIGINS = ""

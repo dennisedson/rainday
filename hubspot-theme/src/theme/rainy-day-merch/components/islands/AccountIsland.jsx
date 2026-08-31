@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { verifySession, logout, getSessionToken } from '../../utils/auth';
 import { getFavorites } from '../../utils/favorites';
 
-const API_BASE_URL = 'https://hsecommerce-api.vercel.app/api';
+import { API_BASE_URL } from '../../utils/config';
 
 export default function AccountIsland() {
   const [contact, setContact] = useState(null);

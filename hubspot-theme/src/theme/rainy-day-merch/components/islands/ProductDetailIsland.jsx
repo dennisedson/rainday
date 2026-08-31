@@ -3,7 +3,9 @@ import Icon from '../shared/Icon';
 import { toggleFavorite, isFavorite } from '../../utils/favorites';
 
 // Vercel API endpoint for single Square product
-const API_ENDPOINT = 'https://hsecommerce-api.vercel.app/api/square-product';
+import { API_BASE_URL } from '../../utils/config';
+
+const API_ENDPOINT = `${API_BASE_URL}/square-product`;
 
 /**
  * Update page title and meta tags for SEO
@@ -399,6 +401,7 @@ export default function ProductDetailIsland({
                 } else {
                   cart.push({
                     id: product.id,
+                    variationId: product.variationId, // required: orders are priced by catalog variation
                     name: product.name,
                     price: product.price,
                     quantity: quantity,

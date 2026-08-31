@@ -1,0 +1,132 @@
+name: CI
+
+# Branch model (see README):
+#   dev -> sandbox Worker + HubSpot test portal
+#   mom -> production Worker + HubSpot production portal
+#
+# The point of deploying on merge is that a merged fix cannot sit unreleased.
+# A July security fix once sat on dev for seven weeks because deploying was a
+# separate manual act.
+
+on:
+  pull_request:
+  push:
+    branches: [dev, mom]
+
+concurrency:
+  # Never let two deploys to the same branch overlap.
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  test:
+    name: Worker tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install
+        working-directory: workers
+        run: npm install
+      - name: Unit tests
+        working-directory: workers
+        run: npm test
+      - name: Build check (does it bundle for the Workers runtime?)
+        working-directory: workers
+        run: npx wrangler deploy --dry-run --env="" --outdir=/tmp/build
+
+  changes:
+    name: What changed
+    runs-on: ubuntu-latest
+    outputs:
+      worker: ${{ steps.filter.outputs.worker }}
+      theme: ${{ steps.filter.outputs.theme }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            worker:
+              - 'workers/**'
+            theme:
+              - 'hubspot-theme/**'
+
+  deploy-worker:
+    name: Deploy Worker
+    needs: [test, changes]
+    if: github.event_name == 'push' && needs.changes.outputs.worker == 'true'
+    runs-on: ubuntu-latest
+    # 'production' on mom lets you require a manual approval in repo settings.
+    environment: ${{ github.ref_name == 'mom' && 'production' || 'sandbox' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install
+        working-directory: workers
+        run: npm install
+      - name: Deploy
+        working-directory: workers
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ "${{ github.ref_name }}" = "mom" ]; then
+            npx wrangler deploy --env=""
+          else
+            npx wrangler deploy --env sandbox
+          fi
+      - name: Verify the deploy actually answers
+        run: |
+          if [ "${{ github.ref_name }}" = "mom" ]; then
+            URL=https://hsecommerce-api.dennis-544.workers.dev/api/health
+            WANT=production
+          else
+            URL=https://hsecommerce-api-sandbox.dennis-544.workers.dev/api/health
+            WANT=sandbox
+          fi
+          for i in $(seq 1 10); do
+            BODY=$(curl -sf --max-time 20 "$URL" || true)
+            echo "attempt $i: $BODY"
+            case "$BODY" in *"\"environment\":\"$WANT\""*) echo "deploy verified"; exit 0;; esac
+            sleep 6
+          done
+          echo "::error::Worker did not report environment=$WANT after deploy"
+          exit 1
+
+  deploy-theme:
+    name: Upload HubSpot theme
+    needs: [test, changes]
+    if: github.event_name == 'push' && needs.changes.outputs.theme == 'true'
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref_name == 'mom' && 'production' || 'sandbox' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Write HubSpot CLI config
+        env:
+          HS_ACCOUNT_ID: ${{ secrets.HUBSPOT_ACCOUNT_ID }}
+          HS_PERSONAL_ACCESS_KEY: ${{ secrets.HUBSPOT_PERSONAL_ACCESS_KEY }}
+        run: |
+          test -n "$HS_ACCOUNT_ID" || { echo "::error::HUBSPOT_ACCOUNT_ID not set"; exit 1; }
+          test -n "$HS_PERSONAL_ACCESS_KEY" || { echo "::error::HUBSPOT_PERSONAL_ACCESS_KEY not set"; exit 1; }
+          cat > hubspot.config.yml <<YAML
+          defaultAccount: $HS_ACCOUNT_ID
+          accounts:
+            - accountId: $HS_ACCOUNT_ID
+              name: ci
+              authType: personalaccesskey
+              personalAccessKey: $HS_PERSONAL_ACCESS_KEY
+          YAML
+      - name: Upload project
+        working-directory: hubspot-theme
+        run: npx --yes @hubspot/cli@8 project upload --account=${{ secrets.HUBSPOT_ACCOUNT_ID }}
+      - name: Remove credentials
+        if: always()
+        run: rm -f hubspot.config.yml

@@ -1,0 +1,21 @@
+{
+  "name": "hsecommerce-api-worker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Cloudflare Worker backing the Rainy Day Merchandise HubSpot storefront",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy --env=\"\"",
+    "tail": "wrangler tail --env=\"\"",
+    "test": "node --test test/*.test.js",
+    "deploy:sandbox": "wrangler deploy --env sandbox",
+    "tail:sandbox": "wrangler tail --env sandbox"
+  },
+  "dependencies": {
+    "jose": "^5.9.6"
+  },
+  "devDependencies": {
+    "wrangler": "^4.127.1"
+  }
+}

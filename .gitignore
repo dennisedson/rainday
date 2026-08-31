@@ -52,3 +52,6 @@ temp/
 Thumbs.db
 
 .vercel
+
+# HubSpot CLI credentials — contains a personal access key once `hs init` runs
+hubspot.config.yml
