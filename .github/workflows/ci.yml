@@ -134,28 +134,18 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Write HubSpot CLI config
-        env:
-          HS_ACCOUNT_ID: ${{ secrets.HUBSPOT_ACCOUNT_ID }}
-          HS_PERSONAL_ACCESS_KEY: ${{ secrets.HUBSPOT_PERSONAL_ACCESS_KEY }}
-        run: |
-          test -n "$HS_ACCOUNT_ID" || { echo "::error::HUBSPOT_ACCOUNT_ID not set"; exit 1; }
-          test -n "$HS_PERSONAL_ACCESS_KEY" || { echo "::error::HUBSPOT_PERSONAL_ACCESS_KEY not set"; exit 1; }
-          cat > hubspot.config.yml <<YAML
-          defaultAccount: $HS_ACCOUNT_ID
-          accounts:
-            - accountId: $HS_ACCOUNT_ID
-              name: ci
-              authType: personalaccesskey
-              personalAccessKey: $HS_PERSONAL_ACCESS_KEY
-          YAML
       # The package is @hubspot/cli but the binary is `hs`, so `npx @hubspot/cli`
       # fails with "could not determine executable to run". Install it instead.
       - name: Install HubSpot CLI
         run: npm install -g @hubspot/cli@8
+      # `--use-env` is the CLI's supported CI path: it reads the key and account
+      # from the environment. A hand-written hubspot.config.yml fails with
+      # "Cannot read properties of undefined (reading 'tokenInfo')" because the
+      # CLI expects an auth block it normally populates itself.
       - name: Upload project
         working-directory: hubspot-theme
-        run: hs project upload --account=${{ secrets.HUBSPOT_ACCOUNT_ID }}
-      - name: Remove credentials
-        if: always()
-        run: rm -f hubspot.config.yml
+        env:
+          HUBSPOT_PERSONAL_ACCESS_KEY: ${{ secrets.HUBSPOT_PERSONAL_ACCESS_KEY }}
+          HUBSPOT_ACCOUNT_ID: ${{ secrets.HUBSPOT_ACCOUNT_ID }}
+          HUBSPOT_PORTAL_ID: ${{ secrets.HUBSPOT_ACCOUNT_ID }}
+        run: hs project upload --use-env
