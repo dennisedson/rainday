@@ -180,9 +180,6 @@ the 6.5% Kansas state rate on its own.
 the shop approaches a nexus threshold in another state, that function becomes a
 list of states rather than a single check.
 
-Shipping is taxable in Kansas, so the shipping service charge is marked
-`taxable: true` and is included in the taxed subtotal.
-
 An unrecognised or missing state is treated as out-of-state and not taxed. That
 undercharges rather than charging tax that was never owed.
 

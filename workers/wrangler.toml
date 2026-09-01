@@ -8,10 +8,14 @@ compatibility_date = "2026-01-15"
 SQUARE_ENVIRONMENT = "production"
 BASE_URL = "https://www.rainydaymerchandise.com"
 ALLOWED_ORIGINS = "https://www.rainydaymerchandise.com,https://rainydaymerchandise.com"
-# Placeholder until the production Kansas tax catalog object exists.
-# Production must use the real combined state-plus-local rate, not the
-# 6.5% Kansas state rate on its own.
-SQUARE_KS_TAX_ID = "DBZ6Y7OTBOC3ZHUYFIUJJEJP"
+# Tax catalog object id is per-account, same as accessToken/locationId in
+# squareConfig() — production and sandbox credentials must never cross.
+# SQUARE_KS_TAX_ID_PRODUCTION is still a placeholder pointing at the
+# sandbox catalog's tax object until a real production tax object exists.
+# It must then use the real combined state-plus-local rate, not the 6.5%
+# Kansas state rate on its own.
+SQUARE_KS_TAX_ID_PRODUCTION = "DBZ6Y7OTBOC3ZHUYFIUJJEJP"
+SQUARE_KS_TAX_ID_SANDBOX = "DBZ6Y7OTBOC3ZHUYFIUJJEJP"
 
 # Replaces the nightly Vercel cron. Workers have no cold starts, so the
 # keep-alive job that existed only to keep Vercel warm is gone.
@@ -38,4 +42,5 @@ BASE_URL = "https://www.rainydaymerchandise.com"
 # Left empty so CORS falls back to '*'. The dev portal is served from a
 # HubSpot preview hostname that varies; locking it down is not worth it here.
 ALLOWED_ORIGINS = ""
-SQUARE_KS_TAX_ID = "DBZ6Y7OTBOC3ZHUYFIUJJEJP"
+SQUARE_KS_TAX_ID_PRODUCTION = "DBZ6Y7OTBOC3ZHUYFIUJJEJP"
+SQUARE_KS_TAX_ID_SANDBOX = "DBZ6Y7OTBOC3ZHUYFIUJJEJP"

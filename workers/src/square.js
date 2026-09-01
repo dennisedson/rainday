@@ -293,7 +293,7 @@ export async function handleCalculateOrder(request, env) {
       };
     });
 
-    const taxes = buildOrderTaxes(env, shippingAddress?.state);
+    const taxes = buildOrderTaxes(env, cfg, shippingAddress?.state);
 
     const response = await squareFetch(cfg, '/v2/orders/calculate', {
       method: 'POST',
@@ -417,7 +417,7 @@ export async function handleProcessPayment(request, env) {
     const attemptKey = (await sha256Hex(`${orderRef}:${sourceId}`)).slice(0, 24);
 
     // 2. Create the Square order — Square prices it from the catalog.
-    const taxes = buildOrderTaxes(env, billingDetails?.state);
+    const taxes = buildOrderTaxes(env, cfg, billingDetails?.state);
 
     const orderResponse = await squareFetch(cfg, '/v2/orders', {
       method: 'POST',
