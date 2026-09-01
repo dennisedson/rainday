@@ -144,25 +144,43 @@ export async function fetchVariationsById(cfg, variationIds) {
 }
 
 /**
- * Returns the first cart item whose requested quantity exceeds available
- * stock, or null when every item can be fulfilled.
+ * Returns the first variation whose combined requested quantity exceeds
+ * available stock, or null when every item can be fulfilled.
+ *
+ * Square's Orders API does not merge line items that share a
+ * catalog_object_id, so a cart can request the same variation across
+ * multiple line items (e.g. added at different times, or split by a
+ * malicious direct API call). Checking each line item in isolation against
+ * the same stock snapshot would let quantity split across items bypass the
+ * gate entirely, so requested quantity is summed per variation first, and
+ * the stock comparison runs once per variation.
  *
  * Deliberately permissive: an untracked variation, an unknown stock level, or
  * a variation missing from the catalog lookup all allow the sale. Blocking
  * every checkout because Square is unreachable is worse than a rare oversell.
  */
 export function findInsufficientStock(cartItems, variationsById, stockLevels, locationId) {
+  const totalsByVariation = new Map();
   for (const item of cartItems) {
     const vid = item.variationId || item.id;
+    const requested = Number(item.quantity);
+    const existing = totalsByVariation.get(vid);
+    if (existing) {
+      existing.requested += requested;
+    } else {
+      totalsByVariation.set(vid, { name: item.name || vid, requested });
+    }
+  }
+
+  for (const [vid, { name, requested }] of totalsByVariation) {
     const variation = variationsById.get(vid);
     if (!variation) continue;
 
     const available = resolveStockLevel(variation, stockLevels, locationId);
     if (available === undefined) continue;
 
-    const requested = Number(item.quantity);
     if (requested > available) {
-      return { name: item.name || vid, requested, available };
+      return { name, requested, available };
     }
   }
   return null;

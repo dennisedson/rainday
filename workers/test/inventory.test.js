@@ -144,3 +144,52 @@ test('an item falls back to its id when it has no name', () => {
     [{ variationId: 'V1', quantity: 2 }], byId, new Map([['V1', 1]]), LOC2);
   assert.equal(r.name, 'V1');
 });
+
+// A cart can request the same variation across multiple line items (e.g.
+// added at different times, or a direct API call splitting quantity to
+// dodge a per-line check). Square's Orders API does not merge line items
+// sharing a catalog_object_id, so findInsufficientStock must sum requested
+// quantity per variation before comparing against stock.
+
+test('quantity for the same variation split across two line items is summed before checking stock', () => {
+  const r = findInsufficientStock([
+    { variationId: 'V1', quantity: 3, name: 'Bracelet' },
+    { variationId: 'V1', quantity: 3, name: 'Bracelet' },
+  ], byId, new Map([['V1', 5]]), LOC2);
+  assert.deepEqual(r, { name: 'Bracelet', requested: 6, available: 5 });
+});
+
+test('the same variation split across two line items summing to exactly the remaining stock is allowed', () => {
+  const r = findInsufficientStock([
+    { variationId: 'V1', quantity: 2, name: 'Bracelet' },
+    { variationId: 'V1', quantity: 3, name: 'Bracelet' },
+  ], byId, new Map([['V1', 5]]), LOC2);
+  assert.equal(r, null);
+});
+
+test('the same variation split across three line items summing over stock is blocked', () => {
+  const r = findInsufficientStock([
+    { variationId: 'V1', quantity: 2, name: 'Bracelet' },
+    { variationId: 'V1', quantity: 2, name: 'Bracelet' },
+    { variationId: 'V1', quantity: 2, name: 'Bracelet' },
+  ], byId, new Map([['V1', 5]]), LOC2);
+  assert.deepEqual(r, { name: 'Bracelet', requested: 6, available: 5 });
+});
+
+test('an untracked variation split across multiple line items is still allowed regardless of total', () => {
+  const r = findInsufficientStock([
+    { variationId: 'V2', quantity: 50, name: 'Earrings' },
+    { variationId: 'V2', quantity: 50, name: 'Earrings' },
+  ], byId, new Map(), LOC2);
+  assert.equal(r, null);
+});
+
+test('with two different variations both short, the one appearing first in cartItems is reported', () => {
+  const tracked2 = { id: 'V3', item_variation_data: { track_inventory: true } };
+  const byIdTwoTracked = new Map([['V1', tracked], ['V3', tracked2]]);
+  const r = findInsufficientStock([
+    { variationId: 'V1', quantity: 5, name: 'Bracelet' },
+    { variationId: 'V3', quantity: 5, name: 'Necklace' },
+  ], byIdTwoTracked, new Map([['V1', 2], ['V3', 2]]), LOC2);
+  assert.deepEqual(r, { name: 'Bracelet', requested: 5, available: 2 });
+});
