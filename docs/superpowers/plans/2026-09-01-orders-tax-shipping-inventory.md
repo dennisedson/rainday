@@ -36,6 +36,150 @@
 
 ---
 
+### Task 0: Break the square/hubspot import cycle
+
+`src/hubspot.js:10` imports `squareConfig` from `src/square.js`. Task 5 needs
+`square.js` to import `createOrderDeal` from `hubspot.js`, which would close a
+cycle. ESM tolerates that when both sides are hoisted function declarations, but
+"works depending on module evaluation order" is not acceptable under a payment
+path, and a bundler may order it differently than Node does.
+
+Extracting the shared Square client breaks the cycle, shrinks `square.js` (524
+lines today), and gives Tasks 1 and 3 a module to import `squareFetch` from
+rather than receiving it as a parameter.
+
+**Files:**
+- Create: `workers/src/square-client.js`
+- Modify: `workers/src/square.js`
+- Modify: `workers/src/hubspot.js`
+
+**Interfaces:**
+- Consumes: nothing.
+- Produces:
+  - `SQUARE_VERSION: string`
+  - `squareConfig(env, opts?) -> {isProd, accessToken, locationId, apiBase}`
+  - `squareFetch(cfg, path, init?) -> Promise<Response>`
+
+- [ ] **Step 1: Create the shared client**
+
+Create `workers/src/square-client.js`:
+
+```javascript
+/**
+ * Square account resolution and the authenticated fetch wrapper.
+ *
+ * Extracted from square.js so hubspot.js can use it without importing
+ * square.js, which would otherwise form a cycle once square.js needs
+ * createOrderDeal from hubspot.js.
+ */
+
+export const SQUARE_VERSION = '2024-12-18';
+
+/**
+ * Resolves which Square account to talk to. A request may override the
+ * environment by passing a sandbox application id, which is how the dev portal
+ * points at Square sandbox while production points at the live account.
+ */
+export function squareConfig(env, { squareApplicationId, squareLocationId } = {}) {
+  const isProd = squareApplicationId
+    ? !squareApplicationId.startsWith('sandbox-')
+    : (env.SQUARE_ENVIRONMENT || 'sandbox') === 'production';
+
+  return {
+    isProd,
+    accessToken: isProd ? env.SQUARE_PRODUCTION_ACCESS_TOKEN : env.SQUARE_SANDBOX_ACCESS_TOKEN,
+    locationId:
+      squareLocationId ||
+      (isProd ? env.SQUARE_PRODUCTION_LOCATION_ID : env.SQUARE_SANDBOX_LOCATION_ID),
+    apiBase: isProd ? 'https://connect.squareup.com' : 'https://connect.squareupsandbox.com',
+  };
+}
+
+export function squareFetch(cfg, path, init = {}) {
+  return fetch(`${cfg.apiBase}${path}`, {
+    ...init,
+    headers: {
+      'Square-Version': SQUARE_VERSION,
+      Authorization: `Bearer ${cfg.accessToken}`,
+      'Content-Type': 'application/json',
+      ...(init.headers || {}),
+    },
+  });
+}
+```
+
+- [ ] **Step 2: Remove the originals from `square.js`**
+
+In `workers/src/square.js`, delete the `SQUARE_VERSION` const, the entire
+`squareConfig` function with its doc comment, and the entire `squareFetch`
+function. Add to the imports:
+
+```javascript
+import { SQUARE_VERSION, squareConfig, squareFetch } from './square-client.js';
+```
+
+`squareConfig` is re-exported so existing importers keep working:
+
+```javascript
+export { squareConfig };
+```
+
+Leave `SQUARE_VERSION` imported only if something in `square.js` still
+references it; if nothing does, drop it from the import.
+
+- [ ] **Step 3: Point `hubspot.js` at the new module**
+
+In `workers/src/hubspot.js`, change line 10 from:
+
+```javascript
+import { squareConfig } from './square.js';
+```
+
+to:
+
+```javascript
+import { squareConfig } from './square-client.js';
+```
+
+- [ ] **Step 4: Verify no cycle remains and nothing broke**
+
+```bash
+cd workers
+grep -n "from './square.js'" src/*.js          # expect: no hits in hubspot.js
+npm test                                        # expect: 11 passing, 0 failures
+npx wrangler deploy --dry-run --env="" --outdir=/tmp/t0   # expect: bundles clean
+```
+
+- [ ] **Step 5: Confirm behaviour is unchanged against sandbox**
+
+```bash
+npm run deploy:sandbox
+S=https://hsecommerce-api-sandbox.dennis-544.workers.dev/api
+curl -s $S/health
+curl -s $S/square-products | python3 -c "import json,sys; d=json.load(sys.stdin); print(len(d['products']), 'products,', len(d['categories']), 'categories')"
+```
+
+Expected: health reports `environment: sandbox`, and 17 products / 5 categories
+— identical to before the refactor. This task changes no behaviour.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add workers/src/square-client.js workers/src/square.js workers/src/hubspot.js
+git commit -m "Extract the Square client so hubspot and square do not cycle
+
+hubspot.js imported squareConfig from square.js, and square.js is about to
+need createOrderDeal from hubspot.js. ESM tolerates that cycle when both
+sides are hoisted function declarations, but module evaluation order is not
+something to rely on under a payment path, and a bundler may order it
+differently than Node.
+
+squareConfig and squareFetch move to square-client.js, which neither
+imports. No behaviour changes."
+```
+
+---
+
 ### Task 1: Inventory-gated availability
 
 **Files:**
@@ -52,11 +196,10 @@
   - `tracksInventory(variationData, locationId) -> boolean`
   - `isSoldOutAtLocation(variationData, locationId) -> boolean`
   - `resolveStockLevel(variation, stockLevels: Map<string,number>, locationId) -> number|undefined`
-  - `fetchInventoryLevels(cfg, squareFetch, variationIds: string[]) -> Promise<Map<string,number>>`
-  - `fetchInventoryLevelsSafely(cfg, squareFetch, variationIds) -> Promise<Map<string,number>>`
+  - `fetchInventoryLevels(cfg, variationIds: string[]) -> Promise<Map<string,number>>`
+  - `fetchInventoryLevelsSafely(cfg, variationIds) -> Promise<Map<string,number>>`
 
-`squareFetch` is passed in rather than imported, because `src/square.js` already
-imports from `src/inventory.js` and importing back would be circular.
+Import `squareFetch` from `./square-client.js` (created in Task 0).
 
 Note: Square REST returns **snake_case** (`catalog_object_id`, `item_variation_data`, `track_inventory`, `location_overrides`, `sold_out`), unlike the SDK. Read those names.
 
@@ -155,6 +298,8 @@ Create `workers/src/inventory.js`:
  * purchasable.
  */
 
+import { squareFetch } from './square-client.js';
+
 const BATCH_SIZE = 500;
 
 export function chunk(items, size) {
@@ -199,7 +344,7 @@ export function resolveStockLevel(variation, stockLevels, locationId) {
 }
 
 /** Current IN_STOCK counts keyed by variation id. Untracked ids simply won't appear. */
-export async function fetchInventoryLevels(cfg, squareFetch, variationIds) {
+export async function fetchInventoryLevels(cfg, variationIds) {
   const levels = new Map();
   if (variationIds.length === 0) return levels;
 
@@ -234,9 +379,9 @@ export async function fetchInventoryLevels(cfg, squareFetch, variationIds) {
  * Inventory is advisory. If the API is unavailable we fall back to "stock
  * unknown" rather than showing an entire catalog as sold out.
  */
-export async function fetchInventoryLevelsSafely(cfg, squareFetch, variationIds) {
+export async function fetchInventoryLevelsSafely(cfg, variationIds) {
   try {
-    return await fetchInventoryLevels(cfg, squareFetch, variationIds);
+    return await fetchInventoryLevels(cfg, variationIds);
   } catch (error) {
     console.error('[Inventory] fetch failed, treating stock as unknown:', error.message);
     return new Map();
@@ -277,7 +422,7 @@ In `handleGetProducts`, after `const [categories, images, items] = await Promise
     const variationIds = items
       .map((item) => item.item_data?.variations?.[0]?.id)
       .filter(Boolean);
-    const stockLevels = await fetchInventoryLevelsSafely(cfg, squareFetch, variationIds);
+    const stockLevels = await fetchInventoryLevelsSafely(cfg, variationIds);
 ```
 
 Then in the `items.map(...)` callback, replace the `available:` line with:
@@ -292,7 +437,7 @@ In `handleGetProduct`, after `const itemData = item.item_data;`, add:
 
 ```javascript
     const variationIds = (itemData.variations || []).map((v) => v.id);
-    const stockLevels = await fetchInventoryLevelsSafely(cfg, squareFetch, variationIds);
+    const stockLevels = await fetchInventoryLevelsSafely(cfg, variationIds);
 ```
 
 Change the `variations` mapping so each entry reports real stock:
@@ -454,6 +599,8 @@ Create `workers/src/pricing.js`:
  * If they ever disagree, the price-mismatch guard returns 409 and checkout
  * breaks - safely, but visibly.
  */
+
+import { squareFetch } from './square-client.js';
 
 const KANSAS = 'KS';
 
@@ -650,7 +797,7 @@ checkout would break, so this must never become two copies."
 - Consumes: `buildOrderTaxes` from Task 2.
 - Produces:
   - `buildServiceCharges(cents: number|null) -> Array<object>`
-  - `fetchShippingCents(cfg, squareFetch, env) -> Promise<number|null>`
+  - `fetchShippingCents(cfg, env) -> Promise<number|null>`
 
 Catalog `SERVICE_CHARGE` objects do not exist in Square 2024-12-18. The fee is
 the price of a normal catalog item, read server-side and applied as an ad-hoc
@@ -660,9 +807,10 @@ order service charge in `SUBTOTAL_PHASE` with `taxable: true`.
 
 Append to `workers/test/pricing.test.js`:
 
-```javascript
-import { buildServiceCharges } from '../src/pricing.js';
+Merge `buildServiceCharges` into the existing import at the top of the file
+rather than adding a second `import` from the same module.
 
+```javascript
 test('no shipping configured means free shipping', () => {
   assert.deepEqual(buildServiceCharges(null), []);
   assert.deepEqual(buildServiceCharges(undefined), []);
@@ -723,7 +871,7 @@ export function buildServiceCharges(cents) {
  * Returns null when unconfigured or unreadable, which means free shipping —
  * a misconfiguration undercharges rather than stranding a customer at checkout.
  */
-export async function fetchShippingCents(cfg, squareFetch, env) {
+export async function fetchShippingCents(cfg, env) {
   const id = env.SQUARE_SHIPPING_VARIATION_ID;
   if (!id) return null;
   try {
@@ -768,7 +916,7 @@ In `handleCalculateOrder`, before building the request:
 
 ```javascript
     const taxes = buildOrderTaxes(env, shippingAddress?.state);
-    const serviceCharges = buildServiceCharges(await fetchShippingCents(cfg, squareFetch, env));
+    const serviceCharges = buildServiceCharges(await fetchShippingCents(cfg, env));
 ```
 
 and include it in the order object:
