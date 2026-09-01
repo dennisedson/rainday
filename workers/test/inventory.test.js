@@ -35,6 +35,22 @@ test('sold_out at a different location is ignored', () => {
   }), new Map([['VAR1', 12]]), LOC), 12);
 });
 
+test('stockLevels === null (Inventory API failure) reports unknown stock for a tracked variation, not zero', () => {
+  assert.equal(
+    resolveStockLevel(variation({ track_inventory: true }), null, LOC), undefined);
+});
+
+test('stockLevels === null (Inventory API failure) reports unknown stock for an untracked variation', () => {
+  assert.equal(resolveStockLevel(variation({}), null, LOC), undefined);
+});
+
+test('a sold_out override still resolves to 0 even when stockLevels is null (Inventory API failure)', () => {
+  assert.equal(resolveStockLevel(variation({
+    track_inventory: true,
+    location_overrides: [{ location_id: LOC, sold_out: true }],
+  }), null, LOC), 0);
+});
+
 test('a location override can turn tracking off', () => {
   assert.equal(resolveStockLevel(variation({
     track_inventory: true,

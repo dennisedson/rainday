@@ -43,11 +43,19 @@ export function isSoldOutAtLocation(variationData, locationId) {
  * Three-way, and the distinction matters:
  *   0         - definitely out of stock, block the sale
  *   a number  - tracked count, gate on it
- *   undefined - Square isn't tracking this variation, leave it unconstrained
+ *   undefined - Square isn't tracking this variation (or the Inventory API
+ *               call failed), leave it unconstrained
+ *
+ * `stockLevels === null` signals an Inventory API failure rather than a
+ * legitimate empty result (nothing tracked). It must not be confused with a
+ * tracked variation whose count row is simply missing, which is why the null
+ * check runs before the tracking check but after `sold_out` — a catalog-level
+ * override is real regardless of whether the Inventory API is reachable.
  */
 export function resolveStockLevel(variation, stockLevels, locationId) {
   const data = variation?.item_variation_data;
   if (isSoldOutAtLocation(data, locationId)) return 0;
+  if (stockLevels === null) return undefined;
   if (!tracksInventory(data, locationId)) return undefined;
   return stockLevels.get(variation.id) ?? 0;
 }
@@ -85,14 +93,18 @@ export async function fetchInventoryLevels(cfg, variationIds) {
 }
 
 /**
- * Inventory is advisory. If the API is unavailable we fall back to "stock
- * unknown" rather than showing an entire catalog as sold out.
+ * Inventory is advisory. If the API is unavailable we return `null` rather
+ * than an empty Map, so callers (via `resolveStockLevel`) can tell "the API
+ * failed" apart from "the API succeeded and nothing is tracked" — both would
+ * otherwise miss on `stockLevels.get(id)` and be indistinguishable from a
+ * tracked-but-zero-count variation, which would wrongly mark the whole
+ * catalog sold out during an outage.
  */
 export async function fetchInventoryLevelsSafely(cfg, variationIds) {
   try {
     return await fetchInventoryLevels(cfg, variationIds);
   } catch (error) {
     console.error('[Inventory] fetch failed, treating stock as unknown:', error.message);
-    return new Map();
+    return null;
   }
 }
