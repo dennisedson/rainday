@@ -1,0 +1,295 @@
+<title>Rainy Day Store Setup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --ground:   #FAF7F2;
+    --surface:  #FFFFFF;
+    --sunken:   #F2ECE4;
+    --ink:      #2B2622;
+    --ink-soft: #6B615A;
+    --muted:    #8A7F76;
+    --rule:     #E4DCD3;
+    --accent:   #D9531E;
+    --accent-soft: #FBEDE6;
+    --flag:     #8A5B12;
+    --flag-soft:#FBF1DC;
+    --display: "Playfair Display", Georgia, "Times New Roman", serif;
+    --body: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:   #17140F;
+      --surface:  #211D18;
+      --sunken:   #2A251F;
+      --ink:      #F2EBE1;
+      --ink-soft: #C0B4A6;
+      --muted:    #968A7C;
+      --rule:     #362F27;
+      --accent:   #FF8B5C;
+      --accent-soft: #34211A;
+      --flag:     #E8B764;
+      --flag-soft:#2E2415;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground:   #17140F;
+    --surface:  #211D18;
+    --sunken:   #2A251F;
+    --ink:      #F2EBE1;
+    --ink-soft: #C0B4A6;
+    --muted:    #968A7C;
+    --rule:     #362F27;
+    --accent:   #FF8B5C;
+    --accent-soft: #34211A;
+    --flag:     #E8B764;
+    --flag-soft:#2E2415;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 17px;
+    line-height: 1.65;
+    margin: 0;
+    padding: 0 1.5rem 6rem;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 44rem; margin: 0 auto; }
+
+  header.masthead {
+    padding: 4.5rem 0 2.5rem;
+    border-bottom: 2px solid var(--ink);
+  }
+  .eyebrow {
+    font-size: .72rem; font-weight: 600; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--accent); margin: 0 0 1rem;
+  }
+  h1 {
+    font-family: var(--display); font-weight: 600;
+    font-size: clamp(2.2rem, 6vw, 3.1rem); line-height: 1.08;
+    margin: 0 0 1rem; text-wrap: balance; letter-spacing: -.01em;
+  }
+  .standfirst {
+    font-size: 1.08rem; color: var(--ink-soft); margin: 0; max-width: 34rem;
+  }
+
+  .meta {
+    display: flex; flex-wrap: wrap; gap: 1.75rem;
+    padding: 1.5rem 0; border-bottom: 1px solid var(--rule); margin-bottom: 3.5rem;
+  }
+  .meta div { display: flex; flex-direction: column; gap: .2rem; }
+  .meta dt {
+    font-size: .68rem; font-weight: 600; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .meta dd { margin: 0; font-size: .95rem; font-weight: 500; }
+
+  section.part { margin-bottom: 4rem; }
+  .part-head { display: flex; align-items: baseline; gap: 1rem; margin-bottom: .5rem; }
+  .part-num {
+    font-family: var(--mono); font-size: .8rem; font-weight: 500;
+    color: var(--accent); flex-shrink: 0; padding-top: .3rem;
+  }
+  h2 {
+    font-family: var(--display); font-weight: 600; font-size: 1.75rem;
+    line-height: 1.2; margin: 0; text-wrap: balance;
+  }
+  .part-where {
+    font-size: .8rem; color: var(--muted); margin: 0 0 1.75rem 3.1rem;
+    font-weight: 500;
+  }
+  section.part > p, section.part > ol, section.part > .note { margin-left: 3.1rem; }
+  @media (max-width: 34rem) {
+    .part-where, section.part > p, section.part > ol, section.part > .note { margin-left: 0; }
+    .part-head { gap: .6rem; }
+  }
+
+  ol.steps { list-style: none; counter-reset: s; padding: 0; margin: 0; }
+  ol.steps > li {
+    counter-increment: s; position: relative;
+    padding: 0 0 1.6rem 2.4rem; border-left: 1px solid var(--rule);
+    margin-left: .45rem;
+  }
+  ol.steps > li:last-child { border-left-color: transparent; padding-bottom: 0; }
+  ol.steps > li::before {
+    content: counter(s); position: absolute; left: -.72rem; top: 0;
+    width: 1.45rem; height: 1.45rem; border-radius: 50%;
+    background: var(--ground); border: 1px solid var(--rule); color: var(--ink-soft);
+    font-family: var(--mono); font-size: .72rem; font-weight: 500;
+    display: grid; place-items: center;
+  }
+  ol.steps > li > strong { font-weight: 600; }
+  ol.steps p { margin: .35rem 0 0; color: var(--ink-soft); font-size: .95rem; }
+
+  kbd {
+    font-family: var(--body); font-size: .93em; font-weight: 500;
+    color: var(--ink); background: var(--sunken);
+    padding: .08em .42em; border-radius: 3px; white-space: nowrap;
+  }
+  code {
+    font-family: var(--mono); font-size: .88em;
+    background: var(--accent-soft); color: var(--accent);
+    padding: .1em .4em; border-radius: 3px;
+  }
+
+  .values { margin: 1.25rem 0 0; border: 1px solid var(--rule); border-radius: 4px; overflow: hidden; }
+  .values-head {
+    background: var(--sunken); padding: .55rem .9rem;
+    font-size: .7rem; font-weight: 600; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--muted);
+    border-bottom: 1px solid var(--rule);
+  }
+  .values ul { list-style: none; margin: 0; padding: 0; }
+  .values li {
+    font-family: var(--mono); font-size: .84rem; padding: .5rem .9rem;
+    border-bottom: 1px solid var(--rule); background: var(--surface);
+  }
+  .values li:last-child { border-bottom: 0; }
+
+  .table-scroll { overflow-x: auto; margin-top: 1.25rem; }
+  table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+  th, td { text-align: left; padding: .6rem .8rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  th {
+    font-size: .68rem; font-weight: 600; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--ink);
+  }
+  td:first-child { font-family: var(--mono); font-size: .84rem; white-space: nowrap; }
+
+  .note {
+    border-left: 3px solid var(--flag); background: var(--flag-soft);
+    padding: .9rem 1.1rem; margin-top: 1.5rem; border-radius: 0 4px 4px 0;
+    font-size: .93rem;
+  }
+  .note strong { color: var(--flag); }
+  .note :is(p):first-child { margin-top: 0; }
+  .note :is(p):last-child { margin-bottom: 0; }
+
+  footer {
+    margin-top: 4rem; padding-top: 2rem; border-top: 2px solid var(--ink);
+    font-size: .93rem; color: var(--ink-soft);
+  }
+  footer h2 { font-size: 1.35rem; margin-bottom: .75rem; }
+  footer ul { padding-left: 1.1rem; }
+  footer li { margin-bottom: .4rem; }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  a:focus-visible, li:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+</style>
+
+<div class="wrap">
+
+<header class="masthead">
+  <p class="eyebrow">Rainy Day Merchandise</p>
+  <h1>Setting up your order notifications</h1>
+  <p class="standfirst">Four short tasks that make your shop tell you when something sells, and stop it selling things you've run out of.</p>
+</header>
+
+<dl class="meta">
+  <div><dt>Time</dt><dd>About 20 minutes</dd></div>
+  <div><dt>You'll need</dt><dd>HubSpot &amp; Square admin access</dd></div>
+  <div><dt>Send back</dt><dd>One access key</dd></div>
+</dl>
+
+<section class="part">
+  <div class="part-head"><span class="part-num">01</span><h2>Create an access key</h2></div>
+  <p class="part-where">In HubSpot</p>
+  <p>This is the password your website uses to write orders into HubSpot. Nobody sees it but the site.</p>
+  <ol class="steps">
+    <li><strong>Open</strong> <kbd>Settings</kbd> (the gear, top right) → <kbd>Integrations</kbd> → <kbd>Private Apps</kbd>.</li>
+    <li><strong>Click</strong> <kbd>Create a private app</kbd>. Name it <em>Rainy Day Website</em> so you recognise it later.</li>
+    <li><strong>Open the Scopes tab.</strong> Scopes are permissions. Search for each one below and tick it.
+      <div class="values">
+        <div class="values-head">Tick exactly these five</div>
+        <ul>
+          <li>crm.objects.contacts.read</li>
+          <li>crm.objects.contacts.write</li>
+          <li>crm.objects.deals.read</li>
+          <li>crm.objects.deals.write</li>
+          <li>crm.schemas.deals.write</li>
+        </ul>
+      </div>
+    </li>
+    <li><strong>Click</strong> <kbd>Create app</kbd>, then <kbd>Continue creating</kbd> when it asks you to confirm.</li>
+    <li><strong>Copy the token.</strong> It starts with <code>pat-na1-</code> and is about 44 characters.
+      <p>Send it to Dennis somewhere private — a text message rather than email, and delete it once he confirms it works.</p>
+    </li>
+  </ol>
+  <div class="note">
+    <p><strong>If a scope won't tick,</strong> your seat may not have permission to grant it. That's a HubSpot account-level setting, not something you've done wrong — you'd need a Super Admin to either grant it or create the app for you.</p>
+  </div>
+</section>
+
+<section class="part">
+  <div class="part-head"><span class="part-num">02</span><h2>Add three order fields</h2></div>
+  <p class="part-where">In HubSpot</p>
+  <p>Right now a sale creates a deal that says only a name and an amount. These three fields are what let it also tell you <em>what</em> was bought and <em>where it's going</em>.</p>
+  <ol class="steps">
+    <li><strong>Go to</strong> <kbd>Settings</kbd> → <kbd>Properties</kbd>, then switch the object dropdown to <kbd>Deal</kbd>.</li>
+    <li><strong>Click</strong> <kbd>Create property</kbd> and make each of the three below.</li>
+    <li><strong>The internal name has to match exactly.</strong> HubSpot creates it from the label, so after typing the label, click the small <kbd>&lt;/&gt;</kbd> or <em>Edit</em> link beside it and set the internal name yourself.
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Internal name</th><th>Label to show</th><th>Field type</th></tr></thead>
+          <tbody>
+            <tr><td>order_items</td><td>Order Items</td><td>Multi-line text</td></tr>
+            <tr><td>shipping_address</td><td>Shipping Address</td><td>Multi-line text</td></tr>
+            <tr><td>square_receipt_url</td><td>Square Receipt URL</td><td>Single-line text</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </li>
+  </ol>
+  <div class="note">
+    <p><strong>The internal name is the part that matters.</strong> The label is just what you see on screen and you can change it any time. If an internal name is even slightly different — <code>order_item</code> instead of <code>order_items</code> — the website can't write to it, and orders will arrive with those boxes empty.</p>
+  </div>
+</section>
+
+<section class="part">
+  <div class="part-head"><span class="part-num">03</span><h2>Get an email when someone orders</h2></div>
+  <p class="part-where">In HubSpot</p>
+  <p>Every sale already creates a deal and assigns it to you. This tells HubSpot to email you when that happens.</p>
+  <ol class="steps">
+    <li><strong>Go to</strong> <kbd>Settings</kbd> → <kbd>Objects</kbd> → <kbd>Deals</kbd>, then open the <kbd>Pipelines</kbd> tab.</li>
+    <li><strong>Choose your pipeline</strong> (it's probably called <em>Sales Pipeline</em>) and open the <kbd>Automate</kbd> tab.</li>
+    <li><strong>Find the first stage</strong> — the one new deals land in, usually <em>Appointment Scheduled</em>. Click the automation icon next to it.</li>
+    <li><strong>Add</strong> <kbd>Send internal email notification</kbd> and put yourself as the recipient.
+      <p>Keep the subject short and recognisable — something like <em>New order on the website</em>.</p>
+    </li>
+    <li><strong>Turn the automation on</strong> and save. Test it by placing a small order on the site.</li>
+  </ol>
+  <div class="note">
+    <p><strong>Why not the "deal assigned to me" notification?</strong> You can switch that on in <kbd>Profile &amp; Preferences</kbd> → <kbd>Notifications</kbd>, and it's worth doing as a backup. But it usually only fires when a deal's owner <em>changes</em>, and your orders arrive already assigned to you — so it may stay silent. The pipeline automation above fires on the sale itself, which is why it's the one to set up first.</p>
+  </div>
+</section>
+
+<section class="part">
+  <div class="part-head"><span class="part-num">04</span><h2>Let the site track your stock</h2></div>
+  <p class="part-where">In Square</p>
+  <p>You're currently marking things unavailable by hand. That works — the website respects it. But it means remembering after every sale.</p>
+  <p>If you turn on stock tracking instead, the site counts down as things sell and marks an item <em>Sold Out</em> on its own the moment you hit zero. Nobody can buy something you can't post.</p>
+  <ol class="steps">
+    <li><strong>Open</strong> Square Dashboard → <kbd>Items &amp; Orders</kbd> → <kbd>Items</kbd>, and click an item you want to track.</li>
+    <li><strong>Turn on</strong> <kbd>Track inventory</kbd> (Square sometimes calls this <em>Manage stock</em>).</li>
+    <li><strong>Enter how many you actually have</strong> and save.</li>
+    <li><strong>Repeat</strong> for anything you make in limited numbers. Do a couple first and watch what happens before doing them all.</li>
+  </ol>
+  <div class="note">
+    <p><strong>Items without tracking stay buyable forever.</strong> That's deliberate — switching this on can't accidentally empty your whole shop. It only applies to items you've explicitly turned it on for, so there's no risk in trying it on one thing.</p>
+  </div>
+</section>
+
+<footer>
+  <h2>When you're done</h2>
+  <ul>
+    <li>Send Dennis the access key from task 1.</li>
+    <li>Tell him whether all five scopes ticked, or which ones wouldn't.</li>
+    <li>Place a small test order and check that you get an email and that the deal shows the items and address.</li>
+  </ul>
+  <p style="margin-top:1.5rem">Tasks 1 to 3 need doing before the new site goes live. Task 4 you can do whenever — including after launch.</p>
+</footer>
+
+</div>
