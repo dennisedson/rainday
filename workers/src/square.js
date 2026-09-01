@@ -435,6 +435,32 @@ export async function handleProcessPayment(request, env) {
     const taxes = buildOrderTaxes(env, cfg, billingDetails?.state);
     const serviceCharges = buildServiceCharges(await fetchShippingCents(cfg, env));
 
+    // The shipping address is attached to the order as a SHIPMENT fulfillment
+    // so it shows up on the Square Dashboard's Orders tab, not just as
+    // billing_address on the payment (which the Dashboard doesn't surface).
+    const recipientName = [billingDetails?.firstName, billingDetails?.lastName]
+      .filter(Boolean).join(' ').trim();
+    const fulfillments = billingDetails?.address1
+      ? [{
+          type: 'SHIPMENT',
+          state: 'PROPOSED',
+          shipment_details: {
+            recipient: {
+              display_name: recipientName || buyerEmail || 'Customer',
+              email_address: buyerEmail,
+              phone_number: billingDetails.phone,
+              address: {
+                address_line_1: billingDetails.address1,
+                locality: billingDetails.city,
+                administrative_district_level_1: billingDetails.state,
+                postal_code: billingDetails.zipCode,
+                country: billingDetails.country || 'US',
+              },
+            },
+          },
+        }]
+      : [];
+
     const orderResponse = await squareFetch(cfg, '/v2/orders', {
       method: 'POST',
       body: JSON.stringify({
@@ -444,6 +470,7 @@ export async function handleProcessPayment(request, env) {
           line_items: lineItems,
           ...(taxes.length ? { taxes } : {}),
           ...(serviceCharges.length ? { service_charges: serviceCharges } : {}),
+          ...(fulfillments.length ? { fulfillments } : {}),
         },
         idempotency_key: `order-${attemptKey}`,
       }),

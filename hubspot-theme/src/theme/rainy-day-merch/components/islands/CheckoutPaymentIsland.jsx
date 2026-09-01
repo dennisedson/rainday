@@ -123,6 +123,9 @@ export default function CheckoutPaymentIsland({ squareApplicationId, squareLocat
             squareApplicationId,
             squareLocationId,
             billingDetails: {
+              firstName: checkoutData.shippingInfo.firstName,
+              lastName: checkoutData.shippingInfo.lastName,
+              phone: checkoutData.shippingInfo.phone,
               address1: checkoutData.shippingInfo.address,
               city: checkoutData.shippingInfo.city,
               state: checkoutData.shippingInfo.state,

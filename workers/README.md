@@ -214,6 +214,13 @@ free rather than sending a sandbox-only catalog id to the production account.
 There is no free-shipping threshold and no local-pickup option. Both are
 straightforward to add and neither has been asked for.
 
+### Why orders carry a fulfillment
+
+The shipping address is attached to the order as a `SHIPMENT` fulfillment with
+a recipient. Without it the address exists only as `billing_address` on the
+payment, and the Square Dashboard's Orders tab shows no destination — which is
+why the shop owner could not see where anything shipped.
+
 ## Deploy
 
 ```bash
