@@ -211,8 +211,16 @@ undercharges rather than charging tax that was never owed.
 ## Shipping
 
 A flat fee applied to every order. **The amount is the price of a catalog item
-called `Shipping`** — edit that price in Square Items to change what customers
-pay. No deploy needed.
+called `Shipping`.**
+
+Once that item exists and `SQUARE_SHIPPING_VARIATION_ID_PRODUCTION` (or
+`_SANDBOX`) points at it, **changing its price in Square Items needs no
+deploy** — the Worker reads the price at request time. **Creating the item
+for the first time is not deploy-free**: the Worker only reads the price it's
+told to read, so `SQUARE_SHIPPING_VARIATION_ID_PRODUCTION` must be set to the
+new item's variation id in `wrangler.toml` and the Worker redeployed before a
+new `Shipping` item does anything. Until then it just sits in the catalog —
+priced, but not charged to anyone.
 
 If no shipping item is configured, **shipping is free**. That makes the feature
 safe to enable before a fee has been decided, and means a misconfiguration
@@ -224,9 +232,14 @@ charge is `SUBTOTAL_PHASE` and `taxable: true` so it falls inside the taxed
 subtotal — correct for Kansas, where shipping is taxable. Square rejects a
 taxable charge in `TOTAL_PHASE`.
 
-The shipping item is excluded from `/api/square-products` by variation ID.
-Without that it appears in the storefront as a purchasable product;
-`available_online: false` does not persist through the Catalog API.
+The shipping item is excluded from `/api/square-products` and
+`/api/square-product` two ways: by variation id (the configured
+`SQUARE_SHIPPING_VARIATION_ID_*`), and independently by name — any item
+literally named `Shipping` (case-insensitive) is excluded even before the
+variation id is configured. Without both checks the item appears in the
+storefront as a purchasable product; `available_online: false` does not
+persist through the Catalog API, and the variation-id check alone does
+nothing for a `Shipping` item created before the id is set.
 
 The variation id is per-account, same as the tax catalog id above and
 accessToken/locationId in `squareConfig()` — production and sandbox

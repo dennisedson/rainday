@@ -70,6 +70,24 @@ function isItemAvailable(itemData, stockLevel) {
   return !itemData.is_deleted && itemData.available_online !== false;
 }
 
+/**
+ * True for the dedicated `Shipping` catalog item, which prices the shipping
+ * fee (see pricing.js) but is not itself a purchasable product.
+ *
+ * Checked two ways, independently: by variation id (the same value that
+ * prices the fee) OR by name (case-insensitive, trimmed). The variation id
+ * check alone leaves a gap — SQUARE_SHIPPING_VARIATION_ID_* defaults to empty
+ * (free shipping) until the owner configures it, and during that window an
+ * item literally named `Shipping` would otherwise reach the storefront grid
+ * as a purchasable product. Belt and braces.
+ */
+export function isShippingItem(item, shippingVariationId) {
+  const variationId = item?.item_data?.variations?.[0]?.id;
+  if (shippingVariationId && variationId === shippingVariationId) return true;
+  const name = item?.item_data?.name;
+  return typeof name === 'string' && name.trim().toLowerCase() === 'shipping';
+}
+
 /** GET /api/square-products */
 export async function handleGetProducts(request, env) {
   const cfg = squareConfig(env);
@@ -87,15 +105,13 @@ export async function handleGetProducts(request, env) {
     // The Shipping catalog item's price is read server-side to compute the
     // shipping fee (see pricing.js); it is not a purchasable product.
     // available_online: false does not persist through the Catalog API, so it
-    // must be filtered out here by id or it would appear in the product grid.
-    // The id is per-account, same as the tax and shipping-fee ids elsewhere —
+    // must be filtered out here or it would appear in the product grid. The id
+    // is per-account, same as the tax and shipping-fee ids elsewhere —
     // production and sandbox credentials must never cross.
     const shippingVariationId = cfg.isProd
       ? env.SQUARE_SHIPPING_VARIATION_ID_PRODUCTION
       : env.SQUARE_SHIPPING_VARIATION_ID_SANDBOX;
-    const sellableItems = shippingVariationId
-      ? items.filter((item) => item.item_data?.variations?.[0]?.id !== shippingVariationId)
-      : items;
+    const sellableItems = items.filter((item) => !isShippingItem(item, shippingVariationId));
 
     const variationIds = sellableItems
       .map((item) => item.item_data?.variations?.[0]?.id)
@@ -180,6 +196,17 @@ export async function handleGetProduct(request, env) {
 
     const item = data.object;
     if (!item || item.type !== 'ITEM') {
+      return json({ error: 'Product not found' }, { status: 404 });
+    }
+
+    // Same exclusion as /api/square-products: the Shipping item is priced
+    // for the shipping fee (see pricing.js), not sold as a product. Without
+    // this, fetching it by id directly returns it as a normal purchasable
+    // item.
+    const shippingVariationId = cfg.isProd
+      ? env.SQUARE_SHIPPING_VARIATION_ID_PRODUCTION
+      : env.SQUARE_SHIPPING_VARIATION_ID_SANDBOX;
+    if (isShippingItem(item, shippingVariationId)) {
       return json({ error: 'Product not found' }, { status: 404 });
     }
 
