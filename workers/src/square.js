@@ -9,6 +9,7 @@
 import { json, readJson, readParams, sha256Hex } from './lib.js';
 import { squareConfig, squareFetch } from './square-client.js';
 import { fetchInventoryLevelsSafely, resolveStockLevel } from './inventory.js';
+import { buildOrderTaxes } from './pricing.js';
 
 const DEFAULT_PRODUCT_IMAGE =
   'https://images.unsplash.com/photo-1560393464-5c69a73c5770?w=800&auto=format&fit=crop&q=80';
@@ -259,7 +260,7 @@ export async function handleGetCategories(request, env) {
 export async function handleCalculateOrder(request, env) {
   try {
     const body = await readJson(request);
-    const { cartItems, squareApplicationId, squareLocationId } = body;
+    const { cartItems, shippingAddress, squareApplicationId, squareLocationId } = body;
 
     if (!Array.isArray(cartItems) || cartItems.length === 0) {
       return json({ error: 'Cart items are required' }, { status: 400 });
@@ -292,11 +293,17 @@ export async function handleCalculateOrder(request, env) {
       };
     });
 
-    // Shipping address is deliberately withheld so Square applies origin-based
-    // tax rather than trying to compute destination-based tax per state.
+    const taxes = buildOrderTaxes(env, shippingAddress?.state);
+
     const response = await squareFetch(cfg, '/v2/orders/calculate', {
       method: 'POST',
-      body: JSON.stringify({ order: { location_id: cfg.locationId, line_items: lineItems } }),
+      body: JSON.stringify({
+        order: {
+          location_id: cfg.locationId,
+          line_items: lineItems,
+          ...(taxes.length ? { taxes } : {}),
+        },
+      }),
     });
 
     const data = await response.json();
@@ -410,10 +417,17 @@ export async function handleProcessPayment(request, env) {
     const attemptKey = (await sha256Hex(`${orderRef}:${sourceId}`)).slice(0, 24);
 
     // 2. Create the Square order — Square prices it from the catalog.
+    const taxes = buildOrderTaxes(env, billingDetails?.state);
+
     const orderResponse = await squareFetch(cfg, '/v2/orders', {
       method: 'POST',
       body: JSON.stringify({
-        order: { location_id: cfg.locationId, reference_id: orderRef, line_items: lineItems },
+        order: {
+          location_id: cfg.locationId,
+          reference_id: orderRef,
+          line_items: lineItems,
+          ...(taxes.length ? { taxes } : {}),
+        },
         idempotency_key: `order-${attemptKey}`,
       }),
     });

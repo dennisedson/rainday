@@ -163,6 +163,29 @@ If the Square Inventory API is unavailable the Worker treats stock as unknown
 rather than marking everything sold out. That fails toward selling rather than
 toward an empty-looking store; a sustained outage could oversell.
 
+## Sales tax
+
+Kansas buyers are charged Kansas sales tax. Buyers in other states are charged
+nothing, because sales tax is only owed elsewhere once an economic nexus
+threshold is crossed there — commonly $100,000 in gross revenue or 200
+transactions annually in that state.
+
+**The rate lives in Square.** It is a catalog tax object; edit its percentage in
+the Square Dashboard under Items & Orders → Settings → Sales taxes. No deploy
+needed. Use the real combined state-plus-local rate for the shop's location, not
+the 6.5% Kansas state rate on its own.
+
+**The condition lives in code** — `shouldApplyKansasTax()` in
+`src/pricing.js` — because who owes tax is a legal rule, not a setting. When
+the shop approaches a nexus threshold in another state, that function becomes a
+list of states rather than a single check.
+
+Shipping is taxable in Kansas, so the shipping service charge is marked
+`taxable: true` and is included in the taxed subtotal.
+
+An unrecognised or missing state is treated as out-of-state and not taxed. That
+undercharges rather than charging tax that was never owed.
+
 ## Deploy
 
 ```bash
