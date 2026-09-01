@@ -145,6 +145,24 @@ makes every magic link look expired.
 `handleCreateDeal` also hardcodes pipeline `default` and stage
 `appointmentscheduled`. Both are HubSpot defaults, but confirm they exist.
 
+## Inventory and out-of-stock
+
+Out-of-stock only works for items with **inventory tracking enabled in Square**
+(Items → the item → Manage stock). Untracked items are always purchasable —
+that is deliberate, so enabling this feature cannot take a whole catalog
+offline.
+
+Stock resolves three ways:
+
+- **0** — out of stock. Add to Cart is disabled and the product shows "Out of
+  Stock". The product stays visible and can still be favourited.
+- **a number** — tracked count, the sale is gated on it.
+- **unknown** — Square is not tracking this variation, so it stays purchasable.
+
+If the Square Inventory API is unavailable the Worker treats stock as unknown
+rather than marking everything sold out. That fails toward selling rather than
+toward an empty-looking store; a sustained outage could oversell.
+
 ## Deploy
 
 ```bash

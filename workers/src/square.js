@@ -8,6 +8,7 @@
 
 import { json, readJson, readParams, sha256Hex } from './lib.js';
 import { squareConfig, squareFetch } from './square-client.js';
+import { fetchInventoryLevelsSafely, resolveStockLevel } from './inventory.js';
 
 const DEFAULT_PRODUCT_IMAGE =
   'https://images.unsplash.com/photo-1560393464-5c69a73c5770?w=800&auto=format&fit=crop&q=80';
@@ -62,13 +63,9 @@ async function fetchAllCatalogPages(cfg, type) {
   return all;
 }
 
-function isItemAvailable(itemData, variation) {
-  const vd = variation?.item_variation_data;
-  return (
-    !itemData.is_deleted &&
-    itemData.available_online !== false &&
-    (!vd?.track_inventory || vd?.inventory_alert_type !== 'LOW_QUANTITY')
-  );
+function isItemAvailable(itemData, stockLevel) {
+  if (stockLevel === 0) return false;
+  return !itemData.is_deleted && itemData.available_online !== false;
 }
 
 /** GET /api/square-products */
@@ -84,6 +81,11 @@ export async function handleGetProducts(request, env) {
       fetchAllCatalogPages(cfg, 'IMAGE'),
       fetchAllCatalogPages(cfg, 'ITEM'),
     ]);
+
+    const variationIds = items
+      .map((item) => item.item_data?.variations?.[0]?.id)
+      .filter(Boolean);
+    const stockLevels = await fetchInventoryLevelsSafely(cfg, variationIds);
 
     const imageMap = {};
     for (const image of images) imageMap[image.id] = image.image_data?.url || null;
@@ -114,7 +116,7 @@ export async function handleGetProducts(request, env) {
         categoryImage: categoryInfo?.image || null,
         price: price / 100,
         image: (imageId ? imageMap[imageId] : null) || DEFAULT_PRODUCT_IMAGE,
-        available: isItemAvailable(itemData, variation),
+        available: isItemAvailable(itemData, resolveStockLevel(variation, stockLevels, cfg.locationId)),
         variations: itemData.variations || [],
       };
     });
@@ -172,14 +174,15 @@ export async function handleGetProduct(request, env) {
     if (images.length === 0) images.push(DEFAULT_PRODUCT_IMAGE);
 
     const itemData = item.item_data;
+    const variationIds = (itemData.variations || []).map((v) => v.id);
+    const stockLevels = await fetchInventoryLevelsSafely(cfg, variationIds);
+
     const variations = (itemData.variations || []).map((v) => ({
       id: v.id,
       name: v.item_variation_data?.name || 'Default',
       sku: v.item_variation_data?.sku || null,
       price: (v.item_variation_data?.price_money?.amount || 0) / 100,
-      available:
-        !v.item_variation_data?.track_inventory ||
-        v.item_variation_data?.inventory_alert_type !== 'LOW_QUANTITY',
+      available: resolveStockLevel(v, stockLevels, cfg.locationId) !== 0,
     }));
 
     const product = {
@@ -192,7 +195,8 @@ export async function handleGetProduct(request, env) {
       images,
       mainImage: images[0],
       galleryImages: images.slice(1, 4),
-      available: isItemAvailable(itemData, itemData.variations?.[0]),
+      available: isItemAvailable(itemData,
+        resolveStockLevel(itemData.variations?.[0] ?? {}, stockLevels, cfg.locationId)),
       variations,
     };
 
