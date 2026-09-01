@@ -1460,9 +1460,12 @@ than only set at creation."
 Repeat the configuration in production, in this order:
 
 1. Create the Kansas tax object in the production Square Dashboard, at the real
-   combined state-plus-local rate. Set `SQUARE_KS_TAX_ID` in `[vars]`.
+   combined state-plus-local rate. Set `SQUARE_KS_TAX_ID_PRODUCTION` in `[vars]`
+   (currently left empty on purpose — see the comment above it in
+   `workers/wrangler.toml`).
 2. Create the `Shipping` item in production Square once Dani has chosen a fee.
-   Set `SQUARE_SHIPPING_VARIATION_ID`. Leaving it empty keeps shipping free.
+   Set `SQUARE_SHIPPING_VARIATION_ID_PRODUCTION`. Leaving it empty keeps
+   shipping free.
 3. Create the three custom deal properties on the production portal:
    `order_items` (textarea), `shipping_address` (textarea),
    `square_receipt_url` (text).

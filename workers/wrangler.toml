@@ -10,11 +10,17 @@ BASE_URL = "https://www.rainydaymerchandise.com"
 ALLOWED_ORIGINS = "https://www.rainydaymerchandise.com,https://rainydaymerchandise.com"
 # Tax catalog object id is per-account, same as accessToken/locationId in
 # squareConfig() — production and sandbox credentials must never cross.
-# SQUARE_KS_TAX_ID_PRODUCTION is still a placeholder pointing at the
-# sandbox catalog's tax object until a real production tax object exists.
-# It must then use the real combined state-plus-local rate, not the 6.5%
-# Kansas state rate on its own.
-SQUARE_KS_TAX_ID_PRODUCTION = "DBZ6Y7OTBOC3ZHUYFIUJJEJP"
+# Left empty: DBZ6Y7OTBOC3ZHUYFIUJJEJP (the value below, in SANDBOX) exists
+# only in the Square SANDBOX catalog. Deployed to production, that id makes
+# Square reject every Kansas order's POST /v2/orders with a 502 — Kansas
+# checkout goes down while every other state keeps working. buildOrderTaxes
+# returns [] for an empty id, so leaving this blank means production charges
+# no Kansas tax (today's behaviour) instead of breaking checkout.
+# MUST be set to the real production tax object id, at the real combined
+# state-plus-local rate (not the 6.5% Kansas state rate alone), at cutover —
+# see docs/superpowers/plans/2026-09-01-orders-tax-shipping-inventory.md,
+# "After all tasks".
+SQUARE_KS_TAX_ID_PRODUCTION = ""
 SQUARE_KS_TAX_ID_SANDBOX = "DBZ6Y7OTBOC3ZHUYFIUJJEJP"
 # Shipping variation id is per-account too, same reasoning as the tax id above.
 # SQUARE_SHIPPING_VARIATION_ID_PRODUCTION is a placeholder until a production
