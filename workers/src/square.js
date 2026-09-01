@@ -7,44 +7,14 @@
  */
 
 import { json, readJson, readParams, sha256Hex } from './lib.js';
+import { squareConfig, squareFetch } from './square-client.js';
 
 const DEFAULT_PRODUCT_IMAGE =
   'https://images.unsplash.com/photo-1560393464-5c69a73c5770?w=800&auto=format&fit=crop&q=80';
 
-const SQUARE_VERSION = '2024-12-18';
 const CACHE_CONTROL = 'public, s-maxage=300, stale-while-revalidate=600';
 
-/**
- * Resolves which Square account to talk to. A request may override the
- * environment by passing a sandbox application id, which is how the dev portal
- * points at Square sandbox while production points at the live account.
- */
-export function squareConfig(env, { squareApplicationId, squareLocationId } = {}) {
-  const isProd = squareApplicationId
-    ? !squareApplicationId.startsWith('sandbox-')
-    : (env.SQUARE_ENVIRONMENT || 'sandbox') === 'production';
-
-  return {
-    isProd,
-    accessToken: isProd ? env.SQUARE_PRODUCTION_ACCESS_TOKEN : env.SQUARE_SANDBOX_ACCESS_TOKEN,
-    locationId:
-      squareLocationId ||
-      (isProd ? env.SQUARE_PRODUCTION_LOCATION_ID : env.SQUARE_SANDBOX_LOCATION_ID),
-    apiBase: isProd ? 'https://connect.squareup.com' : 'https://connect.squareupsandbox.com',
-  };
-}
-
-function squareFetch(cfg, path, init = {}) {
-  return fetch(`${cfg.apiBase}${path}`, {
-    ...init,
-    headers: {
-      'Square-Version': SQUARE_VERSION,
-      Authorization: `Bearer ${cfg.accessToken}`,
-      'Content-Type': 'application/json',
-      ...(init.headers || {}),
-    },
-  });
-}
+export { squareConfig };
 
 // Per-isolate catalog cache, same 5 minute TTL as the Vercel version. The
 // Cache-Control header above is what actually does the heavy lifting once a

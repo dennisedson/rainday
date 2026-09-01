@@ -7,7 +7,7 @@
  */
 
 import { json, readJson, readParams } from './lib.js';
-import { squareConfig } from './square.js';
+import { squareConfig } from './square-client.js';
 
 const HUBSPOT_API = 'https://api.hubapi.com';
 
