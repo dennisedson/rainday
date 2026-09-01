@@ -151,28 +151,7 @@ export default function CheckoutPaymentIsland({ squareApplicationId, squareLocat
 
         console.log('[Checkout] Payment successful:', paymentResult);
 
-        // 3. Create Deal in HubSpot
-        try {
-          await fetch(`${API_BASE_URL}/create-deal`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              email: checkoutData.shippingInfo.email,
-              firstName: checkoutData.shippingInfo.firstName,
-              lastName: checkoutData.shippingInfo.lastName,
-              orderTotal: checkoutData.total,
-              orderItems: checkoutData.cartItems,
-              paymentId: paymentResult.paymentId,
-              orderId: paymentResult.orderId || `ORD-${Date.now()}`,
-            }),
-          });
-        } catch (dealError) {
-          console.error('[Checkout] Failed to create HubSpot deal:', dealError);
-        }
-
-        // 4. Save order data and redirect
+        // 3. Save order data and redirect
         const orderData = {
           ...checkoutData,
           paymentId: paymentResult.paymentId,

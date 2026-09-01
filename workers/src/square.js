@@ -10,6 +10,7 @@ import { json, readJson, readParams, sha256Hex } from './lib.js';
 import { squareConfig, squareFetch } from './square-client.js';
 import { fetchInventoryLevelsSafely, resolveStockLevel } from './inventory.js';
 import { buildOrderTaxes, buildServiceCharges, fetchShippingCents } from './pricing.js';
+import { createOrderDeal } from './hubspot.js';
 
 const DEFAULT_PRODUCT_IMAGE =
   'https://images.unsplash.com/photo-1560393464-5c69a73c5770?w=800&auto=format&fit=crop&q=80';
@@ -368,7 +369,7 @@ export async function handleCalculateOrder(request, env) {
  * against the server total so the shopper is never charged a different amount
  * than they were shown.
  */
-export async function handleProcessPayment(request, env) {
+export async function handleProcessPayment(request, env, ctx) {
   const body = await readJson(request);
   const {
     sourceId,
@@ -537,6 +538,19 @@ export async function handleProcessPayment(request, env) {
     }
 
     const p = data.payment;
+
+    const dealWork = createOrderDeal(env, {
+      email: buyerEmail,
+      firstName: billingDetails?.firstName,
+      lastName: billingDetails?.lastName,
+      phone: billingDetails?.phone,
+      order: squareOrder,
+      payment: p,
+    }).catch((error) => {
+      console.error('[Order] HubSpot deal creation failed:', error.message, 'payment:', p.id);
+    });
+    if (ctx?.waitUntil) ctx.waitUntil(dealWork);
+
     return json({
       success: true,
       paymentId: p.id,

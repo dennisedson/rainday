@@ -92,10 +92,8 @@ change `utils/config.js` plus the inline script in `base.hubl.html`.
 
 ## HubSpot portal setup
 
-A fresh portal needs both the right scopes and five custom properties. Miss the
-properties and HubSpot rejects the writes with a 400 — and `create-deal`'s
-failure is swallowed by the checkout island, so you get a "successful" checkout
-with no deal and no visible reason.
+A fresh portal needs both the right scopes and eight custom properties. Miss
+the properties and HubSpot rejects the writes with a 400.
 
 ### Two different HubSpot credentials
 
@@ -136,14 +134,41 @@ scope, so check both.
 | contacts | `favorite_products` | string / textarea |
 | deals | `payment_id` | string / text |
 | deals | `order_id` | string / text |
+| deals | `order_items` | string / textarea |
+| deals | `shipping_address` | string / textarea |
+| deals | `square_receipt_url` | string / text |
 
 `magic_link_expires` must be **text, not datetime**. The code writes
 `expiresAt.toISOString()` and reads it back with `new Date()`; HubSpot datetime
 properties return epoch milliseconds through the API, which parses to 1970 and
 makes every magic link look expired.
 
-`handleCreateDeal` also hardcodes pipeline `default` and stage
+`createOrderDeal` also hardcodes pipeline `default` and stage
 `appointmentscheduled`. Both are HubSpot defaults, but confirm they exist.
+
+### Order notification
+
+No confirmation email is sent by this code. Two things cover it:
+
+- **The customer** gets Square's own payment receipt, sent automatically to the
+  buyer email in production. Sandbox does not send email — that is a Square
+  behaviour, not a defect. Confirm receipts are enabled in the Square Dashboard.
+- **The shop owner** is notified by HubSpot. Deals are created with
+  `hubspot_owner_id` set, and HubSpot notifies an owner when a deal is assigned
+  to them. Sales Hub Starter also supports a pipeline-stage automation that
+  emails on entry to the first stage. Either works; both are configured in
+  HubSpot, not here.
+
+The notification only has to say a sale happened. The detail lives on the
+records: `order_items`, `shipping_address`, and `square_receipt_url` on the
+deal, and the customer's address and phone on the associated contact.
+
+Deals are created server-side in `process-payment` via `ctx.waitUntil()`, so a
+closed browser cannot lose one and a HubSpot outage cannot fail a charge that
+already succeeded. Failures are logged; look for `[Order]` in `wrangler tail`.
+
+Set `HUBSPOT_OWNER_ID` per environment in `wrangler.toml`. If it is unset the
+deal is still created, just unassigned — and nobody is notified.
 
 ## Inventory and out-of-stock
 

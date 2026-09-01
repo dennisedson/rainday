@@ -68,14 +68,86 @@ export async function getContact(env, contactId, properties = []) {
 export { findContactByEmail, createContact };
 
 async function findOrCreateContact(env, email, extraProperties = {}) {
+  const clean = Object.fromEntries(
+    Object.entries(extraProperties).filter(([, v]) => v !== undefined && v !== null && v !== ''));
   const existing = await findContactByEmail(env, email);
-  if (existing) return existing.id;
-
-  const created = await createContact(env, {
-    email: email.toLowerCase().trim(),
-    ...extraProperties,
-  });
+  if (existing) {
+    if (Object.keys(clean).length) await updateContact(env, existing.id, clean);
+    return existing.id;
+  }
+  const created = await createContact(env, { email: email.toLowerCase().trim(), ...clean });
   return created.id;
+}
+
+function money(cents) {
+  return `$${((cents ?? 0) / 100).toFixed(2)}`;
+}
+
+/** One readable line per item, for the deal's order_items property. */
+export function formatOrderItems(lineItems) {
+  return (lineItems ?? [])
+    .map((li) => `${li.name ?? 'Item'} x${li.quantity ?? '1'} - ${money(li.total_money?.amount)}`)
+    .join('\n');
+}
+
+/** A mailing label, for the deal's shipping_address property. */
+export function formatShippingAddress(recipient) {
+  if (!recipient) return '';
+  const a = recipient.address ?? {};
+  const cityLine = [a.locality, [a.administrative_district_level_1, a.postal_code]
+    .filter(Boolean).join(' ')].filter(Boolean).join(', ');
+  return [recipient.display_name, a.address_line_1, a.address_line_2, cityLine,
+    recipient.phone_number].filter(Boolean).join('\n');
+}
+
+/**
+ * Creates the contact and deal for a completed order.
+ *
+ * The customer's identity and location go on the CONTACT using HubSpot's
+ * standard fields; order-specific data goes on the DEAL. The address is stored
+ * in both places deliberately - the contact holds where a person currently is,
+ * the deal snapshots where THIS order shipped.
+ *
+ * Assigning an owner is what triggers the shop owner's HubSpot notification.
+ */
+export async function createOrderDeal(env, { email, firstName, lastName, phone, order, payment }) {
+  const recipient = order?.fulfillments?.[0]?.shipment_details?.recipient;
+  const address = recipient?.address ?? {};
+
+  const contactId = await findOrCreateContact(env, email, {
+    firstname: firstName,
+    lastname: lastName,
+    phone,
+    address: address.address_line_1,
+    city: address.locality,
+    state: address.administrative_district_level_1,
+    zip: address.postal_code,
+  });
+
+  const properties = {
+    dealname: `Order ${order?.reference_id ?? order?.id ?? Date.now()}`,
+    amount: ((order?.total_money?.amount ?? 0) / 100).toString(),
+    dealstage: 'appointmentscheduled',
+    pipeline: 'default',
+    payment_id: payment?.id,
+    order_id: order?.reference_id ?? order?.id,
+    order_items: formatOrderItems(order?.line_items),
+    shipping_address: formatShippingAddress(recipient),
+    square_receipt_url: payment?.receipt_url,
+  };
+  if (env.HUBSPOT_OWNER_ID) properties.hubspot_owner_id = env.HUBSPOT_OWNER_ID;
+
+  const deal = await hubspotFetch(env, '/crm/v3/objects/deals', {
+    method: 'POST',
+    body: JSON.stringify({ properties }),
+  });
+
+  await hubspotFetch(env, `/crm/v4/objects/deals/${deal.id}/associations/contacts/${contactId}`, {
+    method: 'PUT',
+    body: JSON.stringify([{ associationCategory: 'HUBSPOT_DEFINED', associationTypeId: 3 }]),
+  });
+
+  return { dealId: deal.id };
 }
 
 /** POST /api/create-deal */
