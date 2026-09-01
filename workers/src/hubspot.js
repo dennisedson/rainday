@@ -7,7 +7,7 @@
  */
 
 import { json, readJson, readParams } from './lib.js';
-import { squareConfig } from './square-client.js';
+import { squareConfig, squareFetch } from './square-client.js';
 
 const HUBSPOT_API = 'https://api.hubapi.com';
 
@@ -206,14 +206,7 @@ export async function handleSyncCategories(request, env) {
 /** Shared by the HTTP route and the scheduled handler. */
 export async function syncCategories(env) {
   const cfg = squareConfig(env);
-  const response = await fetch(`${cfg.apiBase}/v2/catalog/list?types=CATEGORY`, {
-    method: 'GET',
-    headers: {
-      'Square-Version': '2024-12-18',
-      Authorization: `Bearer ${cfg.accessToken}`,
-      'Content-Type': 'application/json',
-    },
-  });
+  const response = await squareFetch(cfg, '/v2/catalog/list?types=CATEGORY', { method: 'GET' });
 
   const data = await response.json();
   if (!response.ok) throw new Error(`Square category fetch failed: ${JSON.stringify(data.errors || data)}`);
