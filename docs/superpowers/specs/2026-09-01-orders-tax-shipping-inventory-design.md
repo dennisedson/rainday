@@ -156,8 +156,36 @@ plain `Tax`, since the real rate now comes from Square.
 
 ### Decision
 
-A **Service Charge** defined in the Square Dashboard, referenced by catalog ID
-when the order is created. The owner sets and changes the amount in Square.
+The fee is applied as an **ad-hoc order service charge** (`SUBTOTAL_PHASE`,
+`taxable: true`), with the amount read server-side from the price of a
+dedicated **`Shipping` catalog item**.
+
+Catalog `SERVICE_CHARGE` objects were the obvious choice and do not exist in
+Square API version 2024-12-18 — creating one is rejected with
+`SERVICE_CHARGE is not a valid enum value`. A catalog item price is the only
+Square-native place the owner can edit a number that the server can then read,
+so the fee lives there and is applied as a service charge, which is how it
+should present on the order and receipt.
+
+The owner changes the fee by editing that item's price in Square Items. No
+deploy, and the client never supplies the amount.
+
+Because the shipping item is a real catalog item, `handleGetProducts` must
+exclude it by variation ID or it appears in the storefront grid as a $5
+product. Setting `available_online: false` does not persist through the
+Catalog API and cannot be relied on.
+
+Verified in sandbox across all four cases — item $12.00, shipping $5.00, KS
+6.5%:
+
+| | tax | total |
+| :--- | ---: | ---: |
+| Kansas + shipping | $1.10 | $18.10 |
+| Kansas, no shipping | $0.78 | $12.78 |
+| Out-of-state + shipping | $0.00 | $17.00 |
+| Out-of-state, no shipping | $0.00 | $12.00 |
+
+Shipping is taxed in the Kansas cases, which is correct for Kansas.
 
 The fee must never be supplied by the client — that is the tampering vector the
 server-side pricing fix closed.
@@ -255,8 +283,12 @@ for untracked items until the owner turns tracking on.
 
 Configuration that must exist before the code has anything to reference:
 
-1. A Kansas tax object in the Square catalog (sandbox and production).
-2. A shipping Service Charge in the Square catalog (sandbox and production).
+1. A Kansas tax object in the Square catalog. **Sandbox: created,
+   `DBZ6Y7OTBOC3ZHUYFIUJJEJP`, 6.5%.** Production still to do, and the owner
+   must use her real combined state-plus-local rate, not the 6.5% state rate.
+2. A `Shipping` catalog item whose price is the fee. **Sandbox: created, item
+   `E6CYY7VUONBXH4QRR5S5GHD3`, variation `FTI6NZQXSUZ5CVNBDDL45ALJ`, $5.00.**
+   Optional — absent means free shipping.
 3. The three custom Deal properties on both HubSpot portals.
 4. The owner ID for deal assignment.
 5. Confirmation that Square receipts are enabled in production.
