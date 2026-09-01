@@ -108,3 +108,62 @@ export async function fetchInventoryLevelsSafely(cfg, variationIds) {
     return null;
   }
 }
+
+/**
+ * Reads the catalog variations for a cart, so stock can be resolved.
+ *
+ * resolveStockLevel needs `item_variation_data` — `track_inventory` and the
+ * per-location overrides — to tell "untracked" apart from "tracked at zero".
+ * The cart only carries ids, so the payment path has to look them up.
+ *
+ * Returns an empty Map on failure, which findInsufficientStock treats as
+ * "cannot tell" and therefore allows.
+ */
+export async function fetchVariationsById(cfg, variationIds) {
+  const byId = new Map();
+  const unique = [...new Set(variationIds.filter(Boolean))];
+  if (unique.length === 0) return byId;
+
+  try {
+    for (const ids of chunk(unique, BATCH_SIZE)) {
+      const response = await squareFetch(cfg, '/v2/catalog/batch-retrieve', {
+        method: 'POST',
+        body: JSON.stringify({ object_ids: ids }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(JSON.stringify(data.errors || data));
+      for (const obj of data.objects ?? []) {
+        if (obj.type === 'ITEM_VARIATION') byId.set(obj.id, obj);
+      }
+    }
+  } catch (error) {
+    console.error('[Inventory] variation lookup failed, stock cannot be checked:', error.message);
+    return new Map();
+  }
+  return byId;
+}
+
+/**
+ * Returns the first cart item whose requested quantity exceeds available
+ * stock, or null when every item can be fulfilled.
+ *
+ * Deliberately permissive: an untracked variation, an unknown stock level, or
+ * a variation missing from the catalog lookup all allow the sale. Blocking
+ * every checkout because Square is unreachable is worse than a rare oversell.
+ */
+export function findInsufficientStock(cartItems, variationsById, stockLevels, locationId) {
+  for (const item of cartItems) {
+    const vid = item.variationId || item.id;
+    const variation = variationsById.get(vid);
+    if (!variation) continue;
+
+    const available = resolveStockLevel(variation, stockLevels, locationId);
+    if (available === undefined) continue;
+
+    const requested = Number(item.quantity);
+    if (requested > available) {
+      return { name: item.name || vid, requested, available };
+    }
+  }
+  return null;
+}

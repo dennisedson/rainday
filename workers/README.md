@@ -184,6 +184,17 @@ Stock resolves three ways:
 - **a number** — tracked count, the sale is gated on it.
 - **unknown** — Square is not tracking this variation, so it stays purchasable.
 
+Stock is enforced at payment, not only in the storefront. `process-payment`
+re-checks the cart against live counts before creating the Square order and
+returns 409 if anything is short, so a cached page or a direct API call cannot
+buy the last unit twice. Nothing is charged and no order is created when that
+happens.
+
+The check is deliberately permissive: an untracked variation, an unreachable
+Inventory API, or a variation missing from the catalog all allow the sale.
+Blocking every checkout because Square is unreachable is worse than a rare
+oversell.
+
 If the Square Inventory API is unavailable the Worker treats stock as unknown
 rather than marking everything sold out. That fails toward selling rather than
 toward an empty-looking store; a sustained outage could oversell.

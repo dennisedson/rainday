@@ -8,7 +8,7 @@
 
 import { json, readJson, readParams, sha256Hex } from './lib.js';
 import { squareConfig, squareFetch } from './square-client.js';
-import { fetchInventoryLevelsSafely, resolveStockLevel } from './inventory.js';
+import { fetchInventoryLevelsSafely, fetchVariationsById, findInsufficientStock, resolveStockLevel } from './inventory.js';
 import { buildOrderTaxes, buildServiceCharges, fetchShippingCents } from './pricing.js';
 import { createOrderDeal } from './hubspot.js';
 
@@ -452,6 +452,29 @@ export async function handleProcessPayment(request, env, ctx) {
         );
       }
       lineItems.push({ catalog_object_id: vid, quantity: String(quantity) });
+    }
+
+    // Stock is enforced here, not just in the storefront: a cached page or a
+    // direct API call could otherwise buy the last unit twice.
+    const cartVariationIds = cartItems.map((item) => item.variationId || item.id);
+    const [variationsById, stockLevels] = await Promise.all([
+      fetchVariationsById(cfg, cartVariationIds),
+      fetchInventoryLevelsSafely(cfg, cartVariationIds),
+    ]);
+    const shortfall = findInsufficientStock(cartItems, variationsById, stockLevels, cfg.locationId);
+    if (shortfall) {
+      console.warn(`[Order] Blocked: "${shortfall.name}" requested ${shortfall.requested}, ${shortfall.available} available`);
+      return json(
+        {
+          error: 'Insufficient stock',
+          message: shortfall.available === 0
+            ? `"${shortfall.name}" just sold out. Please remove it from your cart.`
+            : `Only ${shortfall.available} of "${shortfall.name}" remain. Please lower the quantity.`,
+          itemName: shortfall.name,
+          available: shortfall.available,
+        },
+        { status: 409 }
+      );
     }
 
     const orderRef = orderId || `ORD-${crypto.randomUUID()}`;

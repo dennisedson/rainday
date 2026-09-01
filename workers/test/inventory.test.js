@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  chunk, parseInventoryQuantity, resolveStockLevel, tracksInventory,
+  chunk, findInsufficientStock, parseInventoryQuantity, resolveStockLevel, tracksInventory,
 } from '../src/inventory.js';
 
 const LOC = 'LOC1';
@@ -82,4 +82,65 @@ test('chunk splits without dropping or duplicating', () => {
   assert.deepEqual(chunk([1, 2, 3, 4, 5], 2), [[1, 2], [3, 4], [5]]);
   assert.deepEqual(chunk([], 2), []);
   assert.deepEqual(chunk([1, 2], 5), [[1, 2]]);
+});
+
+const LOC2 = 'LOC1';
+const tracked = { id: 'V1', item_variation_data: { track_inventory: true } };
+const untracked = { id: 'V2', item_variation_data: {} };
+const byId = new Map([['V1', tracked], ['V2', untracked]]);
+
+test('an untracked item is always allowed', () => {
+  const r = findInsufficientStock(
+    [{ variationId: 'V2', quantity: 99, name: 'Earrings' }], byId, new Map(), LOC2);
+  assert.equal(r, null);
+});
+
+test('a tracked item within stock is allowed', () => {
+  const r = findInsufficientStock(
+    [{ variationId: 'V1', quantity: 3, name: 'Bracelet' }], byId, new Map([['V1', 5]]), LOC2);
+  assert.equal(r, null);
+});
+
+test('requesting exactly the remaining stock is allowed', () => {
+  const r = findInsufficientStock(
+    [{ variationId: 'V1', quantity: 5, name: 'Bracelet' }], byId, new Map([['V1', 5]]), LOC2);
+  assert.equal(r, null);
+});
+
+test('requesting more than remains is blocked, and reports the shortfall', () => {
+  const r = findInsufficientStock(
+    [{ variationId: 'V1', quantity: 6, name: 'Bracelet' }], byId, new Map([['V1', 5]]), LOC2);
+  assert.deepEqual(r, { name: 'Bracelet', requested: 6, available: 5 });
+});
+
+test('a tracked item at zero is blocked', () => {
+  const r = findInsufficientStock(
+    [{ variationId: 'V1', quantity: 1, name: 'Bracelet' }], byId, new Map(), LOC2);
+  assert.deepEqual(r, { name: 'Bracelet', requested: 1, available: 0 });
+});
+
+test('unknown stock allows the sale — inventory is advisory', () => {
+  const r = findInsufficientStock(
+    [{ variationId: 'V1', quantity: 99, name: 'Bracelet' }], byId, null, LOC2);
+  assert.equal(r, null);
+});
+
+test('a variation missing from the catalog lookup is allowed rather than blocked', () => {
+  const r = findInsufficientStock(
+    [{ variationId: 'GONE', quantity: 1, name: 'Mystery' }], byId, new Map(), LOC2);
+  assert.equal(r, null);
+});
+
+test('with several items, the first insufficient one is reported', () => {
+  const r = findInsufficientStock([
+    { variationId: 'V2', quantity: 10, name: 'Earrings' },
+    { variationId: 'V1', quantity: 4, name: 'Bracelet' },
+  ], byId, new Map([['V1', 2]]), LOC2);
+  assert.deepEqual(r, { name: 'Bracelet', requested: 4, available: 2 });
+});
+
+test('an item falls back to its id when it has no name', () => {
+  const r = findInsufficientStock(
+    [{ variationId: 'V1', quantity: 2 }], byId, new Map([['V1', 1]]), LOC2);
+  assert.equal(r.name, 'V1');
 });
