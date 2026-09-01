@@ -169,6 +169,13 @@ Scope is order-level, not per line item, and it is applied to every order — no
 free-shipping threshold and no local pickup option. Both are easy to add later
 and neither has been asked for.
 
+**If no shipping service charge is configured in Square, shipping is free.**
+The Worker looks the charge up and omits it when absent rather than erroring or
+blocking checkout. This makes the feature safe to deploy before the owner has
+decided on a fee: behaviour is unchanged from today until she creates one, and
+it starts applying the moment she does, with no deploy. It also means a
+misconfiguration undercharges rather than stranding a customer at checkout.
+
 Flat rate only. Weight- and zone-based shipping needs the full address and
 interacts with tax sourcing; not worth building before there is evidence it is
 needed.
