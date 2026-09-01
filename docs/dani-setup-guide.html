@@ -185,11 +185,11 @@
 <header class="masthead">
   <p class="eyebrow">Rainy Day Merchandise</p>
   <h1>Setting up your order notifications</h1>
-  <p class="standfirst">Four short tasks that make your shop tell you when something sells, and stop it selling things you've run out of.</p>
+  <p class="standfirst">Three short tasks that make your shop tell you when something sells, and stop it selling things you've run out of.</p>
 </header>
 
 <dl class="meta">
-  <div><dt>Time</dt><dd>About 20 minutes</dd></div>
+  <div><dt>Time</dt><dd>About 15 minutes</dd></div>
   <div><dt>You'll need</dt><dd>HubSpot &amp; Square admin access</dd></div>
   <div><dt>Send back</dt><dd>One access key</dd></div>
 </dl>
@@ -219,37 +219,13 @@
     </li>
   </ol>
   <div class="note">
+    <p><strong>The fifth scope is only for setup.</strong> <code>crm.schemas.deals.write</code> lets Dennis add the three order fields your deals need, so you don't have to create them by hand and get the spelling exactly right. Once he confirms they exist you can untick it and save — the website never needs it again.</p>
     <p><strong>If a scope won't tick,</strong> your seat may not have permission to grant it. That's a HubSpot account-level setting, not something you've done wrong — you'd need a Super Admin to either grant it or create the app for you.</p>
   </div>
 </section>
 
 <section class="part">
-  <div class="part-head"><span class="part-num">02</span><h2>Add three order fields</h2></div>
-  <p class="part-where">In HubSpot</p>
-  <p>Right now a sale creates a deal that says only a name and an amount. These three fields are what let it also tell you <em>what</em> was bought and <em>where it's going</em>.</p>
-  <ol class="steps">
-    <li><strong>Go to</strong> <kbd>Settings</kbd> → <kbd>Properties</kbd>, then switch the object dropdown to <kbd>Deal</kbd>.</li>
-    <li><strong>Click</strong> <kbd>Create property</kbd> and make each of the three below.</li>
-    <li><strong>The internal name has to match exactly.</strong> HubSpot creates it from the label, so after typing the label, click the small <kbd>&lt;/&gt;</kbd> or <em>Edit</em> link beside it and set the internal name yourself.
-      <div class="table-scroll">
-        <table>
-          <thead><tr><th>Internal name</th><th>Label to show</th><th>Field type</th></tr></thead>
-          <tbody>
-            <tr><td>order_items</td><td>Order Items</td><td>Multi-line text</td></tr>
-            <tr><td>shipping_address</td><td>Shipping Address</td><td>Multi-line text</td></tr>
-            <tr><td>square_receipt_url</td><td>Square Receipt URL</td><td>Single-line text</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </li>
-  </ol>
-  <div class="note">
-    <p><strong>The internal name is the part that matters.</strong> The label is just what you see on screen and you can change it any time. If an internal name is even slightly different — <code>order_item</code> instead of <code>order_items</code> — the website can't write to it, and orders will arrive with those boxes empty.</p>
-  </div>
-</section>
-
-<section class="part">
-  <div class="part-head"><span class="part-num">03</span><h2>Get an email when someone orders</h2></div>
+  <div class="part-head"><span class="part-num">02</span><h2>Get an email when someone orders</h2></div>
   <p class="part-where">In HubSpot</p>
   <p>Every sale already creates a deal and assigns it to you. This tells HubSpot to email you when that happens.</p>
   <ol class="steps">
@@ -267,7 +243,7 @@
 </section>
 
 <section class="part">
-  <div class="part-head"><span class="part-num">04</span><h2>Let the site track your stock</h2></div>
+  <div class="part-head"><span class="part-num">03</span><h2>Let the site track your stock</h2></div>
   <p class="part-where">In Square</p>
   <p>You're currently marking things unavailable by hand. That works — the website respects it. But it means remembering after every sale.</p>
   <p>If you turn on stock tracking instead, the site counts down as things sell and marks an item <em>Sold Out</em> on its own the moment you hit zero. Nobody can buy something you can't post.</p>
@@ -287,9 +263,9 @@
   <ul>
     <li>Send Dennis the access key from task 1.</li>
     <li>Tell him whether all five scopes ticked, or which ones wouldn't.</li>
-    <li>Place a small test order and check that you get an email and that the deal shows the items and address.</li>
+    <li>Once he's confirmed the order fields are in, place a small test order and check that you get an email and that the deal shows what was bought and where it's going.</li>
   </ul>
-  <p style="margin-top:1.5rem">Tasks 1 to 3 need doing before the new site goes live. Task 4 you can do whenever — including after launch.</p>
+  <p style="margin-top:1.5rem">Tasks 1 and 2 need doing before the new site goes live. Task 3 you can do whenever — including after launch.</p>
 </footer>
 
 </div>
