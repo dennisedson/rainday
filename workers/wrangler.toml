@@ -29,6 +29,10 @@ SQUARE_KS_TAX_ID_SANDBOX = "DBZ6Y7OTBOC3ZHUYFIUJJEJP"
 SQUARE_SHIPPING_VARIATION_ID_PRODUCTION = ""
 SQUARE_SHIPPING_VARIATION_ID_SANDBOX = "FTI6NZQXSUZ5CVNBDDL45ALJ"
 
+# Deals are assigned to this owner, which is what triggers the shop owner's
+# HubSpot notification. Without it deals are created unassigned and silent.
+HUBSPOT_OWNER_ID = "86679095"
+
 # Replaces the nightly Vercel cron. Workers have no cold starts, so the
 # keep-alive job that existed only to keep Vercel warm is gone.
 [triggers]
