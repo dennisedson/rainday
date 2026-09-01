@@ -26,7 +26,7 @@ SQUARE_KS_TAX_ID_SANDBOX = "DBZ6Y7OTBOC3ZHUYFIUJJEJP"
 # SQUARE_SHIPPING_VARIATION_ID_PRODUCTION is a placeholder until a production
 # Shipping item exists; leave it empty (or unresolved) to keep production
 # shipping free rather than pointing it at a sandbox-only catalog object.
-SQUARE_SHIPPING_VARIATION_ID_PRODUCTION = ""
+SQUARE_SHIPPING_VARIATION_ID_PRODUCTION = "OQNGEYFZKWGHYIZCUAWCHQ3R"
 SQUARE_SHIPPING_VARIATION_ID_SANDBOX = "FTI6NZQXSUZ5CVNBDDL45ALJ"
 
 # Deals are assigned to this owner, which is what triggers the shop owner's
@@ -62,7 +62,7 @@ SQUARE_KS_TAX_ID_PRODUCTION = "DBZ6Y7OTBOC3ZHUYFIUJJEJP"
 SQUARE_KS_TAX_ID_SANDBOX = "DBZ6Y7OTBOC3ZHUYFIUJJEJP"
 # See the [vars] comment above — production placeholder until a production
 # Shipping item exists.
-SQUARE_SHIPPING_VARIATION_ID_PRODUCTION = ""
+SQUARE_SHIPPING_VARIATION_ID_PRODUCTION = "OQNGEYFZKWGHYIZCUAWCHQ3R"
 SQUARE_SHIPPING_VARIATION_ID_SANDBOX = "FTI6NZQXSUZ5CVNBDDL45ALJ"
 # Owner assigned to deals created from sandbox orders, which is what triggers
 # HubSpot's notification to them. Left out of [vars] until the production
