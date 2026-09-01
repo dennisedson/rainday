@@ -83,11 +83,32 @@ function money(cents) {
   return `$${((cents ?? 0) / 100).toFixed(2)}`;
 }
 
-/** One readable line per item, for the deal's order_items property. */
-export function formatOrderItems(lineItems) {
-  return (lineItems ?? [])
-    .map((li) => `${li.name ?? 'Item'} x${li.quantity ?? '1'} - ${money(li.total_money?.amount)}`)
-    .join('\n');
+/**
+ * A readable order summary for the deal's order_items property.
+ *
+ * Line totals use `gross_sales_money` — quantity x unit price, BEFORE tax.
+ * Square's `total_money` per line folds in that line's apportioned tax, which
+ * made the block impossible to reconcile against the order total. Shipping is
+ * a service charge rather than a line item, so it is appended explicitly, as
+ * are tax and the total.
+ */
+export function formatOrderSummary(order) {
+  const lineItems = order?.line_items ?? [];
+  if (lineItems.length === 0) return '';
+
+  const lines = lineItems.map(
+    (li) => `${li.name ?? 'Item'} x${li.quantity ?? '1'} - ${money(li.gross_sales_money?.amount)}`
+  );
+
+  for (const charge of order?.service_charges ?? []) {
+    lines.push(`${charge.name ?? 'Service charge'} - ${money(charge.amount_money?.amount)}`);
+  }
+
+  const tax = order?.total_tax_money?.amount ?? 0;
+  if (tax > 0) lines.push(`Tax - ${money(tax)}`);
+
+  lines.push(`Total - ${money(order?.total_money?.amount)}`);
+  return lines.join('\n');
 }
 
 /** A mailing label, for the deal's shipping_address property. */
@@ -131,7 +152,7 @@ export async function createOrderDeal(env, { email, firstName, lastName, phone, 
     pipeline: 'default',
     payment_id: payment?.id,
     order_id: order?.reference_id ?? order?.id,
-    order_items: formatOrderItems(order?.line_items),
+    order_items: formatOrderSummary(order),
     shipping_address: formatShippingAddress(recipient),
     square_receipt_url: payment?.receipt_url,
   };

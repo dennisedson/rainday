@@ -1,23 +1,71 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { formatOrderItems, formatShippingAddress } from '../src/hubspot.js';
+import { formatOrderSummary, formatShippingAddress } from '../src/hubspot.js';
 
-test('order items render one readable line each', () => {
-  const lineItems = [
-    { name: 'Charm bracelets', quantity: '2', total_money: { amount: 2400 } },
-    { name: 'Small earrings', quantity: '1', total_money: { amount: 500 } },
-  ];
-  assert.equal(formatOrderItems(lineItems),
-    'Charm bracelets x2 - $24.00\nSmall earrings x1 - $5.00');
+test('the summary reconciles: lines, shipping, tax, total', () => {
+  const order = {
+    line_items: [
+      { name: 'Charm bracelets', quantity: '2', gross_sales_money: { amount: 2400 },
+        total_money: { amount: 2556 } },
+    ],
+    service_charges: [{ name: 'Shipping', amount_money: { amount: 500 } }],
+    total_tax_money: { amount: 188 },
+    total_money: { amount: 3088 },
+  };
+  assert.equal(formatOrderSummary(order),
+    'Charm bracelets x2 - $24.00\nShipping - $5.00\nTax - $1.88\nTotal - $30.88');
 });
 
-test('order items handle an empty or missing list', () => {
-  assert.equal(formatOrderItems([]), '');
-  assert.equal(formatOrderItems(undefined), '');
+test('several items each get their own pre-tax line', () => {
+  const order = {
+    line_items: [
+      { name: 'Charm bracelets', quantity: '2', gross_sales_money: { amount: 2400 } },
+      { name: 'Small earrings', quantity: '1', gross_sales_money: { amount: 500 } },
+    ],
+    total_money: { amount: 2900 },
+  };
+  assert.equal(formatOrderSummary(order),
+    'Charm bracelets x2 - $24.00\nSmall earrings x1 - $5.00\nTotal - $29.00');
 });
 
-test('an item with no total renders as $0.00 rather than undefined', () => {
-  assert.equal(formatOrderItems([{ name: 'Mystery', quantity: '1' }]), 'Mystery x1 - $0.00');
+test('no tax means no tax line', () => {
+  const order = {
+    line_items: [{ name: 'Keychain', quantity: '1', gross_sales_money: { amount: 1000 } }],
+    total_tax_money: { amount: 0 },
+    total_money: { amount: 1000 },
+  };
+  assert.equal(formatOrderSummary(order), 'Keychain x1 - $10.00\nTotal - $10.00');
+});
+
+test('free shipping means no shipping line', () => {
+  const order = {
+    line_items: [{ name: 'Keychain', quantity: '1', gross_sales_money: { amount: 1000 } }],
+    service_charges: [],
+    total_money: { amount: 1000 },
+  };
+  assert.equal(formatOrderSummary(order), 'Keychain x1 - $10.00\nTotal - $10.00');
+});
+
+test('a line with no gross total renders $0.00, never undefined', () => {
+  const order = {
+    line_items: [{ name: 'Mystery', quantity: '1' }],
+    total_money: { amount: 0 },
+  };
+  assert.equal(formatOrderSummary(order), 'Mystery x1 - $0.00\nTotal - $0.00');
+});
+
+test('an item with no name falls back to Item', () => {
+  const order = {
+    line_items: [{ quantity: '3', gross_sales_money: { amount: 900 } }],
+    total_money: { amount: 900 },
+  };
+  assert.equal(formatOrderSummary(order), 'Item x3 - $9.00\nTotal - $9.00');
+});
+
+test('an empty or missing order renders empty', () => {
+  assert.equal(formatOrderSummary(undefined), '');
+  assert.equal(formatOrderSummary({}), '');
+  assert.equal(formatOrderSummary({ line_items: [] }), '');
 });
 
 test('shipping address renders as a mailing label', () => {
