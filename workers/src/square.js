@@ -9,7 +9,7 @@
 import { json, readJson, readParams, sha256Hex } from './lib.js';
 import { squareConfig, squareFetch } from './square-client.js';
 import { fetchInventoryLevelsSafely, resolveStockLevel } from './inventory.js';
-import { buildOrderTaxes } from './pricing.js';
+import { buildOrderTaxes, buildServiceCharges, fetchShippingCents } from './pricing.js';
 
 const DEFAULT_PRODUCT_IMAGE =
   'https://images.unsplash.com/photo-1560393464-5c69a73c5770?w=800&auto=format&fit=crop&q=80';
@@ -83,7 +83,20 @@ export async function handleGetProducts(request, env) {
       fetchAllCatalogPages(cfg, 'ITEM'),
     ]);
 
-    const variationIds = items
+    // The Shipping catalog item's price is read server-side to compute the
+    // shipping fee (see pricing.js); it is not a purchasable product.
+    // available_online: false does not persist through the Catalog API, so it
+    // must be filtered out here by id or it would appear in the product grid.
+    // The id is per-account, same as the tax and shipping-fee ids elsewhere —
+    // production and sandbox credentials must never cross.
+    const shippingVariationId = cfg.isProd
+      ? env.SQUARE_SHIPPING_VARIATION_ID_PRODUCTION
+      : env.SQUARE_SHIPPING_VARIATION_ID_SANDBOX;
+    const sellableItems = shippingVariationId
+      ? items.filter((item) => item.item_data?.variations?.[0]?.id !== shippingVariationId)
+      : items;
+
+    const variationIds = sellableItems
       .map((item) => item.item_data?.variations?.[0]?.id)
       .filter(Boolean);
     const stockLevels = await fetchInventoryLevelsSafely(cfg, variationIds);
@@ -100,7 +113,7 @@ export async function handleGetProducts(request, env) {
       };
     }
 
-    const products = items.map((item) => {
+    const products = sellableItems.map((item) => {
       const itemData = item.item_data;
       const variation = itemData.variations?.[0];
       const price = variation?.item_variation_data?.price_money?.amount || 0;
@@ -294,6 +307,7 @@ export async function handleCalculateOrder(request, env) {
     });
 
     const taxes = buildOrderTaxes(env, cfg, shippingAddress?.state);
+    const serviceCharges = buildServiceCharges(await fetchShippingCents(cfg, env));
 
     const response = await squareFetch(cfg, '/v2/orders/calculate', {
       method: 'POST',
@@ -302,6 +316,7 @@ export async function handleCalculateOrder(request, env) {
           location_id: cfg.locationId,
           line_items: lineItems,
           ...(taxes.length ? { taxes } : {}),
+          ...(serviceCharges.length ? { service_charges: serviceCharges } : {}),
         },
       }),
     });
@@ -418,6 +433,7 @@ export async function handleProcessPayment(request, env) {
 
     // 2. Create the Square order — Square prices it from the catalog.
     const taxes = buildOrderTaxes(env, cfg, billingDetails?.state);
+    const serviceCharges = buildServiceCharges(await fetchShippingCents(cfg, env));
 
     const orderResponse = await squareFetch(cfg, '/v2/orders', {
       method: 'POST',
@@ -427,6 +443,7 @@ export async function handleProcessPayment(request, env) {
           reference_id: orderRef,
           line_items: lineItems,
           ...(taxes.length ? { taxes } : {}),
+          ...(serviceCharges.length ? { service_charges: serviceCharges } : {}),
         },
         idempotency_key: `order-${attemptKey}`,
       }),

@@ -183,6 +183,37 @@ list of states rather than a single check.
 An unrecognised or missing state is treated as out-of-state and not taxed. That
 undercharges rather than charging tax that was never owed.
 
+## Shipping
+
+A flat fee applied to every order. **The amount is the price of a catalog item
+called `Shipping`** — edit that price in Square Items to change what customers
+pay. No deploy needed.
+
+If no shipping item is configured, **shipping is free**. That makes the feature
+safe to enable before a fee has been decided, and means a misconfiguration
+undercharges rather than stranding a customer at checkout.
+
+Square API 2024-12-18 has no catalog service-charge object, which is why the fee
+lives on an item price and is applied as an ad-hoc order service charge. The
+charge is `SUBTOTAL_PHASE` and `taxable: true` so it falls inside the taxed
+subtotal — correct for Kansas, where shipping is taxable. Square rejects a
+taxable charge in `TOTAL_PHASE`.
+
+The shipping item is excluded from `/api/square-products` by variation ID.
+Without that it appears in the storefront as a purchasable product;
+`available_online: false` does not persist through the Catalog API.
+
+The variation id is per-account, same as the tax catalog id above and
+accessToken/locationId in `squareConfig()` — production and sandbox
+credentials must never cross, because a production-deployed Worker can be
+flipped onto sandbox credentials per-request by a `sandbox-` prefixed
+application id. `SQUARE_SHIPPING_VARIATION_ID_PRODUCTION` is left empty until
+a real production `Shipping` item exists, which keeps production shipping
+free rather than sending a sandbox-only catalog id to the production account.
+
+There is no free-shipping threshold and no local-pickup option. Both are
+straightforward to add and neither has been asked for.
+
 ## Deploy
 
 ```bash

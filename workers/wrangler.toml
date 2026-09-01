@@ -16,6 +16,12 @@ ALLOWED_ORIGINS = "https://www.rainydaymerchandise.com,https://rainydaymerchandi
 # Kansas state rate on its own.
 SQUARE_KS_TAX_ID_PRODUCTION = "DBZ6Y7OTBOC3ZHUYFIUJJEJP"
 SQUARE_KS_TAX_ID_SANDBOX = "DBZ6Y7OTBOC3ZHUYFIUJJEJP"
+# Shipping variation id is per-account too, same reasoning as the tax id above.
+# SQUARE_SHIPPING_VARIATION_ID_PRODUCTION is a placeholder until a production
+# Shipping item exists; leave it empty (or unresolved) to keep production
+# shipping free rather than pointing it at a sandbox-only catalog object.
+SQUARE_SHIPPING_VARIATION_ID_PRODUCTION = ""
+SQUARE_SHIPPING_VARIATION_ID_SANDBOX = "FTI6NZQXSUZ5CVNBDDL45ALJ"
 
 # Replaces the nightly Vercel cron. Workers have no cold starts, so the
 # keep-alive job that existed only to keep Vercel warm is gone.
@@ -44,3 +50,7 @@ BASE_URL = "https://www.rainydaymerchandise.com"
 ALLOWED_ORIGINS = ""
 SQUARE_KS_TAX_ID_PRODUCTION = "DBZ6Y7OTBOC3ZHUYFIUJJEJP"
 SQUARE_KS_TAX_ID_SANDBOX = "DBZ6Y7OTBOC3ZHUYFIUJJEJP"
+# See the [vars] comment above — production placeholder until a production
+# Shipping item exists.
+SQUARE_SHIPPING_VARIATION_ID_PRODUCTION = ""
+SQUARE_SHIPPING_VARIATION_ID_SANDBOX = "FTI6NZQXSUZ5CVNBDDL45ALJ"

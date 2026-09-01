@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildOrderTaxes, shouldApplyKansasTax } from '../src/pricing.js';
+import { buildOrderTaxes, buildServiceCharges, shouldApplyKansasTax } from '../src/pricing.js';
 
 const env = { SQUARE_KS_TAX_ID_PRODUCTION: 'PROD_TAX', SQUARE_KS_TAX_ID_SANDBOX: 'SANDBOX_TAX' };
 const prodCfg = { isProd: true };
@@ -54,4 +54,26 @@ test('buildOrderTaxes attaches nothing when the selected environment has no id c
   assert.deepEqual(buildOrderTaxes({ SQUARE_KS_TAX_ID_SANDBOX: 'SANDBOX_TAX' }, prodCfg, 'KS'), []);
   assert.deepEqual(buildOrderTaxes({ SQUARE_KS_TAX_ID_PRODUCTION: 'PROD_TAX' }, sandboxCfg, 'KS'), []);
   assert.deepEqual(buildOrderTaxes({}, prodCfg, 'KS'), []);
+});
+
+test('no shipping configured means free shipping', () => {
+  assert.deepEqual(buildServiceCharges(null), []);
+  assert.deepEqual(buildServiceCharges(undefined), []);
+});
+
+test('zero shipping is also free, with no empty charge attached', () => {
+  assert.deepEqual(buildServiceCharges(0), []);
+});
+
+test('a configured fee becomes a taxable subtotal-phase service charge', () => {
+  assert.deepEqual(buildServiceCharges(500), [{
+    name: 'Shipping',
+    amount_money: { amount: 500, currency: 'USD' },
+    calculation_phase: 'SUBTOTAL_PHASE',
+    taxable: true,
+  }]);
+});
+
+test('a negative fee is refused rather than credited', () => {
+  assert.deepEqual(buildServiceCharges(-100), []);
 });
