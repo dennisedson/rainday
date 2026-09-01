@@ -87,6 +87,29 @@ Deal creation moves server-side into `process-payment`, dispatched with
 charge that has already succeeded. Failures are logged loudly enough to find in
 `wrangler tail`.
 
+## 1b. Shipping address visible in Square
+
+### Decision
+
+Attach a `fulfillment` with `shipment_details.recipient` when the order is
+created.
+
+Today the order carries only `location_id`, `reference_id`, and `line_items`.
+The shipping address is set as `billing_address` on the *payment*, never on the
+order — which is why the owner cannot see where anything ships from Square's
+Orders tab. Attaching the recipient puts the name, address, email, and phone on
+the order itself, where Square's own UI displays it.
+
+This is a few lines in `process-payment` and it resolves a reported complaint
+directly, independently of anything else in this document.
+
+### Requires a small theme change
+
+`process-payment` currently receives `billingDetails` with only `address1`,
+`city`, `state`, `zipCode`, and `country`. The recipient also needs
+`firstName`, `lastName`, and `phone` — all present in `shippingInfo` in the
+checkout island, simply not forwarded.
+
 ## 2. Sales tax
 
 ### Decision
@@ -101,6 +124,13 @@ Split by who owns what:
   percentage in Square with no deploy.
 - **The condition** lives in the Worker: ship-to state is `KS` -> apply the tax,
   otherwise do not.
+
+The state is read from `billingDetails.state` in `process-payment` and from
+`shippingAddress.state` in `calculate-order`, both populated from the same
+checkout form. Matching is case-insensitive and whitespace-trimmed: `ks`, `KS`,
+and ` Ks ` all mean Kansas. A missing or unrecognised state is treated as
+out-of-state and not taxed, which fails toward undercharging rather than
+charging tax that was never owed.
 
 Square's Orders API is not relied on to infer jurisdiction from the shipping
 address; that behaviour is unverified outside Square Online, and an explicit
@@ -134,6 +164,10 @@ server-side pricing fix closed.
 
 Applied in both `calculate-order` and `process-payment`, for the same
 price-mismatch reason as tax.
+
+Scope is order-level, not per line item, and it is applied to every order — no
+free-shipping threshold and no local pickup option. Both are easy to add later
+and neither has been asked for.
 
 Flat rate only. Weight- and zone-based shipping needs the full address and
 interacts with tax sourcing; not worth building before there is evidence it is
