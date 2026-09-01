@@ -44,6 +44,39 @@ function setCachedCatalog(data) {
 }
 
 /**
+ * Fetch every page of a catalog type. Square paginates /v2/catalog/list, so a
+ * single request only returns the first page — with a few hundred images the
+ * CATEGORY objects fall past it.
+ */
+async function fetchAllCatalogPages(type) {
+  let allObjects = [];
+  let cursor = null;
+
+  do {
+    const url = cursor
+      ? `${SQUARE_API_BASE}/v2/catalog/list?types=${type}&cursor=${encodeURIComponent(cursor)}`
+      : `${SQUARE_API_BASE}/v2/catalog/list?types=${type}`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Square-Version': '2024-12-18',
+        'Authorization': `Bearer ${SQUARE_ACCESS_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(`Failed to fetch ${type}: ${JSON.stringify(data)}`);
+
+    allObjects = allObjects.concat(data.objects || []);
+    cursor = data.cursor;
+  } while (cursor);
+
+  return allObjects;
+}
+
+/**
  * Handle GET /api/square-products
  */
 async function handleGetProducts(req, res) {
@@ -55,35 +88,6 @@ async function handleGetProducts(req, res) {
       res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
       return res.status(200).json(cached);
     }
-    // Helper function to fetch all pages of a catalog type
-    async function fetchAllCatalogPages(type) {
-      let allObjects = [];
-      let cursor = null;
-
-      do {
-        const url = cursor
-          ? `${SQUARE_API_BASE}/v2/catalog/list?types=${type}&cursor=${encodeURIComponent(cursor)}`
-          : `${SQUARE_API_BASE}/v2/catalog/list?types=${type}`;
-
-        const response = await fetch(url, {
-          method: 'GET',
-          headers: {
-            'Square-Version': '2024-12-18',
-            'Authorization': `Bearer ${SQUARE_ACCESS_TOKEN}`,
-            'Content-Type': 'application/json',
-          },
-        });
-
-        const data = await response.json();
-        if (!response.ok) throw new Error(`Failed to fetch ${type}: ${JSON.stringify(data)}`);
-
-        allObjects = allObjects.concat(data.objects || []);
-        cursor = data.cursor;
-      } while (cursor);
-
-      return allObjects;
-    }
-
     // Fetch categories, images, and items with pagination support
     const [categories, images, items] = await Promise.all([
       fetchAllCatalogPages('CATEGORY'),
@@ -275,24 +279,21 @@ async function handleGetCategories(req, res) {
       return res.status(200).json({ categories: cached.categories, count: cached.categories.length });
     }
 
-    const response = await fetch(`${SQUARE_API_BASE}/v2/catalog/list?types=CATEGORY,IMAGE`, {
-      method: 'GET',
-      headers: {
-        'Square-Version': '2024-12-18',
-        'Authorization': `Bearer ${SQUARE_ACCESS_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    const data = await response.json();
-    if (!response.ok) return res.status(response.status).json({ error: 'Failed to fetch categories', details: data });
+    // Must paginate: a single ?types=CATEGORY,IMAGE call returns one page, and
+    // with a few hundred images the CATEGORY objects fall past it — which
+    // returned an empty category list, and so an empty storefront nav, whenever
+    // this ran without a warm catalog cache.
+    const [categoryObjects, imageObjects] = await Promise.all([
+      fetchAllCatalogPages('CATEGORY'),
+      fetchAllCatalogPages('IMAGE'),
+    ]);
 
     const imageMap = {};
-    (data.objects || []).filter(obj => obj.type === 'IMAGE').forEach(image => {
+    imageObjects.forEach(image => {
       imageMap[image.id] = image.image_data?.url || null;
     });
 
-    const categories = (data.objects || [])
+    const categories = categoryObjects
       .filter(obj => obj.type === 'CATEGORY' && obj.category_data)
       .map(category => ({
         id: category.id,
