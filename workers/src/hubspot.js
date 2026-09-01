@@ -6,7 +6,7 @@
  * directly against the REST API here.
  */
 
-import { json, readJson, readParams } from './lib.js';
+import { json, readParams } from './lib.js';
 import { squareConfig, squareFetch } from './square-client.js';
 
 const HUBSPOT_API = 'https://api.hubapi.com';
@@ -148,49 +148,6 @@ export async function createOrderDeal(env, { email, firstName, lastName, phone, 
   });
 
   return { dealId: deal.id };
-}
-
-/** POST /api/create-deal */
-export async function handleCreateDeal(request, env) {
-  const { email, firstName, lastName, orderTotal, paymentId, orderId } = await readJson(request);
-  if (!email || !orderTotal) {
-    return json({ error: 'Email and orderTotal are required' }, { status: 400 });
-  }
-
-  try {
-    const contactId = await findOrCreateContact(env, email, {
-      firstname: firstName,
-      lastname: lastName,
-    });
-
-    const deal = await hubspotFetch(env, '/crm/v3/objects/deals', {
-      method: 'POST',
-      body: JSON.stringify({
-        properties: {
-          dealname: `Order ${orderId || Date.now()}`,
-          amount: String(orderTotal),
-          dealstage: 'appointmentscheduled',
-          pipeline: 'default',
-          payment_id: paymentId,
-          order_id: orderId,
-        },
-      }),
-    });
-
-    // v4 associations: HUBSPOT_DEFINED type 3 is deal -> contact.
-    await hubspotFetch(
-      env,
-      `/crm/v4/objects/deals/${deal.id}/associations/contacts/${contactId}`,
-      {
-        method: 'PUT',
-        body: JSON.stringify([{ associationCategory: 'HUBSPOT_DEFINED', associationTypeId: 3 }]),
-      }
-    );
-
-    return json({ success: true, dealId: deal.id });
-  } catch (error) {
-    return json({ error: 'Failed to create deal', message: error.message }, { status: 500 });
-  }
 }
 
 /** POST /api/sync-categories — also the target of the nightly cron. */

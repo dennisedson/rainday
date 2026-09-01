@@ -14,7 +14,6 @@ import {
   handleProcessPayment,
 } from './square.js';
 import {
-  handleCreateDeal,
   handleFavorites,
   handleSyncCategories,
   syncCategories,
@@ -33,7 +32,6 @@ const routes = {
   '/api/square-categories': handleGetCategories,
   '/api/calculate-order': handleCalculateOrder,
   '/api/process-payment': handleProcessPayment,
-  '/api/create-deal': handleCreateDeal,
   '/api/sync-categories': handleSyncCategories,
   '/api/favorites': handleFavorites,
   '/api/auth/magic-link': handleMagicLinkRequest,
