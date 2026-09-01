@@ -20,7 +20,7 @@ ALLOWED_ORIGINS = "https://www.rainydaymerchandise.com,https://rainydaymerchandi
 # state-plus-local rate (not the 6.5% Kansas state rate alone), at cutover —
 # see docs/superpowers/plans/2026-09-01-orders-tax-shipping-inventory.md,
 # "After all tasks".
-SQUARE_KS_TAX_ID_PRODUCTION = ""
+SQUARE_KS_TAX_ID_PRODUCTION = "PUGWKTHXBDXO7GUEFKKQLFP6"
 SQUARE_KS_TAX_ID_SANDBOX = "DBZ6Y7OTBOC3ZHUYFIUJJEJP"
 # Shipping variation id is per-account too, same reasoning as the tax id above.
 # SQUARE_SHIPPING_VARIATION_ID_PRODUCTION is a placeholder until a production
@@ -58,7 +58,7 @@ BASE_URL = "https://www.rainydaymerchandise.com"
 # Left empty so CORS falls back to '*'. The dev portal is served from a
 # HubSpot preview hostname that varies; locking it down is not worth it here.
 ALLOWED_ORIGINS = ""
-SQUARE_KS_TAX_ID_PRODUCTION = "DBZ6Y7OTBOC3ZHUYFIUJJEJP"
+SQUARE_KS_TAX_ID_PRODUCTION = "PUGWKTHXBDXO7GUEFKKQLFP6"
 SQUARE_KS_TAX_ID_SANDBOX = "DBZ6Y7OTBOC3ZHUYFIUJJEJP"
 # See the [vars] comment above — production placeholder until a production
 # Shipping item exists.
