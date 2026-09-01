@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildOrderTaxes, buildServiceCharges, shouldApplyKansasTax } from '../src/pricing.js';
+import { buildOrderTaxes, buildServiceCharges, shouldApplyKansasTax, shippingCentsFromCatalogObject } from '../src/pricing.js';
 
 const env = { SQUARE_KS_TAX_ID_PRODUCTION: 'PROD_TAX', SQUARE_KS_TAX_ID_SANDBOX: 'SANDBOX_TAX' };
 const prodCfg = { isProd: true };
@@ -76,4 +76,39 @@ test('a configured fee becomes a taxable subtotal-phase service charge', () => {
 
 test('a negative fee is refused rather than credited', () => {
   assert.deepEqual(buildServiceCharges(-100), []);
+});
+
+test('reads the price from a variation object', () => {
+  assert.equal(shippingCentsFromCatalogObject({
+    type: 'ITEM_VARIATION',
+    item_variation_data: { price_money: { amount: 500 } },
+  }), 500);
+});
+
+test('reads the price from an item object, via its first variation', () => {
+  assert.equal(shippingCentsFromCatalogObject({
+    type: 'ITEM',
+    item_data: { variations: [{ item_variation_data: { price_money: { amount: 650 } } }] },
+  }), 650);
+});
+
+test('an item with no variations yields null, meaning free shipping', () => {
+  assert.equal(shippingCentsFromCatalogObject({ type: 'ITEM', item_data: { variations: [] } }), null);
+  assert.equal(shippingCentsFromCatalogObject({ type: 'ITEM', item_data: {} }), null);
+});
+
+test('a variation with no price yields null', () => {
+  assert.equal(shippingCentsFromCatalogObject({ type: 'ITEM_VARIATION', item_variation_data: {} }), null);
+});
+
+test('an unexpected object type yields null rather than throwing', () => {
+  assert.equal(shippingCentsFromCatalogObject({ type: 'CATEGORY' }), null);
+  assert.equal(shippingCentsFromCatalogObject(undefined), null);
+  assert.equal(shippingCentsFromCatalogObject(null), null);
+});
+
+test('a zero price yields 0, which buildServiceCharges then treats as free', () => {
+  assert.equal(shippingCentsFromCatalogObject({
+    type: 'ITEM_VARIATION', item_variation_data: { price_money: { amount: 0 } },
+  }), 0);
 });

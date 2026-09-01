@@ -228,10 +228,13 @@ Once that item exists and `SQUARE_SHIPPING_VARIATION_ID_PRODUCTION` (or
 `_SANDBOX`) points at it, **changing its price in Square Items needs no
 deploy** — the Worker reads the price at request time. **Creating the item
 for the first time is not deploy-free**: the Worker only reads the price it's
-told to read, so `SQUARE_SHIPPING_VARIATION_ID_PRODUCTION` must be set to the
-new item's variation id in `wrangler.toml` and the Worker redeployed before a
+told to read, so `SQUARE_SHIPPING_VARIATION_ID_PRODUCTION` must be set in `wrangler.toml` and the Worker redeployed before a
 new `Shipping` item does anything. Until then it just sits in the catalog —
 priced, but not charged to anyone.
+
+`SQUARE_SHIPPING_VARIATION_ID_PRODUCTION` accepts **either** the item id or the
+variation id. Square's Dashboard URL shows the item id — the last segment of
+`app.squareup.com/dashboard/items/library/<id>` — so that is the one to paste.
 
 If no shipping item is configured, **shipping is free**. That makes the feature
 safe to enable before a fee has been decided, and means a misconfiguration

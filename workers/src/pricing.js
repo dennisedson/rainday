@@ -66,6 +66,21 @@ export function buildServiceCharges(cents) {
 }
 
 /**
+ * Pulls the shipping price out of whatever the catalog returned.
+ *
+ * Square's Dashboard URL exposes the ITEM id, not the VARIATION id, so the
+ * configured value is whichever one a human could actually copy. Both are
+ * accepted: an ITEM_VARIATION carries the price directly, an ITEM carries it
+ * on its first variation.
+ */
+export function shippingCentsFromCatalogObject(object) {
+  const amount =
+    object?.item_variation_data?.price_money?.amount ??
+    object?.item_data?.variations?.[0]?.item_variation_data?.price_money?.amount;
+  return typeof amount === 'number' ? amount : null;
+}
+
+/**
  * Reads the shipping fee from the configured catalog variation.
  *
  * The variation id is per-account, same as the tax catalog id in
@@ -89,8 +104,7 @@ export async function fetchShippingCents(cfg, env) {
     });
     const data = await response.json();
     if (!response.ok) throw new Error(JSON.stringify(data.errors || data));
-    const amount = data.object?.item_variation_data?.price_money?.amount;
-    return typeof amount === 'number' ? amount : null;
+    return shippingCentsFromCatalogObject(data.object);
   } catch (error) {
     console.error('[Pricing] shipping lookup failed, treating shipping as free:', error.message);
     return null;
