@@ -35,6 +35,54 @@ export function corsHeaders(request, env) {
   };
 }
 
+/**
+ * Where a magic link should point back to.
+ *
+ * Sandbox is deployed once but served from HubSpot preview hostnames that
+ * change, so a hardcoded BASE_URL walked every dev-portal tester to the
+ * production site — a different Worker and a different CRM portal, where their
+ * token does not exist. Reading the requesting Origin fixes that without
+ * pinning a hostname that will rot.
+ *
+ * Production deliberately does NOT do this. A link built from a client-supplied
+ * header is a phishing vector: whoever sets the header chooses where the
+ * customer's token gets delivered. Confining derivation to sandbox means the
+ * real storefront's links can only ever point at the real storefront, and the
+ * blast radius is a test portal against a test catalog.
+ */
+const PREVIEW_HOST_SUFFIX = '.hs-sites.com';
+
+export function resolveBaseUrl(request, env) {
+  const fallback = env.BASE_URL || 'https://www.rainydaymerchandise.com';
+  if (env.SQUARE_ENVIRONMENT === 'production') return fallback;
+
+  const origin = request.headers.get('Origin');
+  if (!origin) return fallback;
+
+  let url;
+  try {
+    url = new URL(origin);
+  } catch {
+    return fallback;
+  }
+
+  // https only: a token delivered over plaintext is a token in transit.
+  if (url.protocol !== 'https:') return fallback;
+
+  const configured = (env.ALLOWED_ORIGINS || '')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+
+  // Suffix match on the parsed hostname, never the raw string — that is what
+  // stops "hs-sites.com.evil.example" from reading as a preview host.
+  if (configured.includes(url.origin) || url.hostname.endsWith(PREVIEW_HOST_SUFFIX)) {
+    return url.origin;
+  }
+
+  return fallback;
+}
+
 export function json(body, { status = 200, headers = {} } = {}) {
   return new Response(JSON.stringify(body), {
     status,

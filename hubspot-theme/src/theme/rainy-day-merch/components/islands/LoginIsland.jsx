@@ -1,7 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { requestMagicLink } from '../../utils/auth';
-
-import { API_BASE_URL } from '../../utils/config';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { requestMagicLink, verifyMagicLink, verifySession } from '../../utils/auth';
 
 export default function LoginIsland() {
   const [email, setEmail] = useState('');
@@ -11,92 +9,61 @@ export default function LoginIsland() {
   const [linkSent, setLinkSent] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
 
-  const verifyMagicLink = useCallback(async (token, email) => {
+  const verifiedOnce = useRef(false);
+
+  const completeSignIn = useCallback(async (token, emailParam) => {
     try {
       setLoading(true);
       setError('');
-      
-      console.log('[LoginIsland] Verifying magic link...', { token: token.substring(0, 10) + '...', email });
-      
-      const response = await fetch(`${API_BASE_URL}/auth/verify-link?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`);
-      
-      console.log('[LoginIsland] Response status:', response.status, response.ok);
-      
-      let data;
-      try {
-        data = await response.json();
-        console.log('[LoginIsland] Response data:', data);
-      } catch (parseError) {
-        console.error('[LoginIsland] Failed to parse JSON:', parseError);
-        throw new Error('Invalid response from server');
-      }
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Invalid or expired magic link');
-      }
+      const data = await verifyMagicLink(token, emailParam);
+      if (!data.token) throw new Error('No session token received');
 
-      // Store session token
-      if (data.token) {
-        console.log('[LoginIsland] Storing session token...');
-        localStorage.setItem('auth_session_token', data.token);
-        
-        // Verify token was stored
-        const storedToken = localStorage.getItem('auth_session_token');
-        console.log('[LoginIsland] Token stored, verifying:', storedToken ? storedToken.substring(0, 20) + '...' : 'NOT STORED');
-        
-        window.dispatchEvent(new CustomEvent('authStateChanged', { detail: { authenticated: true } }));
-        
-        // Longer delay to ensure token is persisted and page is ready
-        setTimeout(() => {
-          console.log('[LoginIsland] Redirecting to /account...');
-          // Use href instead of replace to allow back navigation if needed
-          window.location.href = '/account';
-        }, 300);
-      } else {
-        console.warn('[LoginIsland] No token in response:', data);
-        throw new Error('No session token received');
-      }
+      window.dispatchEvent(new CustomEvent('authStateChanged', { detail: { authenticated: true } }));
+      window.location.href = '/account';
     } catch (err) {
-      console.error('[LoginIsland] Error verifying magic link:', err);
-      setError(err.message || 'Failed to verify magic link. Please try again.');
+      // A burned or expired link is a dead end unless we offer a way out, so
+      // the failure state IS the resend form, with the address pre-filled.
+      // But an already-signed-in visitor (a link scanner burned the token, or
+      // they are signed in in another tab) should just go to their account.
+      const contact = await verifySession();
+      if (contact) {
+        window.location.href = '/account';
+        return;
+      }
+
+      setEmail(emailParam);
+      setError(
+        err.message === 'Expired link'
+          ? 'That sign-in link has expired. Send yourself a fresh one below.'
+          : "That sign-in link didn't work — it may have expired or already been used. Send yourself a fresh one below."
+      );
+      setIsVerifying(false);
       setLoading(false);
     }
   }, []);
 
-  // Check if we're verifying a magic link from email
+  // Complete a sign-in arriving from an emailed link.
   useEffect(() => {
-    // First, try to get params from data attributes (set by HubL template server-side)
-    const container = document.getElementById('login-container');
-    let token = container?.dataset?.token || '';
-    let emailParam = container?.dataset?.email || '';
-    
-    console.log('[LoginIsland] Data attributes - Token:', token ? token.substring(0, 10) + '...' : 'none');
-    console.log('[LoginIsland] Data attributes - Email:', emailParam || 'none');
-    
-    // Fallback: Check URL params (in case HubSpot doesn't strip them)
-    if (!token || !emailParam) {
-      const fullUrl = window.location.href;
-      const searchParams = window.location.search;
-      
-      console.log('[LoginIsland] Fallback - Full URL:', fullUrl);
-      console.log('[LoginIsland] Fallback - Search params:', searchParams);
-      
-      const urlParams = new URLSearchParams(searchParams);
-      token = token || urlParams.get('token') || '';
-      emailParam = emailParam || urlParams.get('email') || '';
-      
-      console.log('[LoginIsland] Fallback - Token:', token ? token.substring(0, 10) + '...' : 'none');
-      console.log('[LoginIsland] Fallback - Email:', emailParam || 'none');
-    }
+    if (verifiedOnce.current) return;
 
-    if (token && emailParam) {
-      console.log('[LoginIsland] Found magic link params, starting verification...');
-      setIsVerifying(true);
-      verifyMagicLink(token, emailParam);
-    } else {
-      console.log('[LoginIsland] No magic link params found');
-    }
-  }, [verifyMagicLink]);
+    const container = document.getElementById('login-container');
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = container?.dataset?.token || urlParams.get('token') || '';
+    const emailParam = container?.dataset?.email || urlParams.get('email') || '';
+
+    if (!token || !emailParam) return;
+    verifiedOnce.current = true;
+
+    // Scrub the credential from the address bar BEFORE verifying. Without this
+    // a reload re-runs verification against a token that has already been
+    // burned, so a successful sign-in shows "Invalid link" on the next refresh.
+    // With the query string gone, HubL renders empty data attributes too.
+    window.history.replaceState({}, '', window.location.pathname);
+
+    setIsVerifying(true);
+    completeSignIn(token, emailParam);
+  }, [completeSignIn]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -111,16 +78,10 @@ export default function LoginIsland() {
       setError('');
       setMessage('');
 
-      const result = await requestMagicLink(email.trim().toLowerCase());
+      await requestMagicLink(email.trim().toLowerCase());
       
       setLinkSent(true);
       setMessage('Check your email! We sent you a magic link to sign in.');
-      
-      // In development, show the link
-      if (result.magicLink) {
-        console.log('[Dev] Magic link:', result.magicLink);
-        setMessage(`Check your email! (Dev: ${result.magicLink})`);
-      }
     } catch (err) {
       setError(err.message || 'Failed to send magic link. Please try again.');
     } finally {

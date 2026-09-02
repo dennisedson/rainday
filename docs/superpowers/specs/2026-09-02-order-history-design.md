@@ -58,10 +58,21 @@ contact identity in the request.
 `handleVerifySession` currently performs the JWT check inline. Extract it:
 
 ```js
-// workers/src/auth.js
-export async function requireSession(request, env)
+// workers/src/session.js
+export async function requireSession(request, env, params = {})
   // -> { contactId, email } | null
 ```
+
+Two details settled during implementation:
+
+**It lives in its own module, not `auth.js`.** `hubspot.js` needs it for
+favorites, and `auth.js` already imports `hubspot.js`, so putting it in
+`auth.js` creates the same import cycle the Square client extraction was done
+to break.
+
+**It accepts already-parsed params.** A `Request` body can only be consumed
+once, and `handleFavorites` reads the body before it needs the session, so it
+passes what it already parsed rather than having the helper re-read it.
 
 It reads `Authorization: Bearer <token>`, falling back to a `token` parameter
 for parity with today's behaviour, verifies against `JWT_SECRET`, and returns

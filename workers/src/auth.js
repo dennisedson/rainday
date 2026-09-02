@@ -6,18 +6,13 @@
  */
 
 import { SignJWT, jwtVerify } from 'jose';
-import { json, randomHex, readParams, timingSafeEqual } from './lib.js';
+import { json, randomHex, readParams, resolveBaseUrl, timingSafeEqual } from './lib.js';
+import { requireSession, secretKey } from './session.js';
 import { findContactByEmail, getContact, createContact, updateContact } from './hubspot.js';
 
 const MAGIC_LINK_TOKEN_PROPERTY = 'magic_link_token';
 const MAGIC_LINK_EXPIRES_PROPERTY = 'magic_link_expires';
 const MAGIC_LINK_TTL_MS = 15 * 60 * 1000;
-
-function secretKey(env) {
-  // No fallback: sessions must never be signed with a guessable default.
-  if (!env.JWT_SECRET) return null;
-  return new TextEncoder().encode(env.JWT_SECRET);
-}
 
 async function sendMagicLinkEmail(env, { to, magicLink }) {
   if (!env.RESEND_API_KEY) return false;
@@ -64,7 +59,7 @@ export async function handleMagicLinkRequest(request, env) {
       [MAGIC_LINK_EXPIRES_PROPERTY]: expiresAt.toISOString(),
     });
 
-    const baseUrl = env.BASE_URL || 'https://www.rainydaymerchandise.com';
+    const baseUrl = resolveBaseUrl(request, env);
     const magicLink = `${baseUrl}/login?token=${token}&email=${encodeURIComponent(email)}`;
     await sendMagicLinkEmail(env, { to: email, magicLink });
 

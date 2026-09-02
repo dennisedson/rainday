@@ -18,6 +18,7 @@ import {
   handleSyncCategories,
   syncCategories,
 } from './hubspot.js';
+import { handleOrders } from './orders.js';
 import {
   handleMagicLinkRequest,
   handleVerifyLink,
@@ -34,6 +35,7 @@ const routes = {
   '/api/process-payment': handleProcessPayment,
   '/api/sync-categories': handleSyncCategories,
   '/api/favorites': handleFavorites,
+  '/api/orders': handleOrders,
   '/api/auth/magic-link': handleMagicLinkRequest,
   '/api/auth/verify-link': handleVerifyLink,
   '/api/auth/verify-session': handleVerifySession,

@@ -1,22 +1,10 @@
 /**
  * Favorites Service
- * Manages favorites sync with HubSpot CRM
- * Falls back to localStorage if email not available
+ * Manages favorites sync with HubSpot CRM for signed-in customers.
+ * Signed-out visitors fall back to localStorage.
  */
 
-import { get, post, del } from './api';
-
-// Get HubSpot tracking token from cookie
-function getHubSpotTrackingToken() {
-  const cookies = document.cookie.split('; ');
-  const hubspotCookie = cookies.find(row => row.startsWith('hubspotutk='));
-  
-  if (hubspotCookie) {
-    return hubspotCookie.split('=')[1];
-  }
-  
-  return null;
-}
+import { get, post } from './api';
 
 // Get session token from localStorage
 function getSessionToken() {
@@ -24,75 +12,36 @@ function getSessionToken() {
   return localStorage.getItem('auth_session_token');
 }
 
-// Get user identifier (authenticated email > tracking token > fallback)
-async function getUserIdentifier() {
-  // First, check if user is authenticated (has session token)
-  const sessionToken = getSessionToken();
-  if (sessionToken) {
-    try {
-      // Verify session and get contact email
-      const data = await post('/auth/verify-session', { token: sessionToken }, {
-        headers: {
-          'Authorization': `Bearer ${sessionToken}`,
-        },
-      });
-
-      if (data.contact && data.contact.email) {
-        return { type: 'email', value: data.contact.email };
-      }
-    } catch (error) {
-      console.error('[Favorites] Error verifying session:', error);
-      // Fall through to other methods
-    }
+function readLocalFavorites() {
+  try {
+    return JSON.parse(localStorage.getItem('favorites') || '[]');
+  } catch (e) {
+    return [];
   }
+}
 
-  // Try to get HubSpot tracking token
-  const trackingToken = getHubSpotTrackingToken();
-  if (trackingToken) {
-    return { type: 'tracking_token', value: trackingToken };
-  }
-  
-  // Fallback: Don't use guest IDs - they're not valid emails
-  // Return null to indicate no valid identifier
-  return null;
+function authHeaders(token) {
+  return { headers: { Authorization: `Bearer ${token}` } };
 }
 
 /**
  * Get all favorites for current user
  */
 export async function getFavorites() {
+  const token = getSessionToken();
+
+  // Signed-out visitors keep the localStorage list they have always actually
+  // been using: the server never read the hubspotutk parameter this used to
+  // send, so anonymous favorites have never persisted to the CRM.
+  if (!token) return readLocalFavorites();
+
   try {
-    const identifier = await getUserIdentifier();
-    
-    if (!identifier) {
-      // No valid identifier - return empty array
-      return [];
-    }
-    
-    const params = new URLSearchParams();
-    
-    if (identifier.type === 'tracking_token') {
-      params.append('hubspotutk', identifier.value);
-    } else {
-      params.append('email', identifier.value);
-    }
-    
-    const data = await get(`/favorites?${params.toString()}`);
-    
-    // Also sync to localStorage as backup
+    const data = await get('/favorites', authHeaders(token));
     localStorage.setItem('favorites', JSON.stringify(data.favorites || []));
-    
     return data.favorites || [];
   } catch (error) {
     console.error('[Favorites] Error fetching favorites:', error);
-    
-    // Fallback to localStorage
-    try {
-      const localFavorites = localStorage.getItem('favorites');
-      return localFavorites ? JSON.parse(localFavorites) : [];
-    } catch (e) {
-      return [];
-    }
+    return readLocalFavorites();
   }
 }
 
@@ -100,69 +49,39 @@ export async function getFavorites() {
  * Toggle favorite status for a product
  */
 export async function toggleFavorite(productId) {
-  try {
-    const identifier = await getUserIdentifier();
-    
-    if (!identifier) {
-      throw new Error('Please sign in to save favorites');
-    }
-    
-    const body = {
-      productId,
-      action: 'toggle',
+  const token = getSessionToken();
+
+  const localToggle = () => {
+    const favorites = readLocalFavorites();
+    const index = favorites.indexOf(productId);
+    if (index > -1) favorites.splice(index, 1);
+    else favorites.push(productId);
+
+    localStorage.setItem('favorites', JSON.stringify(favorites));
+    window.dispatchEvent(new CustomEvent('favoritesUpdated', {
+      detail: { favorites, count: favorites.length },
+    }));
+
+    return {
+      success: true,
+      favorites,
+      count: favorites.length,
+      isFavorite: favorites.includes(productId),
     };
-    
-    if (identifier.type === 'tracking_token') {
-      body.hubspotutk = identifier.value;
-    } else {
-      body.email = identifier.value;
-    }
-    
-    const data = await post('/favorites', body);
-    
-    // Sync to localStorage
+  };
+
+  if (!token) return localToggle();
+
+  try {
+    const data = await post('/favorites', { productId, action: 'toggle' }, authHeaders(token));
     localStorage.setItem('favorites', JSON.stringify(data.favorites || []));
-    
-    // Dispatch event for other components
     window.dispatchEvent(new CustomEvent('favoritesUpdated', {
       detail: { favorites: data.favorites, count: data.count },
     }));
-    
     return data;
   } catch (error) {
     console.error('[Favorites] Error toggling favorite:', error);
-    
-    // Fallback to localStorage only if we have a valid identifier
-    const identifier = await getUserIdentifier();
-    if (identifier) {
-      try {
-        const localFavorites = JSON.parse(localStorage.getItem('favorites') || '[]');
-        const index = localFavorites.indexOf(productId);
-        
-        if (index > -1) {
-          localFavorites.splice(index, 1);
-        } else {
-          localFavorites.push(productId);
-        }
-        
-        localStorage.setItem('favorites', JSON.stringify(localFavorites));
-        
-        window.dispatchEvent(new CustomEvent('favoritesUpdated', {
-          detail: { favorites: localFavorites, count: localFavorites.length },
-        }));
-        
-        return {
-          success: true,
-          favorites: localFavorites,
-          count: localFavorites.length,
-          isFavorite: localFavorites.includes(productId),
-        };
-      } catch (e) {
-        return { success: false, error: e.message };
-      }
-    }
-    
-    return { success: false, error: error.message };
+    return localToggle();
   }
 }
 

@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { verifySession, logout, getSessionToken } from '../../utils/auth';
 import { getFavorites } from '../../utils/favorites';
-
-import { API_BASE_URL } from '../../utils/config';
+import { get } from '../../utils/api';
 
 export default function AccountIsland() {
   const [contact, setContact] = useState(null);
@@ -90,16 +89,10 @@ export default function AccountIsland() {
     try {
       setOrdersLoading(true);
       const token = getSessionToken();
-      
-      if (!token) {
-        setOrdersLoading(false);
-        return;
-      }
+      if (!token) return;
 
-      // Fetch orders from HubSpot Deals associated with this contact
-      // This would require a new API endpoint to fetch deals by contact ID
-      // For now, we'll show a placeholder
-      setOrders([]);
+      const data = await get('/orders', { headers: { Authorization: `Bearer ${token}` } });
+      setOrders(data.orders || []);
     } catch (error) {
       console.error('[Account] Error loading orders:', error);
     } finally {
@@ -192,21 +185,52 @@ export default function AccountIsland() {
             <div className="space-y-4">
               {orders.map((order) => (
                 <div key={order.id} className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex justify-between items-start">
+                  <div className="flex justify-between items-start gap-4">
                     <div>
-                      <p className="font-medium text-gray-900">Order #{order.id}</p>
-                      <p className="text-sm text-gray-600">{order.date}</p>
+                      <p className="font-medium text-gray-900">
+                        Order {order.orderId || order.id}
+                      </p>
+                      {order.placedAt && (
+                        <p className="text-sm text-gray-600">
+                          {new Date(order.placedAt).toLocaleDateString(undefined, {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                          })}
+                        </p>
+                      )}
                     </div>
-                    <div className="text-right">
-                      <p className="font-medium text-gray-900">${order.total}</p>
-                      <p className="text-sm text-gray-600">{order.status}</p>
-                    </div>
+                    <p className="font-medium text-gray-900 whitespace-nowrap">{order.total}</p>
                   </div>
+
+                  {order.items.length > 0 && (
+                    <ul className="mt-3 space-y-1 border-t border-gray-100 pt-3">
+                      {order.items.map((line, i) => (
+                        <li key={i} className="text-sm text-gray-600">{line}</li>
+                      ))}
+                    </ul>
+                  )}
+
+                  {order.receiptUrl && (
+                    <a
+                      href={order.receiptUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block mt-3 text-sm text-primary hover:text-primary-600 font-medium"
+                    >
+                      View receipt →
+                    </a>
+                  )}
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-gray-500">You haven't placed any orders yet.</p>
+            <div>
+              <p className="text-gray-500">You haven't placed any orders yet.</p>
+              <a href="/shop" className="inline-block mt-2 text-primary hover:text-primary-600 font-medium">
+                Start shopping →
+              </a>
+            </div>
           )}
         </div>
       </div>
