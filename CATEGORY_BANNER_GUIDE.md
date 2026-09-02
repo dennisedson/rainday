@@ -8,17 +8,43 @@ Code edits are still supported as a fallback, but day-to-day updates should be d
 
 ## Option A (Recommended): Edit in HubSpot (No Code)
 
-1. In HubSpot, open the **Shop** page in the page editor.
-2. Click the **Category Banner** module.
-3. Find **Category Custom Content**.
-4. Add or edit an entry:
-   - **Category Name**: must exactly match the Square category name (example: `Bracelets`)
-   - **Custom Description**: your banner text
-   - **Custom Banner Image (Optional)**: upload an image if you want to override Square’s category image
-5. Publish the page.
+Open the **Shop** page in the HubSpot page editor and click the **Category
+Banner** module.
 
-Notes:
-- If no override exists, the banner will try **Square’s category description/image** (if available), and otherwise fall back to the default copy.
+### The Shop All cover photo
+
+Use the **Shop All Cover Photo** field.
+
+Shop All is the one page that cannot inherit its image from Square, because
+"All Products" is not a Square category. That is why it has its own field —
+setting a category image in Square will never change this page.
+
+### A specific category’s cover photo
+
+Set the category’s image in **Square** (Items & Orders → Categories). The
+banner picks it up automatically, and this is the normal way to change one.
+
+To override Square for a single category, add an entry under **Category Custom
+Content**:
+
+- **Category Name** — must match the Square category exactly, e.g. `Bracelets`
+- **Custom Description** — banner text
+- **Custom Banner Image** — overrides the Square image
+
+### Categories with no image in Square
+
+Use the **Fallback Cover Photo** field. Any category without a Square image
+uses it, instead of rendering an empty banner.
+
+Publish the page when you are done.
+
+### What wins, when
+
+1. Custom Banner Image for that category (Category Custom Content)
+2. Shop All Cover Photo — Shop All only
+3. The category’s image in Square
+4. Fallback Cover Photo
+5. A built-in default
 
 ---
 

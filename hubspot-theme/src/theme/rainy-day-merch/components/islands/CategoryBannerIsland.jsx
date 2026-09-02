@@ -5,9 +5,11 @@ import { get } from '../../utils/api';
  * CategoryBannerIsland - Dynamic banner that updates based on URL category parameter
  * Shows category-specific content and imagery
  */
-export default function CategoryBannerIsland({ 
+export default function CategoryBannerIsland({
   siteName = 'Rainy Day Merchandise',
   categoryOverrides = [],
+  shopAllImage = null,
+  fallbackImage = null,
   showSaleBadge = true,
   showFeatures = true,
 }) {
@@ -95,16 +97,30 @@ export default function CategoryBannerIsland({
   // Find override from HubSpot repeater field (if category name matches)
   const override = categoryOverrides.find(item => item.categoryName === category);
   
-  // Priority system:
-  // Description: HubSpot override > Square description > Hardcoded default
-  // Image: HubSpot custom image > Square image > Hardcoded default
+  // Image, most specific first:
+  //   1. per-category override from the repeater (existing behaviour)
+  //   2. the dedicated Shop All field — that page has no Square category to
+  //      inherit from, which is why it needs its own setting
+  //   3. the Square category image (how category pages normally get theirs)
+  //   4. the dedicated fallback field, for categories with no Square image
+  //   5. a hardcoded default, last resort
+  const isShopAll = category === 'All Products';
   const displayTitle = content.title;
   const displayDescription = override?.customDescription || squareData.description || content.description;
-  const imageUrl = override?.customImage?.src || squareData.image || content.image;
-  
+  const imageUrl =
+    override?.customImage?.src ||
+    (isShopAll ? shopAllImage?.src : null) ||
+    squareData.image ||
+    fallbackImage?.src ||
+    content.image;
+
   console.log('[CategoryBannerIsland] Content sources:', {
     description: override?.customDescription ? 'HubSpot Override' : squareData.description ? 'Square' : 'Default',
-    image: override?.customImage?.src ? 'HubSpot Custom' : squareData.image ? 'Square' : 'Default',
+    image: override?.customImage?.src ? 'HubSpot Override'
+      : (isShopAll && shopAllImage?.src) ? 'HubSpot Shop All field'
+      : squareData.image ? 'Square'
+      : fallbackImage?.src ? 'HubSpot fallback field'
+      : 'Default',
   });
 
   if (isLoading) {
@@ -192,7 +208,10 @@ export default function CategoryBannerIsland({
             {imageUrl ? (
               <img
                 src={imageUrl}
-                alt={override?.customImage?.alt || displayTitle}
+                alt={override?.customImage?.alt
+                  || (isShopAll ? shopAllImage?.alt : null)
+                  || fallbackImage?.alt
+                  || displayTitle}
                 loading="lazy"
                 decoding="async"
                 className="w-full h-full object-cover"

@@ -7,10 +7,12 @@ export function Component({ fieldValues = {}, ...props }) {
   const siteName = props.content?.website_settings?.website_header?.company_name || 'Rainy Day Merchandise';
   
   return (
-    <Island 
-      module={CategoryBannerIsland} 
+    <Island
+      module={CategoryBannerIsland}
       siteName={siteName}
       categoryOverrides={fieldValues.categoryOverrides || []}
+      shopAllImage={fieldValues.shopAllImage || null}
+      fallbackImage={fieldValues.fallbackImage || null}
       showSaleBadge={fieldValues.showSaleBadge !== undefined ? fieldValues.showSaleBadge : true}
       showFeatures={fieldValues.showFeatures !== undefined ? fieldValues.showFeatures : true}
     />
@@ -53,7 +55,21 @@ export const fields = (
         helpText="Upload a custom image. If empty, will use Square category image"
       />
     </RepeatedFieldGroup>
-    
+
+    <ImageField
+      name="shopAllImage"
+      label="Shop All Cover Photo"
+      default={{ src: '', alt: '' }}
+      helpText="The cover photo for the Shop All page. This page has no Square category, so it cannot inherit an image the way category pages do — set it here."
+    />
+
+    <ImageField
+      name="fallbackImage"
+      label="Fallback Cover Photo"
+      default={{ src: '', alt: '' }}
+      helpText="Used for any category that has no image set in Square. Without it those banners render empty."
+    />
+
     <BooleanField
       name="showSaleBadge"
       label="Show 'SALE' Badge"
