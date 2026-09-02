@@ -1,0 +1,312 @@
+<title>Running Rainy Day</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --ground:#FAF7F2; --surface:#FFFFFF; --sunken:#F2ECE4;
+    --ink:#2B2622; --ink-soft:#6B615A; --muted:#8A7F76; --rule:#E4DCD3;
+    --accent:#D9531E; --accent-soft:#FBEDE6;
+    --flag:#8A5B12; --flag-soft:#FBF1DC;
+    --good:#3F6B44; --good-soft:#EAF2EA;
+    --display:"Playfair Display",Georgia,serif;
+    --body:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:#17140F; --surface:#211D18; --sunken:#2A251F;
+      --ink:#F2EBE1; --ink-soft:#C0B4A6; --muted:#968A7C; --rule:#362F27;
+      --accent:#FF8B5C; --accent-soft:#34211A;
+      --flag:#E8B764; --flag-soft:#2E2415;
+      --good:#8FC095; --good-soft:#1C2A1E;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground:#17140F; --surface:#211D18; --sunken:#2A251F;
+    --ink:#F2EBE1; --ink-soft:#C0B4A6; --muted:#968A7C; --rule:#362F27;
+    --accent:#FF8B5C; --accent-soft:#34211A;
+    --flag:#E8B764; --flag-soft:#2E2415;
+    --good:#8FC095; --good-soft:#1C2A1E;
+  }
+
+  * { box-sizing:border-box; }
+  body {
+    background:var(--ground); color:var(--ink); font-family:var(--body);
+    font-size:16.5px; line-height:1.65; margin:0; padding:0 1.5rem 6rem;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap { max-width:50rem; margin:0 auto; }
+
+  header.masthead { padding:4rem 0 1.75rem; }
+  .eyebrow { font-size:.7rem; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); margin:0 0 .9rem; }
+  h1 { font-family:var(--display); font-weight:600; font-size:clamp(2.1rem,5.5vw,2.9rem); line-height:1.08; margin:0 0 .85rem; letter-spacing:-.01em; text-wrap:balance; }
+  .standfirst { font-size:1.05rem; color:var(--ink-soft); margin:0; max-width:36rem; }
+
+  /* Tabs */
+  .tabs { display:flex; gap:.25rem; border-bottom:2px solid var(--ink); margin-bottom:2.75rem; flex-wrap:wrap; }
+  .tab {
+    appearance:none; border:0; background:none; cursor:pointer;
+    font-family:var(--body); font-size:.95rem; font-weight:500; color:var(--ink-soft);
+    padding:.7rem 1.05rem; border-radius:4px 4px 0 0; margin-bottom:-2px;
+    border-bottom:2px solid transparent;
+  }
+  .tab:hover { color:var(--ink); background:var(--sunken); }
+  .tab[aria-selected="true"] { color:var(--ink); font-weight:600; border-bottom-color:var(--accent); background:none; }
+  .tab:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+
+  h2 { font-family:var(--display); font-weight:600; font-size:1.6rem; line-height:1.2; margin:3rem 0 .4rem; text-wrap:balance; }
+  section > h2:first-child { margin-top:0; }
+  h3 { font-size:1rem; font-weight:600; margin:2rem 0 .5rem; letter-spacing:-.005em; }
+  p { margin:.7rem 0; max-width:40rem; }
+  .lede { color:var(--ink-soft); margin-top:.2rem; }
+
+  .path {
+    font-family:var(--body); font-size:.9rem; font-weight:500;
+    background:var(--sunken); color:var(--ink); padding:.5rem .8rem;
+    border-radius:4px; display:inline-block; margin:.5rem 0;
+  }
+  kbd { font-family:var(--body); font-size:.93em; font-weight:500; background:var(--sunken); padding:.08em .42em; border-radius:3px; white-space:nowrap; }
+  code { font-family:var(--mono); font-size:.86em; background:var(--accent-soft); color:var(--accent); padding:.1em .4em; border-radius:3px; }
+
+  .scroll { overflow-x:auto; margin:1.1rem 0; }
+  table { border-collapse:collapse; width:100%; font-size:.9rem; }
+  th,td { text-align:left; padding:.6rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top; }
+  th { font-size:.67rem; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); border-bottom:1px solid var(--ink); white-space:nowrap; }
+  td:first-child { font-weight:500; white-space:nowrap; }
+
+  .note { border-left:3px solid var(--flag); background:var(--flag-soft); padding:.85rem 1.05rem; margin:1.3rem 0; border-radius:0 4px 4px 0; font-size:.92rem; }
+  .note strong { color:var(--flag); }
+  .note p { margin:.4rem 0; } .note p:first-child { margin-top:0; } .note p:last-child { margin-bottom:0; }
+
+  /* Changelog */
+  .log { display:flex; flex-direction:column; gap:1.6rem; margin-top:1.5rem; }
+  .entry { display:grid; grid-template-columns:5.5rem 1fr; gap:1.25rem; align-items:start; }
+  @media (max-width:36rem) { .entry { grid-template-columns:1fr; gap:.4rem; } }
+  .badge {
+    font-size:.63rem; font-weight:600; letter-spacing:.09em; text-transform:uppercase;
+    padding:.28rem .5rem; border-radius:3px; text-align:center; white-space:nowrap;
+  }
+  .badge.fixed { background:var(--good-soft); color:var(--good); }
+  .badge.new { background:var(--accent-soft); color:var(--accent); }
+  .badge.under { background:var(--sunken); color:var(--muted); }
+  .entry h4 { margin:0 0 .25rem; font-size:1rem; font-weight:600; }
+  .entry p { margin:0; font-size:.93rem; color:var(--ink-soft); max-width:38rem; }
+
+  footer { margin-top:4rem; padding-top:1.75rem; border-top:2px solid var(--ink); font-size:.92rem; color:var(--ink-soft); }
+  a { color:var(--accent); text-underline-offset:2px; }
+</style>
+
+<div class="wrap">
+
+<header class="masthead">
+  <p class="eyebrow">Rainy Day Merchandise</p>
+  <h1>Running your shop</h1>
+  <p class="standfirst">Where everything lives, and which of the two systems to open when you want to change something.</p>
+</header>
+
+<div class="tabs" role="tablist">
+  <button class="tab" role="tab" id="t1" aria-controls="p1" aria-selected="true">The website</button>
+  <button class="tab" role="tab" id="t2" aria-controls="p2" aria-selected="false">Square</button>
+  <button class="tab" role="tab" id="t3" aria-controls="p3" aria-selected="false">What changed</button>
+</div>
+
+<!-- ───────────── TAB 1 ───────────── -->
+<section id="p1" role="tabpanel" aria-labelledby="t1">
+
+  <h2>The one rule worth knowing</h2>
+  <p class="lede">Your shop runs on two systems, and almost every question comes down to which one owns the thing you want to change.</p>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Square owns</th><th>HubSpot owns</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Products, prices, photos<br>Stock levels<br>Sales tax<br>Shipping fee</td>
+          <td>Page layouts and text<br>Banners and hero images<br>Customer records and orders</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p>If it is a <strong>thing you sell</strong>, change it in Square. If it is <strong>how the site looks</strong>, change it in HubSpot. Products never get created in HubSpot — the website reads them from Square automatically.</p>
+
+  <h2>Editing a page</h2>
+  <p>Every page is built from blocks called <em>modules</em>. Open the page in HubSpot, click a module, change its fields, publish.</p>
+  <span class="path">HubSpot → Content → Website Pages → open a page → click a module → Publish</span>
+
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Page</th><th>What you can change there</th></tr></thead>
+      <tbody>
+        <tr><td>Home</td><td>Hero image and headline, category tiles, your story section, testimonials</td></tr>
+        <tr><td>Shop</td><td>Cover photos, section title, how many columns, sort order</td></tr>
+        <tr><td>Product</td><td>Layout only — the product itself comes from Square</td></tr>
+        <tr><td>Cart &amp; checkout</td><td>Layout only. Avoid editing these; they handle payments</td></tr>
+        <tr><td>Footer</td><td>Shop name, logo, tagline</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Cover photos</h2>
+  <p>Banner images work differently depending on the page, which is why the Shop All page felt broken.</p>
+
+  <h3>The Shop All page</h3>
+  <p>Open the Shop page, click the <strong>Category Banner</strong> module, and use the <strong>Shop All Cover Photo</strong> field.</p>
+  <div class="note">
+    <p><strong>This is the one that wouldn't change before.</strong> Shop All isn't a Square category, so it has no category photo to inherit — changing anything in Square will never affect it. It now has its own field, which is the only place that image comes from.</p>
+  </div>
+
+  <h3>A category page — Bracelets, Earrings, and so on</h3>
+  <p>Set the <strong>category image in Square</strong>. The banner picks it up on its own, and this is the normal way to change one.</p>
+  <p>To override Square for a single category, add an entry under <strong>Category Custom Content</strong> and match the Category Name exactly — <code>Bracelets</code>, not <code>bracelets</code>.</p>
+
+  <h3>A category with no photo in Square</h3>
+  <p>Use the <strong>Fallback Cover Photo</strong> field. Without it those banners render empty. Keychains has no Square photo today.</p>
+
+  <h2>Emails</h2>
+  <p class="lede">Three different emails, sent by three different systems.</p>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Email</th><th>Goes to</th><th>Comes from</th></tr></thead>
+      <tbody>
+        <tr><td>Payment receipt</td><td>Customer</td><td>Square, automatically — check receipts are on in Square settings</td></tr>
+        <tr><td>New order alert</td><td>You</td><td>HubSpot, when a deal is created</td></tr>
+        <tr><td>Sign-in link</td><td>Customer</td><td>The website, when someone logs in</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>To set up your new-order alert: <span class="path">HubSpot → Settings → Objects → Deals → Pipelines → Automate → first stage → Send internal email notification</span></p>
+
+  <h2>Theme settings</h2>
+  <p>Under <kbd>Design</kbd> → <kbd>Themes</kbd> you'll find <strong>Brand Color</strong>, which you can change freely, and <strong>Square Environment</strong>.</p>
+  <div class="note">
+    <p><strong>Leave Square Environment set to "production".</strong> Switching it to sandbox points your live shop at Square's test system — orders would look successful and no money would arrive.</p>
+  </div>
+</section>
+
+<!-- ───────────── TAB 2 ───────────── -->
+<section id="p2" role="tabpanel" aria-labelledby="t2" hidden>
+
+  <h2>Products and photos</h2>
+  <p class="lede">Everything you sell lives in Square. The website reads it and updates within about five minutes.</p>
+  <span class="path">Square → Items &amp; Orders → Items</span>
+  <p>An item's name, description, price, and photo all flow straight to the website. To hide something without deleting it, mark it unavailable — the site respects that immediately.</p>
+  <p>A <strong>category's</strong> photo becomes the banner on that category's page, which is how you change those cover images.</p>
+
+  <h2>Stock</h2>
+  <p>Turn on stock tracking for anything you make in limited numbers, and the shop counts down as things sell.</p>
+  <span class="path">Square → Items &amp; Orders → Items → open an item → Track inventory → enter your count</span>
+  <p>When a tracked item hits zero, the website shows <strong>Sold Out</strong>, disables the Add to Cart button, and refuses the purchase even if someone had the page open beforehand. People can still favourite it.</p>
+  <div class="note">
+    <p><strong>Items without tracking stay buyable forever.</strong> That's deliberate — turning this on can't accidentally empty your shop. It only applies to items you switch it on for, so try one first.</p>
+  </div>
+
+  <h2>Sales tax</h2>
+  <p>Kansas customers are charged tax. Customers in other states are not, because you don't owe tax elsewhere until you sell a great deal into that state.</p>
+  <span class="path">Square → Settings → Account &amp; Settings → Payments → Sales taxes</span>
+  <p>Your rule is called <strong>Kansas Jewelry</strong>. Change the percentage there and the website uses the new rate immediately — nothing needs redeploying.</p>
+  <div class="note">
+    <p><strong>The rate is currently 6.5%, which is the Kansas state rate on its own.</strong> Your county and city add more on top, so at 6.5% you collect less than you owe and make up the difference at filing time. Worth confirming your full combined rate with whoever does your taxes, then updating it here.</p>
+  </div>
+
+  <h2>Shipping</h2>
+  <p>The shipping fee is stored as the price of an item called <strong>Shipping</strong> in your catalog.</p>
+  <span class="path">Square → Items &amp; Orders → Items → Shipping → set the price</span>
+  <p>Customers never see it as a product — the website hides it and shows the amount as "Shipping" on the receipt instead. It's one flat charge per order, not per item, so a two-bracelet order pays it once.</p>
+  <div class="note">
+    <p><strong>Don't delete the Shipping item.</strong> It looks like a stray product in your list, but it's where the fee is stored. Deleting it silently makes shipping free. It's priced at $0 right now, so nothing is charged until you set an amount.</p>
+  </div>
+
+  <h2>Receipts</h2>
+  <p>Square emails a receipt to every customer automatically, and it's their only confirmation. Check it's switched on under <kbd>Settings</kbd> → <kbd>Payments</kbd> → <kbd>Receipts</kbd>.</p>
+</section>
+
+<!-- ───────────── TAB 3 ───────────── -->
+<section id="p3" role="tabpanel" aria-labelledby="t3" hidden>
+  <h2>What changed</h2>
+  <p class="lede">The shop moved to new hosting, four things that were quietly broken got fixed, and five features were added.</p>
+
+  <div class="log">
+    <div class="entry"><span class="badge fixed">Fixed</span><div>
+      <h4>Orders never reached HubSpot</h4>
+      <p>Not one order had ever created a record, since the shop was built. The website was trying to save details into fields that didn't exist, HubSpot rejected every attempt, and the error was being thrown away silently. This is why you couldn't see orders, addresses, or customer contact details. Orders now arrive with what was bought, where it ships, and a link to the receipt.</p>
+    </div></div>
+
+    <div class="entry"><span class="badge fixed">Fixed</span><div>
+      <h4>Anyone could set their own price</h4>
+      <p>The checkout accepted whatever total the browser sent, so a $200 order could have been paid as one cent. Square now prices every order from your catalog and the site charges what Square says.</p>
+    </div></div>
+
+    <div class="entry"><span class="badge fixed">Fixed</span><div>
+      <h4>The menu sometimes came up empty</h4>
+      <p>Your categories loaded in one batch that wasn't big enough, so a visitor arriving at a quiet moment could see a shop with no navigation at all.</p>
+    </div></div>
+
+    <div class="entry"><span class="badge fixed">Fixed</span><div>
+      <h4>The Shop All cover photo</h4>
+      <p>The page you told us about. It had no way to be changed — see the website tab for where its field now lives.</p>
+    </div></div>
+
+    <div class="entry"><span class="badge new">New</span><div>
+      <h4>Kansas sales tax</h4>
+      <p>Kansas customers are charged tax; other states aren't. You control the rate in Square.</p>
+    </div></div>
+
+    <div class="entry"><span class="badge new">New</span><div>
+      <h4>Shipping fee</h4>
+      <p>A flat charge per order, set by you in Square, currently $0 until you choose an amount.</p>
+    </div></div>
+
+    <div class="entry"><span class="badge new">New</span><div>
+      <h4>Sold out actually means sold out</h4>
+      <p>Out-of-stock items can no longer be bought — not from a stale page, not by anyone poking at the site directly. Works on items where you've turned tracking on.</p>
+    </div></div>
+
+    <div class="entry"><span class="badge new">New</span><div>
+      <h4>Shipping addresses in Square</h4>
+      <p>Orders now carry the delivery address, so Square's Orders tab shows you where each one is going.</p>
+    </div></div>
+
+    <div class="entry"><span class="badge new">New</span><div>
+      <h4>Order details in HubSpot</h4>
+      <p>Each sale creates a record listing the items, the shipping address, and the total, assigned to you so HubSpot can alert you.</p>
+    </div></div>
+
+    <div class="entry"><span class="badge under">Under the hood</span><div>
+      <h4>New hosting</h4>
+      <p>The part of the shop that talks to Square moved to Cloudflare — faster, no cold starts, and on a plan that permits selling. The old host stays available for a short while as a safety net.</p>
+    </div></div>
+
+    <div class="entry"><span class="badge under">Under the hood</span><div>
+      <h4>Automatic checks</h4>
+      <p>75 automated tests now run on every change, and updates deploy themselves once they pass. Any change can be undone in about two minutes.</p>
+    </div></div>
+  </div>
+
+  <footer>
+    <p><strong>Still to do:</strong> set your real combined tax rate, choose a shipping amount, switch on your new-order email in HubSpot, and turn on stock tracking for the items you make in limited numbers.</p>
+  </footer>
+</section>
+
+</div>
+
+<script>
+  const tabs = [...document.querySelectorAll('.tab')];
+  const panels = tabs.map(t => document.getElementById(t.getAttribute('aria-controls')));
+  function select(i) {
+    tabs.forEach((t, n) => {
+      t.setAttribute('aria-selected', n === i ? 'true' : 'false');
+      panels[n].hidden = n !== i;
+    });
+  }
+  tabs.forEach((t, i) => {
+    t.addEventListener('click', () => select(i));
+    t.addEventListener('keydown', (e) => {
+      const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+      if (!d) return;
+      e.preventDefault();
+      const n = (i + d + tabs.length) % tabs.length;
+      tabs[n].focus();
+      select(n);
+    });
+  });
+</script>
