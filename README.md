@@ -1,6 +1,6 @@
 # HubSpot E-commerce Project
 
-A modern e-commerce storefront built with HubSpot CMS React and Square payments, with serverless functions hosted on Vercel.
+A modern e-commerce storefront built with HubSpot CMS React and Square payments, with serverless functions hosted on Cloudflare Workers.
 
 ## 📁 Project Structure
 
@@ -18,11 +18,13 @@ hsecommerce-project/
 │   ├── hsproject.json
 │   └── package.json
 │
-├── api/                # Vercel Serverless Functions
-│   ├── auth/           # Authentication endpoints
-│   ├── cron/           # Background jobs
-│   └── ...             # Core API endpoints
-├── vercel.json         # Vercel configuration
+├── workers/            # Cloudflare Worker (the API) — see workers/README.md
+│   ├── src/            # Router, Square, HubSpot, auth
+│   ├── test/           # Unit tests (npm test, no credentials needed)
+│   └── wrangler.toml   # Worker config; secrets set via `wrangler secret put`
+│
+├── api/                # LEGACY Vercel functions — delete after cutover
+├── vercel.json         # LEGACY Vercel configuration — delete after cutover
 ├── package.json        # Project dependencies & scripts
 ├── keep-alive.js       # Local keep-alive script
 └── .env                # Local environment variables (not tracked)
@@ -102,10 +104,11 @@ npm run keep-alive
 - **Tailwind CSS** (CDN) - Styling
 - **Square Web Payments SDK** - Client-side payment tokenization
 
-### Backend (Vercel API)
-- **Vercel Serverless Functions** - API endpoints
+### Backend (Cloudflare Worker)
+- **Cloudflare Workers** - API endpoints, no cold starts
 - **Square Connect API** - Product catalog & payment processing
 - **HubSpot CRM API** - Order logging
+- **jose** - Session tokens for magic-link auth
 
 ## 📚 Documentation
 
@@ -140,12 +143,93 @@ npm run keep-alive
 
 ## 🌐 CI/CD & Environments
 
-We use a two-portal and two-branch system to keep production safe.
+Two branches, two of everything else.
 
-| Environment | Git Branch | HubSpot Portal | Square Env | Vercel URL |
-| :--- | :--- | :--- | :--- | :--- |
-| **Production** | `mom` | Main Portal | Production | `rainydaymerchandise.com` |
-| **Sandbox/Dev** | `dev` | Dev Test Account | Sandbox | Vercel Preview URL |
+| | Production | Sandbox / Dev |
+| :--- | :--- | :--- |
+| Git branch | `mom` | `dev` |
+| HubSpot portal | Main | Test account |
+| Square | Production | Sandbox |
+| Worker | `hsecommerce-api` | `hsecommerce-api-sandbox` |
+| Storefront | `rainydaymerchandise.com` | HubSpot preview URL |
+
+`.github/workflows/ci.yml` runs the Worker tests and a bundle check on every
+pull request, then on a push to `dev` or `mom` deploys whichever halves changed:
+
+- `workers/**` changed → `wrangler deploy` (`--env sandbox` on `dev`), then
+  polls `/api/health` until it reports the expected environment. A deploy that
+  does not answer fails the run.
+- `hubspot-theme/**` changed → `hs project upload` to that branch's portal.
+
+Path filtering means a Worker-only change does not reupload the theme, and a
+change spanning both deploys both — which is the case that used to drift.
+
+**Deploying on merge is the point.** A merged fix cannot sit unreleased; a July
+security fix once sat on `dev` for seven weeks because deploying was a separate
+manual act.
+
+### Which backend the theme talks to
+
+Chosen at runtime from the hostname, in
+`hubspot-theme/src/theme/rainy-day-merch/utils/config.js`, so one build serves
+both portals. Production domains get the production Worker; everything else
+gets sandbox. Unknown hostnames default to **sandbox** on purpose — guessing
+wrong that way shows the wrong catalog, while guessing wrong towards production
+would take real card payments from a test page.
+
+### Required GitHub secrets
+
+Set these per environment under **Settings → Environments** (`production` and
+`sandbox`), not as repo-wide secrets, so the test portal's key can never deploy
+to the live one:
+
+| Secret | Notes |
+| :--- | :--- |
+| `CLOUDFLARE_API_TOKEN` | Scope: *Edit Cloudflare Workers* |
+| `CLOUDFLARE_ACCOUNT_ID` | |
+| `HUBSPOT_ACCOUNT_ID` | Differs per portal |
+| `HUBSPOT_PERSONAL_ACCESS_KEY` | Differs per portal |
+
+The Worker's own secrets (Square tokens, `JWT_SECRET`, HubSpot token) live in
+Cloudflare, not GitHub — `wrangler deploy` does not need them. Set them per
+environment with `wrangler secret put NAME --env sandbox`.
+
+Bootstrap them with the `gh` CLI rather than pasting into the web UI. Create the
+two environments, then load a dotenv file into each:
+
+```bash
+gh api -X PUT repos/:owner/:repo/environments/sandbox
+gh api -X PUT repos/:owner/:repo/environments/production
+
+gh secret set -f .env.github.sandbox.local    --env sandbox
+gh secret set -f .env.github.production.local --env production
+```
+
+Those two files are **gitignored and must stay that way** — they hold live
+credentials. `.gitignore` covers them via `.env.*.local`; verify with
+`git check-ignore .env.github.sandbox.local` before committing anything.
+
+The CI HubSpot key needs CMS/content scopes on top of the four CRM scopes, since
+it runs `hs project upload`. A key scoped only for the CRM calls will pass the
+Worker jobs and fail the theme job.
+
+Using GitHub *Environments* also lets you require a manual approval before any
+`mom` deploy, which is worth turning on for production.
+
+### The API host lives in one place
+
+The API host is declared in
+`hubspot-theme/src/theme/rainy-day-merch/utils/config.js`. Import `API_BASE_URL`
+from there rather than writing a URL literal.
+
+It was previously hardcoded in nine files, which is why moving off Vercel needed
+a nine-file edit. The one place that still repeats it is the inline script in
+`templates/layouts/base.hubl.html`, which cannot import an ES module; keep the
+two in step.
+
+A custom domain (`api.rainydaymerchandise.com`) would reduce this to a DNS
+change, but it requires moving the whole zone to Cloudflare DNS. That is
+deliberately deferred — see `workers/README.md`.
 
 ### ⚠️ Theme and API deploy separately
 

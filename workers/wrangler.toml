@@ -1,0 +1,71 @@
+name = "hsecommerce-api"
+main = "src/index.js"
+compatibility_date = "2026-01-15"
+
+# Non-secret configuration. Secrets go in with `wrangler secret put NAME`
+# (see workers/README.md) and never live in this file.
+[vars]
+SQUARE_ENVIRONMENT = "production"
+BASE_URL = "https://www.rainydaymerchandise.com"
+ALLOWED_ORIGINS = "https://www.rainydaymerchandise.com,https://rainydaymerchandise.com"
+# Tax catalog object id is per-account, same as accessToken/locationId in
+# squareConfig() — production and sandbox credentials must never cross.
+# Left empty: DBZ6Y7OTBOC3ZHUYFIUJJEJP (the value below, in SANDBOX) exists
+# only in the Square SANDBOX catalog. Deployed to production, that id makes
+# Square reject every Kansas order's POST /v2/orders with a 502 — Kansas
+# checkout goes down while every other state keeps working. buildOrderTaxes
+# returns [] for an empty id, so leaving this blank means production charges
+# no Kansas tax (today's behaviour) instead of breaking checkout.
+# MUST be set to the real production tax object id, at the real combined
+# state-plus-local rate (not the 6.5% Kansas state rate alone), at cutover —
+# see docs/superpowers/plans/2026-09-01-orders-tax-shipping-inventory.md,
+# "After all tasks".
+SQUARE_KS_TAX_ID_PRODUCTION = "PUGWKTHXBDXO7GUEFKKQLFP6"
+SQUARE_KS_TAX_ID_SANDBOX = "DBZ6Y7OTBOC3ZHUYFIUJJEJP"
+# Shipping variation id is per-account too, same reasoning as the tax id above.
+# SQUARE_SHIPPING_VARIATION_ID_PRODUCTION is a placeholder until a production
+# Shipping item exists; leave it empty (or unresolved) to keep production
+# shipping free rather than pointing it at a sandbox-only catalog object.
+SQUARE_SHIPPING_VARIATION_ID_PRODUCTION = "OQNGEYFZKWGHYIZCUAWCHQ3R"
+SQUARE_SHIPPING_VARIATION_ID_SANDBOX = "FTI6NZQXSUZ5CVNBDDL45ALJ"
+
+# Deals are assigned to this owner, which is what triggers the shop owner's
+# HubSpot notification. Without it deals are created unassigned and silent.
+HUBSPOT_OWNER_ID = "86679095"
+
+# Replaces the nightly Vercel cron. Workers have no cold starts, so the
+# keep-alive job that existed only to keep Vercel warm is gone.
+[triggers]
+crons = ["0 0 * * *"]
+
+# Sandbox environment: deploys as a separate Worker
+# (hsecommerce-api-sandbox) reading the Square *sandbox* catalog.
+#
+# This exists because SQUARE_ENVIRONMENT governs catalog reads and cannot be
+# overridden per request — only orders and payments infer their environment
+# from the client's squareApplicationId. Pointing the dev portal at the
+# production Worker would read production catalog ids and then fail to create
+# a sandbox order from them.
+#
+# Secrets are per-environment: set them with
+#   npx wrangler secret put NAME --env sandbox
+[env.sandbox]
+name = "hsecommerce-api-sandbox"
+
+[env.sandbox.vars]
+SQUARE_ENVIRONMENT = "sandbox"
+BASE_URL = "https://www.rainydaymerchandise.com"
+# Left empty so CORS falls back to '*'. The dev portal is served from a
+# HubSpot preview hostname that varies; locking it down is not worth it here.
+ALLOWED_ORIGINS = ""
+SQUARE_KS_TAX_ID_PRODUCTION = "PUGWKTHXBDXO7GUEFKKQLFP6"
+SQUARE_KS_TAX_ID_SANDBOX = "DBZ6Y7OTBOC3ZHUYFIUJJEJP"
+# See the [vars] comment above — production placeholder until a production
+# Shipping item exists.
+SQUARE_SHIPPING_VARIATION_ID_PRODUCTION = "OQNGEYFZKWGHYIZCUAWCHQ3R"
+SQUARE_SHIPPING_VARIATION_ID_SANDBOX = "FTI6NZQXSUZ5CVNBDDL45ALJ"
+# Owner assigned to deals created from sandbox orders, which is what triggers
+# HubSpot's notification to them. Left out of [vars] until the production
+# owner ID is known — the deal is still created when it's unset, just
+# unassigned, so an unknown owner never fails a deal.
+HUBSPOT_OWNER_ID = "11176268"

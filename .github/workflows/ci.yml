@@ -1,0 +1,151 @@
+name: CI
+
+# Branch model (see README):
+#   dev -> sandbox Worker + HubSpot test portal
+#   mom -> production Worker + HubSpot production portal
+#
+# The point of deploying on merge is that a merged fix cannot sit unreleased.
+# A July security fix once sat on dev for seven weeks because deploying was a
+# separate manual act.
+
+on:
+  pull_request:
+  push:
+    branches: [dev, mom]
+
+concurrency:
+  # Never let two deploys to the same branch overlap.
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  test:
+    name: Worker tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install
+        working-directory: workers
+        run: npm install
+      - name: Unit tests
+        working-directory: workers
+        run: npm test
+      - name: Build check (does it bundle for the Workers runtime?)
+        working-directory: workers
+        run: npx wrangler deploy --dry-run --env="" --outdir=/tmp/build
+
+  changes:
+    name: What changed
+    runs-on: ubuntu-latest
+    outputs:
+      worker: ${{ steps.filter.outputs.worker }}
+      theme: ${{ steps.filter.outputs.theme }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            worker:
+              - 'workers/**'
+            theme:
+              - 'hubspot-theme/**'
+
+  deploy-worker:
+    name: Deploy Worker
+    needs: [test, changes]
+    if: github.event_name == 'push' && needs.changes.outputs.worker == 'true'
+    runs-on: ubuntu-latest
+    # 'production' on mom lets you require a manual approval in repo settings.
+    environment: ${{ github.ref_name == 'mom' && 'production' || 'sandbox' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install
+        working-directory: workers
+        run: npm install
+      # A bad account id surfaces from wrangler as an opaque
+      # "Could not route to /accounts/***/... [code: 7003]". Check the shape and
+      # the token's access here so the failure names itself.
+      - name: Preflight - Cloudflare credentials
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          echo "account id length: ${#CLOUDFLARE_ACCOUNT_ID}"
+          echo "api token length:  ${#CLOUDFLARE_API_TOKEN}"
+          if ! printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | grep -qE '^[0-9a-f]{32}$'; then
+            echo "::error::CLOUDFLARE_ACCOUNT_ID is not 32 lowercase hex characters - check for whitespace or truncation in the secret"
+            exit 1
+          fi
+          code=$(curl -s -o /tmp/cf.json -w '%{http_code}' \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts")
+          echo "workers/scripts probe: HTTP $code"
+          if [ "$code" != "200" ]; then
+            echo "::error::Token cannot list Workers for this account"
+            cat /tmp/cf.json
+            exit 1
+          fi
+          echo "credentials OK"
+
+      - name: Deploy
+        working-directory: workers
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ "${{ github.ref_name }}" = "mom" ]; then
+            npx wrangler deploy --env=""
+          else
+            npx wrangler deploy --env sandbox
+          fi
+      - name: Verify the deploy actually answers
+        run: |
+          if [ "${{ github.ref_name }}" = "mom" ]; then
+            URL=https://hsecommerce-api.dennis-544.workers.dev/api/health
+            WANT=production
+          else
+            URL=https://hsecommerce-api-sandbox.dennis-544.workers.dev/api/health
+            WANT=sandbox
+          fi
+          for i in $(seq 1 10); do
+            BODY=$(curl -sf --max-time 20 "$URL" || true)
+            echo "attempt $i: $BODY"
+            case "$BODY" in *"\"environment\":\"$WANT\""*) echo "deploy verified"; exit 0;; esac
+            sleep 6
+          done
+          echo "::error::Worker did not report environment=$WANT after deploy"
+          exit 1
+
+  deploy-theme:
+    name: Upload HubSpot theme
+    needs: [test, changes]
+    if: github.event_name == 'push' && needs.changes.outputs.theme == 'true'
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref_name == 'mom' && 'production' || 'sandbox' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      # The package is @hubspot/cli but the binary is `hs`, so `npx @hubspot/cli`
+      # fails with "could not determine executable to run". Install it instead.
+      - name: Install HubSpot CLI
+        run: npm install -g @hubspot/cli@8
+      # `--use-env` is the CLI's supported CI path: it reads the key and account
+      # from the environment. A hand-written hubspot.config.yml fails with
+      # "Cannot read properties of undefined (reading 'tokenInfo')" because the
+      # CLI expects an auth block it normally populates itself.
+      - name: Upload project
+        working-directory: hubspot-theme
+        env:
+          HUBSPOT_PERSONAL_ACCESS_KEY: ${{ secrets.HUBSPOT_PERSONAL_ACCESS_KEY }}
+          HUBSPOT_ACCOUNT_ID: ${{ secrets.HUBSPOT_ACCOUNT_ID }}
+          HUBSPOT_PORTAL_ID: ${{ secrets.HUBSPOT_ACCOUNT_ID }}
+        run: hs project upload --use-env

@@ -70,8 +70,16 @@
     <script>
       // Sync categories from Square to HubSpot CMS (runs in background)
       (function() {
+        // Inline scripts cannot import utils/config.js, so the host selection
+        // is duplicated here. Keep it in step with that file.
+        var PRODUCTION_HOSTS = ['www.rainydaymerchandise.com', 'rainydaymerchandise.com'];
+        var API_BASE_URL = PRODUCTION_HOSTS.indexOf(window.location.hostname) !== -1
+          ? 'https://hsecommerce-api.dennis-544.workers.dev/api'
+          : 'https://hsecommerce-api-sandbox.dennis-544.workers.dev/api';
+        window.__API_BASE_URL__ = API_BASE_URL;
+
         // Call sync endpoint - this will update HubSpot CMS if categories changed
-        fetch('https://hsecommerce-api.vercel.app/api/sync-categories', {
+        fetch(API_BASE_URL + '/sync-categories', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -95,7 +103,7 @@
         .catch(function(error) {
           console.error('[Nav] Failed to sync categories:', error);
           // Fallback: try to fetch categories directly
-          fetch('https://hsecommerce-api.vercel.app/api/square-categories')
+          fetch(API_BASE_URL + '/square-categories')
             .then(function(response) {
               if (response.ok) {
                 return response.json();

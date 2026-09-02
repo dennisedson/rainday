@@ -131,7 +131,7 @@ export default function OrderConfirmationIsland() {
                 </div>
               )}
               <div className="flex justify-between text-gray-600">
-                <span>Tax (8%)</span>
+                <span>Tax</span>
                 <span>${orderData.tax?.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-xl font-bold text-gray-900 pt-4 border-t border-gray-200">

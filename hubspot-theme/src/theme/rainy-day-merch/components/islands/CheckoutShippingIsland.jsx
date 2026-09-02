@@ -117,6 +117,7 @@ export default function CheckoutShippingIsland({ squareApplicationId, squareLoca
     if (!formData.city) newErrors.city = 'City is required';
     if (!formData.state) newErrors.state = 'State is required';
     if (!formData.zipCode) newErrors.zipCode = 'ZIP code is required';
+    else if (formData.zipCode.length < 5) newErrors.zipCode = 'ZIP code must be at least 5 digits';
     if (!formData.phone) newErrors.phone = 'Phone is required';
 
     setErrors(newErrors);
@@ -374,7 +375,8 @@ export default function CheckoutShippingIsland({ squareApplicationId, squareLoca
                   </a>
                   <button
                     type="submit"
-                    className="flex-1 px-6 py-3 bg-primary hover:bg-primary-600 text-white font-semibold rounded-lg transition"
+                    disabled={isCalculating}
+                    className="flex-1 px-6 py-3 bg-primary hover:bg-primary-600 text-white font-semibold rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Continue to Payment
                   </button>

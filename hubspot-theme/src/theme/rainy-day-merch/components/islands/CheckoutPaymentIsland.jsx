@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { API_BASE_URL } from '../../utils/config';
 
 export default function CheckoutPaymentIsland({ squareApplicationId, squareLocationId }) {
   const [checkoutData, setCheckoutData] = useState(null);
@@ -107,7 +108,7 @@ export default function CheckoutPaymentIsland({ squareApplicationId, squareLocat
         console.log('[Checkout] Payment token received');
 
         // 2. Call our API to process payment
-        const paymentResponse = await fetch('https://hsecommerce-api.vercel.app/api/process-payment', {
+        const paymentResponse = await fetch(`${API_BASE_URL}/process-payment`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -122,6 +123,9 @@ export default function CheckoutPaymentIsland({ squareApplicationId, squareLocat
             squareApplicationId,
             squareLocationId,
             billingDetails: {
+              firstName: checkoutData.shippingInfo.firstName,
+              lastName: checkoutData.shippingInfo.lastName,
+              phone: checkoutData.shippingInfo.phone,
               address1: checkoutData.shippingInfo.address,
               city: checkoutData.shippingInfo.city,
               state: checkoutData.shippingInfo.state,
@@ -147,28 +151,7 @@ export default function CheckoutPaymentIsland({ squareApplicationId, squareLocat
 
         console.log('[Checkout] Payment successful:', paymentResult);
 
-        // 3. Create Deal in HubSpot
-        try {
-          await fetch('https://hsecommerce-api.vercel.app/api/create-deal', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              email: checkoutData.shippingInfo.email,
-              firstName: checkoutData.shippingInfo.firstName,
-              lastName: checkoutData.shippingInfo.lastName,
-              orderTotal: checkoutData.total,
-              orderItems: checkoutData.cartItems,
-              paymentId: paymentResult.paymentId,
-              orderId: paymentResult.orderId || `ORD-${Date.now()}`,
-            }),
-          });
-        } catch (dealError) {
-          console.error('[Checkout] Failed to create HubSpot deal:', dealError);
-        }
-
-        // 4. Save order data and redirect
+        // 3. Save order data and redirect
         const orderData = {
           ...checkoutData,
           paymentId: paymentResult.paymentId,
