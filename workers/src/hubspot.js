@@ -7,11 +7,12 @@
  */
 
 import { json, readParams } from './lib.js';
+import { requireSession } from './session.js';
 import { squareConfig, squareFetch } from './square-client.js';
 
 const HUBSPOT_API = 'https://api.hubapi.com';
 
-async function hubspotFetch(env, path, init = {}) {
+export async function hubspotFetch(env, path, init = {}) {
   const response = await fetch(`${HUBSPOT_API}${path}`, {
     ...init,
     headers: {
@@ -192,26 +193,26 @@ export async function syncCategories(env) {
   return (data.objects || []).length;
 }
 
-async function resolveContactId(env, { contactId, email }) {
-  if (contactId) return contactId;
-  if (!email) return null;
-  const contact = await findContactByEmail(env, email);
-  return contact?.id || null;
-}
-
 /**
  * GET/POST /api/favorites
  *
- * Reads for an unknown user return an empty list; writes require a signed-in
- * email so favorites cannot be written to an arbitrary contact.
+ * The contact comes from the session. This used to resolve whoever the client
+ * named in an `email` parameter, which let anyone read or write another
+ * customer's favorites by guessing an address.
+ *
+ * Signed-out visitors are unaffected in practice: the client sent `hubspotutk`
+ * for them, which this handler never read, so anonymous reads already returned
+ * nothing and anonymous writes already 401'd. They keep the localStorage
+ * fallback they have always actually been using.
  */
 export async function handleFavorites(request, env) {
   const params = await readParams(request);
-  const { contactId, email, productId, action } = params;
+  const { productId, action } = params;
   const isWrite = request.method === 'POST';
 
   try {
-    const resolvedId = await resolveContactId(env, { contactId, email });
+    const session = await requireSession(request, env, params);
+    const resolvedId = session?.contactId || null;
 
     if (!resolvedId) {
       if (isWrite) return json({ error: 'Sign in to save favorites' }, { status: 401 });

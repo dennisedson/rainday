@@ -1,0 +1,51 @@
+<!--
+  templateType: page
+  isAvailableForNewContent: true
+  label: About - Our Story
+-->
+{% extends "./layouts/base.hubl.html" %}
+
+{% block body %}
+  <main>
+    {% dnd_area "about_content"
+      label="About Content Area"
+    %}
+      {# About/Story Section - Default #}
+      {% dnd_section %}
+        {% dnd_column %}
+          {% dnd_row %}
+            {% dnd_module "aboutStory"
+              path="../components/modules/AboutStory",
+              showCta=false
+            %}
+            {% end_dnd_module %}
+          {% end_dnd_row %}
+        {% end_dnd_column %}
+      {% end_dnd_section %}
+
+      {# Testimonials - Default #}
+      {% dnd_section %}
+        {% dnd_column %}
+          {% dnd_row %}
+            {% dnd_module "testimonials"
+              path="../components/modules/Testimonials"
+            %}
+            {% end_dnd_module %}
+          {% end_dnd_row %}
+        {% end_dnd_column %}
+      {% end_dnd_section %}
+
+      {# Newsletter - Default #}
+      {% dnd_section %}
+        {% dnd_column %}
+          {% dnd_row %}
+            {% dnd_module "newsletter"
+              path="../components/modules/Newsletter"
+            %}
+            {% end_dnd_module %}
+          {% end_dnd_row %}
+        {% end_dnd_column %}
+      {% end_dnd_section %}
+    {% end_dnd_area %}
+  </main>
+{% endblock body %}

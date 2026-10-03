@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { formatOrderSummary, formatShippingAddress } from '../src/hubspot.js';
+import { toOrderList } from '../src/orders.js';
 
 test('the summary reconciles: lines, shipping, tax, total', () => {
   const order = {
@@ -92,4 +93,79 @@ test('shipping address omits missing parts without leaving stray punctuation', (
 test('a missing recipient renders empty', () => {
   assert.equal(formatShippingAddress(undefined), '');
   assert.equal(formatShippingAddress({}), '');
+});
+
+// --- order history --------------------------------------------------------
+//
+// The same deals, read back for the account page.
+
+function deal(id, properties = {}) {
+  return { id, properties: { createdate: '2026-08-01T12:00:00Z', ...properties } };
+}
+
+test('a deal becomes the order the account page renders', () => {
+  const [order] = toOrderList([
+    deal('501', {
+      order_id: 'ORD-1',
+      amount: '30.88',
+      order_items: 'Charm bracelets x2 - $24.00\nShipping - $5.00\nTotal - $30.88',
+      shipping_address: 'Dani\n123 Main St\nWichita, KS 67202',
+      square_receipt_url: 'https://squareup.com/receipt/preview/abc',
+    }),
+  ]);
+
+  assert.deepEqual(order, {
+    id: '501',
+    orderId: 'ORD-1',
+    placedAt: '2026-08-01T12:00:00Z',
+    total: '$30.88',
+    items: ['Charm bracelets x2 - $24.00', 'Shipping - $5.00', 'Total - $30.88'],
+    shippingAddress: 'Dani\n123 Main St\nWichita, KS 67202',
+    receiptUrl: 'https://squareup.com/receipt/preview/abc',
+  });
+});
+
+test('a whole-dime total keeps both decimal places', () => {
+  // createOrderDeal writes (cents / 100).toString(), so $30.90 is stored "30.9".
+  const [order] = toOrderList([deal('501', { amount: '30.9' })]);
+  assert.equal(order.total, '$30.90');
+});
+
+test('a deal with no amount reads as $0.00 rather than $NaN', () => {
+  const [order] = toOrderList([deal('501', {})]);
+  assert.equal(order.total, '$0.00');
+});
+
+test('a missing receipt url is null, so the UI can omit the link', () => {
+  const [order] = toOrderList([deal('501', { amount: '5.00' })]);
+  assert.equal(order.receiptUrl, null);
+});
+
+test('an order with no item summary yields no item lines', () => {
+  const [order] = toOrderList([deal('501', { order_items: '' })]);
+  assert.deepEqual(order.items, []);
+});
+
+test('orders are newest first', () => {
+  const orders = toOrderList([
+    deal('1', { createdate: '2026-01-01T00:00:00Z', order_id: 'oldest' }),
+    deal('2', { createdate: '2026-08-01T00:00:00Z', order_id: 'newest' }),
+    deal('3', { createdate: '2026-04-01T00:00:00Z', order_id: 'middle' }),
+  ]);
+  assert.deepEqual(orders.map((o) => o.orderId), ['newest', 'middle', 'oldest']);
+});
+
+test('the list is capped at 50 so one customer cannot page the account view forever', () => {
+  const deals = Array.from({ length: 51 }, (_, i) =>
+    deal(String(i), { createdate: `2026-01-01T00:00:${String(i).padStart(2, '0')}Z` })
+  );
+  assert.equal(toOrderList(deals).length, 50);
+});
+
+test('a deal missing createdate sorts last instead of throwing', () => {
+  const orders = toOrderList([
+    deal('1', { createdate: undefined, order_id: 'undated' }),
+    deal('2', { createdate: '2026-08-01T00:00:00Z', order_id: 'dated' }),
+  ]);
+  assert.deepEqual(orders.map((o) => o.orderId), ['dated', 'undated']);
 });

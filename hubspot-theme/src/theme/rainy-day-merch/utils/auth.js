@@ -3,7 +3,7 @@
  * Client-side authentication helpers for magic link authentication
  */
 
-import { post, get } from './api';
+import { post } from './api';
 
 // Session token storage key
 const SESSION_TOKEN_KEY = 'auth_session_token';
@@ -54,7 +54,7 @@ export async function requestMagicLink(email) {
  */
 export async function verifyMagicLink(token, email) {
   try {
-    const data = await get(`/auth/verify-link?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`);
+    const data = await post('/auth/verify-link', { token, email });
 
     // Store session token
     if (data.token) {
@@ -74,12 +74,7 @@ export async function verifyMagicLink(token, email) {
 export async function verifySession() {
   const token = getSessionToken();
   
-  if (!token) {
-    console.log('[Auth] No token found in localStorage');
-    return null;
-  }
-
-  console.log('[Auth] Verifying session with token:', token.substring(0, 20) + '...');
+  if (!token) return null;
 
   try {
     const data = await post('/auth/verify-session', { token }, {
@@ -88,15 +83,11 @@ export async function verifySession() {
       },
     });
 
-    console.log('[Auth] Verify session response data:', data);
-    console.log('[Auth] Session verified successfully for:', data.contact?.email);
     return data.contact;
   } catch (error) {
     console.error('[Auth] Error verifying session:', error);
-    // Don't clear token on network errors - might be temporary
-    if (error.message.includes('Failed to fetch') || error.message.includes('API request failed')) {
-      console.log('[Auth] Network error, keeping token for retry');
-    } else {
+    // A network blip must not sign the customer out; a rejected token must.
+    if (!error.message.includes('Failed to fetch') && !error.message.includes('API request failed')) {
       clearSessionToken();
     }
     return null;
