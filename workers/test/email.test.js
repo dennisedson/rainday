@@ -64,7 +64,7 @@ test('the text body has the reconciling summary, the address, and the receipt li
 test('no first name falls back to a generic greeting', () => {
   const { text, html } = buildOrderConfirmationEmail({ order: ORDER, payment: PAYMENT });
   assert.match(text, /^Hi there,/);
-  assert.match(html, /Hi there,/);
+  assert.match(html, /Thanks for your order!</);
 });
 
 test('customer-entered text is escaped in the HTML body', () => {
@@ -83,10 +83,10 @@ test('customer-entered text is escaped in the HTML body', () => {
   assert.match(html, /&lt;b&gt;Mug&lt;\/b&gt;/);
 });
 
-test('a missing receipt url leaves the receipt line out rather than linking nowhere', () => {
+test('a missing receipt url leaves the receipt button out rather than linking nowhere', () => {
   const { text, html } = buildOrderConfirmationEmail({ order: ORDER, payment: {} });
   assert.doesNotMatch(text, /receipt/i);
-  assert.doesNotMatch(html, /href=/);
+  assert.doesNotMatch(html, /View your receipt/);
 });
 
 test('a receipt url that is not https is not linked', () => {
@@ -180,4 +180,53 @@ test('a Resend rejection throws, so the caller logs it', async () => {
       sendOrderConfirmationEmail({ RESEND_API_KEY: 'k' }, { to: 'pat@example.com', order: ORDER, payment: PAYMENT })),
     /422/
   );
+});
+
+// --- Layout ---------------------------------------------------------------
+
+test('a lowercase first name is capitalised in the greeting', () => {
+  const { text, html } = buildOrderConfirmationEmail({ order: ORDER, payment: PAYMENT, firstName: 'dennis' });
+  assert.match(text, /^Hi Dennis,/);
+  assert.match(html, /Thanks for your order, Dennis!/);
+});
+
+test('items, shipping, tax and the total each get a row, with prices on the right', () => {
+  const { html } = buildOrderConfirmationEmail({ order: ORDER, payment: PAYMENT });
+  for (const label of ['Charm bracelets', 'Shipping', 'Tax', 'Total']) assert.match(html, new RegExp(`>${label}<`));
+  for (const price of ['\\$24\\.00', '\\$5\\.00', '\\$1\\.88', '\\$30\\.88']) {
+    assert.match(html, new RegExp(`align="right"[^>]*>${price}<`), price);
+  }
+});
+
+test('an order with no shipping fee or tax has no rows for them', () => {
+  const order = { ...ORDER, service_charges: [], total_tax_money: { amount: 0 }, total_money: { amount: 2400 } };
+  const { html } = buildOrderConfirmationEmail({ order, payment: PAYMENT });
+  assert.doesNotMatch(html, />Shipping</);
+  assert.doesNotMatch(html, />Tax</);
+});
+
+test('the address leaves out the phone number and is written so mail apps do not link it', () => {
+  const order = structuredClone(ORDER);
+  order.fulfillments[0].shipment_details.recipient.phone_number = '6467894233';
+  const { html } = buildOrderConfirmationEmail({ order, payment: PAYMENT });
+  assert.doesNotMatch(html.replace(/&zwnj;/g, ''), /6467894233/);
+  assert.match(html, /6&zwnj;7&zwnj;2&zwnj;0&zwnj;2/);
+});
+
+test('the order date is the day in shop time, not UTC', () => {
+  // 03:00 UTC on 6 October is the evening of 5 October in Kansas.
+  const order = { ...ORDER, created_at: '2026-10-06T03:00:00Z' };
+  const { html, text } = buildOrderConfirmationEmail({ order, payment: PAYMENT });
+  assert.match(html, /October 5, 2026/);
+  assert.match(text, /October 5, 2026/);
+});
+
+test('the logo is the shop logo and links to the shop', () => {
+  const { html } = buildOrderConfirmationEmail({ order: ORDER, payment: PAYMENT });
+  assert.match(html, /<a href="https:\/\/www\.rainydaymerchandise\.com"><img src="https:\/\/www\.rainydaymerchandise\.com\/hs-fs\/hubfs\/rainydaylogo1\.png\?width=192&amp;name=rainydaylogo1\.png"[^>]*alt="Rainy Day Merchandise"/);
+});
+
+test('the inbox preview line names the order and its total', () => {
+  const { html } = buildOrderConfirmationEmail({ order: ORDER, payment: PAYMENT });
+  assert.match(html, /<div style="display:none[^"]*">[^<]*ORD-1700000000000[^<]*\$30\.88/);
 });
