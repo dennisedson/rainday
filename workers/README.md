@@ -213,6 +213,32 @@ If the Square Inventory API is unavailable the Worker treats stock as unknown
 rather than marking everything sold out. That fails toward selling rather than
 toward an empty-looking store; a sustained outage could oversell.
 
+### Turning tracking on in bulk
+
+A tracked variation with no count shows as Out of Stock, so tracking must never
+be switched on without a count. `scripts/track-inventory.mjs` does both, in two
+steps:
+
+```bash
+export SQUARE_ENVIRONMENT=sandbox          # or production
+export SQUARE_ACCESS_TOKEN=...             # that environment's token
+export SQUARE_LOCATION_ID=...              # the shop's location
+
+node scripts/track-inventory.mjs plan      # writes untracked-items.csv; changes nothing
+# edit the count column; set track to "no" for made-to-order items
+node scripts/track-inventory.mjs apply untracked-items.csv
+```
+
+`plan` lists every untracked variation (not the Shipping item) with a count of
+1. `apply` checks the whole spreadsheet first and changes nothing if any row is
+wrong. It then sets each count, switches tracking on, reads both back, and
+re-sends any count that didn't take. Against production it also needs
+`--confirm-production`.
+
+"Tracked" uses the Worker's own rule from `src/inventory.js`, so the script and
+the website agree. Tests: `node --test scripts/track-inventory.test.mjs`. The
+spreadsheet lists the whole catalog, so it is gitignored.
+
 ## Sales tax
 
 Kansas buyers are charged Kansas sales tax. Buyers in other states are charged
