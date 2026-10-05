@@ -51,7 +51,12 @@ export default function OrderConfirmationIsland() {
             Your order number is <span className="font-semibold text-gray-900">{orderData.orderId}</span>
           </p>
           <p className="text-sm text-gray-500 mt-4">
-            A confirmation email has been sent to {orderData.shippingInfo?.email}
+            A confirmation email has been sent to{' '}
+            <span className="font-medium text-gray-700 break-all">{orderData.shippingInfo?.email}</span>
+          </p>
+          {/* The customer can't fix a wrong address themselves, so tell them who can. */}
+          <p className="text-sm text-gray-500 mt-1">
+            Wrong address? Email rainydaymerchandise@gmail.com with your order number and we'll fix it.
           </p>
           {orderData.receiptUrl && (
             <a 

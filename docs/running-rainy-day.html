@@ -238,10 +238,29 @@
 
   <h2>Questions from customers</h2>
   <h3>Finding their order</h3>
-  <p>The order number a customer sees on the website doesn't match the numbers in HubSpot. Search HubSpot for the customer's name or email instead, then open the deal on their contact.</p>
+  <p>Order numbers start with <strong>ORD-</strong>. Search HubSpot for the number the customer gives you: the deal is named "Order" followed by it. If that finds nothing, search for their name or email instead. Older orders showed customers a different number.</p>
 
   <h3>"I didn't get a confirmation email"</h3>
-  <p>That's expected for now. After paying, customers see a confirmation page with a link to their Square receipt, but no email is sent yet, even though that page says one was. An automatic confirmation email is being added. Until it's ready, a short thank-you email from you covers it.</p>
+  <p>The website emails every customer a confirmation right after they pay. If theirs didn't arrive, ask them to check their spam folder. Then check the address on the order: open the deal and look at the contact in the right-hand panel. If the address is wrong, fix it as described next.</p>
+
+  <h3>They gave the wrong email address</h3>
+  <p>The order itself is fine: it's paid and the shipping address is right. Only the email is wrong, so the customer didn't get their confirmation and won't see the order when they sign in. They can't fix this themselves, so the confirmation page asks them to email you.</p>
+  <ol class="steps">
+    <li>Find the order in HubSpot and open the contact in its right-hand panel.</li>
+    <li>Search your HubSpot contacts for the customer's correct address.
+      <span class="hint">What you find decides which of the two fixes below to use.</span></li>
+  </ol>
+  <div class="choices">
+    <div class="choice">
+      <h3>No contact has the right address</h3>
+      <p>On the contact from step 1, click the email address, change it to the correct one, and save.</p>
+    </div>
+    <div class="choice">
+      <h3>One already does</h3>
+      <p>Open the contact with the <strong>correct</strong> address. Click <kbd>Actions</kbd>, then <kbd>Merge</kbd>, search for the wrong-address contact, select it, and click <kbd>Merge</kbd>. The order moves onto the right contact.</p>
+    </div>
+  </div>
+  <p>Then email the customer from rainydaymerchandise@gmail.com with their order details. The deal's <strong>Order Items</strong> and <strong>Square Receipt URL</strong> have everything they need.</p>
 
   <h2>Refund an order</h2>
   <ol class="steps">
@@ -310,7 +329,7 @@
       <tbody>
         <tr><td>New order alert</td><td>You</td><td>HubSpot, when an order arrives</td></tr>
         <tr><td>Sign-in link</td><td>Customer</td><td>The website, when they sign in</td></tr>
-        <tr><td>Order confirmation</td><td>Customer</td><td>Nothing yet. It's being added; see <em>Questions from customers</em> on the Orders tab</td></tr>
+        <tr><td>Order confirmation</td><td>Customer</td><td>The website, right after they pay. Replies come to rainydaymerchandise@gmail.com</td></tr>
         <tr><td>Tracking number</td><td>Customer</td><td>You, from rainydaymerchandise@gmail.com</td></tr>
       </tbody>
     </table>
