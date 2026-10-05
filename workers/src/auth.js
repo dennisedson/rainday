@@ -9,6 +9,7 @@ import { SignJWT, jwtVerify } from 'jose';
 import { json, randomHex, readParams, resolveBaseUrl, timingSafeEqual } from './lib.js';
 import { requireSession, secretKey } from './session.js';
 import { findContactByEmail, getContact, createContact, updateContact } from './hubspot.js';
+import { isValidEmailAddress } from './email-address.js';
 
 const MAGIC_LINK_TOKEN_PROPERTY = 'magic_link_token';
 const MAGIC_LINK_EXPIRES_PROPERTY = 'magic_link_expires';
@@ -41,8 +42,11 @@ async function sendMagicLinkEmail(env, { to, magicLink }) {
 /** POST /api/auth/magic-link */
 export async function handleMagicLinkRequest(request, env) {
   const { email } = await readParams(request);
-  if (!email || !email.includes('@')) {
-    return json({ error: 'Valid email address is required' }, { status: 400 });
+  if (!isValidEmailAddress(email)) {
+    return json(
+      { error: "That email address doesn't look right. Check the spelling and try again." },
+      { status: 400 }
+    );
   }
 
   try {
@@ -70,8 +74,32 @@ export async function handleMagicLinkRequest(request, env) {
       message: 'If an account exists, a magic link has been sent.',
     });
   } catch (error) {
-    return json({ error: 'Internal server error', message: error.message }, { status: 500 });
+    // An existing contact always has a valid address, so this only fires for
+    // a new one and cannot be used to tell whether a customer exists.
+    if (isInvalidEmailError(error)) {
+      return json(
+        { error: "That email address doesn't look right. Check the spelling and try again." },
+        { status: 400 }
+      );
+    }
+    // HubSpot's message can include the address, so only the status is logged,
+    // and none of it reaches the browser.
+    console.error('[Auth] Magic link request failed, HubSpot status:', error.status ?? 'none');
+    return json(
+      { error: "We couldn't send your sign-in link. Please try again in a minute." },
+      { status: 500 }
+    );
   }
+}
+
+/**
+ * True when HubSpot refused the address itself. isValidEmailAddress runs the
+ * same top-level-domain rule first, so this only catches a rule HubSpot adds
+ * that we don't check, or a list that has gone stale.
+ */
+function isInvalidEmailError(error) {
+  if (error?.status !== 400) return false;
+  return /INVALID_EMAIL/.test(`${error.message ?? ''} ${JSON.stringify(error.details ?? {})}`);
 }
 
 /** POST /api/auth/verify-link */

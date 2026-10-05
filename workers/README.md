@@ -59,6 +59,11 @@ npx wrangler secret put RESEND_API_KEY
 npx wrangler secret put RESEND_FROM_EMAIL
 ```
 
+`RESEND_API_KEY` sends both the magic-link sign-in emails and the order
+confirmations. Give sandbox its own sending-only key
+(`npx wrangler secret put RESEND_API_KEY --env sandbox`) rather than a copy of
+production's. Without one, sandbox sends no email at all.
+
 Pull the current values from Vercel *before* tearing that project down:
 
 ```bash
@@ -117,7 +122,7 @@ fails the theme upload; a CLI key in the Worker fails every CRM call.
 | `crm.objects.contacts.read` | contact search, session lookup |
 | `crm.objects.contacts.write` | contact create, magic-link token, favorites |
 | `crm.objects.deals.write` | deal creation on checkout |
-| `crm.objects.deals.read` | not called directly; pairs with write |
+| `crm.objects.deals.read` | order history (`/api/orders` reads a contact's deals) |
 | `crm.schemas.contacts.write` | only to create the properties below via API |
 | `crm.schemas.deals.write` | same |
 
@@ -148,27 +153,36 @@ makes every magic link look expired.
 
 ### Order notification
 
-No confirmation email is sent by this code. Two things cover it:
+Every order notifies two people:
 
-- **The customer** gets Square's own payment receipt, sent automatically to the
-  buyer email in production. Sandbox does not send email — that is a Square
-  behaviour, not a defect. Confirm receipts are enabled in the Square Dashboard.
-- **The shop owner** is notified by HubSpot. Deals are created with
-  `hubspot_owner_id` set, and HubSpot notifies an owner when a deal is assigned
-  to them. Sales Hub Starter also supports a pipeline-stage automation that
-  emails on entry to the first stage. Either works; both are configured in
-  HubSpot, not here.
+- **The customer** gets an order confirmation from this Worker, sent through
+  Resend right after the payment succeeds (`src/email.js`). It lists the items,
+  shipping, tax, total, shipping address, and the Square receipt link. Replies
+  go to `ORDER_EMAIL_REPLY_TO` in `wrangler.toml`. Square sends **no** receipt
+  for Payments API orders, whatever the Dashboard's receipt settings say; only
+  Square's hosted Checkout API does. A test order on 2026-10-02 confirmed it.
+  No `RESEND_API_KEY` on a Worker means no confirmation from it. Look for
+  `[Email]` in `wrangler tail`.
+- **The shop owner** is notified by HubSpot, configured in HubSpot rather than
+  here. The alert to rely on is a pipeline-stage automation ("Send internal
+  email notification") on the first deal stage; `docs/dani-setup-guide.html`
+  walks through it. Deals are also created with `hubspot_owner_id` set, but
+  HubSpot's "deal assigned to you" notification usually fires only when an
+  owner *changes*, so it is a backup at best for deals that arrive assigned.
 
 The notification only has to say a sale happened. The detail lives on the
 records: `order_items`, `shipping_address`, and `square_receipt_url` on the
 deal, and the customer's address and phone on the associated contact.
 
-Deals are created server-side in `process-payment` via `ctx.waitUntil()`, so a
-closed browser cannot lose one and a HubSpot outage cannot fail a charge that
-already succeeded. Failures are logged; look for `[Order]` in `wrangler tail`.
+Deals and confirmation emails are both sent server-side in `process-payment`
+via `ctx.waitUntil()`, so a closed browser cannot lose one and a HubSpot or
+Resend outage cannot fail a charge that already succeeded. Neither is retried.
+Failures are logged; look for `[Order]` in `wrangler tail`. The email carries a
+Resend idempotency key derived from the payment id, so a retried request does
+not email the customer twice.
 
 Set `HUBSPOT_OWNER_ID` per environment in `wrangler.toml`. If it is unset the
-deal is still created, just unassigned — and nobody is notified.
+deal is still created, just unassigned; the pipeline automation still fires.
 
 ## Inventory and out-of-stock
 

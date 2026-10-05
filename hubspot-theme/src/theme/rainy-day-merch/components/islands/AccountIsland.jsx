@@ -6,9 +6,11 @@ import { get } from '../../utils/api';
 export default function AccountIsland() {
   const [contact, setContact] = useState(null);
   const [loading, setLoading] = useState(true);
+  // Favorited products with their names and photos, not bare ids.
   const [favorites, setFavorites] = useState([]);
   const [orders, setOrders] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
+  const [ordersError, setOrdersError] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -78,8 +80,18 @@ export default function AccountIsland() {
     }
 
     try {
-      const favs = await getFavorites();
-      setFavorites(favs);
+      const ids = await getFavorites();
+      if (ids.length === 0) {
+        setFavorites([]);
+        return;
+      }
+
+      // Favorites are stored as catalog ids. Look them up in the product list
+      // (the same one the shop uses) for a name and photo. An id that isn't in
+      // the catalog, such as a deleted product, is skipped.
+      const data = await get('/square-products');
+      const byId = new Map((data.products || []).map((p) => [p.id, p]));
+      setFavorites(ids.map((id) => byId.get(id)).filter(Boolean));
     } catch (error) {
       console.error('[Account] Error loading favorites:', error);
     }
@@ -93,8 +105,12 @@ export default function AccountIsland() {
 
       const data = await get('/orders', { headers: { Authorization: `Bearer ${token}` } });
       setOrders(data.orders || []);
+      setOrdersError(false);
     } catch (error) {
+      // Shown separately from "no orders", so a failed lookup never tells a
+      // customer who has ordered that they haven't.
       console.error('[Account] Error loading orders:', error);
+      setOrdersError(true);
     } finally {
       setOrdersLoading(false);
     }
@@ -156,11 +172,22 @@ export default function AccountIsland() {
           <h2 className="text-xl font-semibold text-gray-900 mb-4">My Favorites</h2>
           {favorites.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-              {favorites.map((productId) => (
-                <div key={productId} className="bg-gray-100 rounded-lg p-4 text-center">
-                  <p className="text-sm text-gray-600">Product ID: {productId}</p>
-                  {/* TODO: Fetch and display actual product details */}
-                </div>
+              {favorites.map((product) => (
+                <a
+                  key={product.id}
+                  href={`/product?id=${encodeURIComponent(product.id)}`}
+                  className="group block"
+                >
+                  <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+                    <img
+                      src={product.image}
+                      alt={product.name}
+                      loading="lazy"
+                      className="w-full h-full object-cover group-hover:opacity-90 transition-opacity"
+                    />
+                  </div>
+                  <p className="mt-2 text-sm font-medium text-gray-900 group-hover:text-primary">{product.name}</p>
+                </a>
               ))}
             </div>
           ) : (
@@ -181,6 +208,8 @@ export default function AccountIsland() {
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Order History</h2>
           {ordersLoading ? (
             <p className="text-gray-500">Loading orders...</p>
+          ) : ordersError ? (
+            <p className="text-gray-500">We couldn't load your orders just now. Refresh the page to try again.</p>
           ) : orders.length > 0 ? (
             <div className="space-y-4">
               {orders.map((order) => (

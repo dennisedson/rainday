@@ -11,6 +11,8 @@ import { squareConfig, squareFetch } from './square-client.js';
 import { fetchInventoryLevelsSafely, fetchVariationsById, findInsufficientStock, resolveStockLevel } from './inventory.js';
 import { buildOrderTaxes, buildServiceCharges, fetchShippingCents } from './pricing.js';
 import { createOrderDeal } from './hubspot.js';
+import { sendOrderConfirmationEmail } from './email.js';
+import { isValidEmailAddress } from './email-address.js';
 
 const DEFAULT_PRODUCT_IMAGE =
   'https://images.unsplash.com/photo-1560393464-5c69a73c5770?w=800&auto=format&fit=crop&q=80';
@@ -413,6 +415,18 @@ export async function handleProcessPayment(request, env, ctx) {
   if (!Array.isArray(cartItems) || cartItems.length === 0) {
     return json({ error: 'cartItems are required' }, { status: 400 });
   }
+  // Checked before anything is charged. HubSpot refuses an address like
+  // "name@site.cpm", and without a contact there is no deal, so the shop owner
+  // would never be told about an order that had already been paid for.
+  if (!isValidEmailAddress(buyerEmail)) {
+    return json(
+      {
+        error: 'Invalid email',
+        message: "That email address doesn't look right. Go back to your shipping details and check the spelling.",
+      },
+      { status: 400 }
+    );
+  }
 
   try {
     const cfg = squareConfig(env, { squareApplicationId, squareLocationId });
@@ -600,6 +614,19 @@ export async function handleProcessPayment(request, env, ctx) {
       console.error('[Order] HubSpot deal creation failed:', error.message, 'payment:', p.id);
     });
     if (ctx?.waitUntil) ctx.waitUntil(dealWork);
+
+    // Square sends no receipt for Payments API orders, so this is the
+    // customer's only confirmation. Like the deal, it must never fail a charge
+    // that already succeeded.
+    const emailWork = sendOrderConfirmationEmail(env, {
+      to: buyerEmail,
+      firstName: billingDetails?.firstName,
+      order: squareOrder,
+      payment: p,
+    }).catch((error) => {
+      console.error('[Order] Confirmation email failed:', error.message, 'payment:', p.id);
+    });
+    if (ctx?.waitUntil) ctx.waitUntil(emailWork);
 
     return json({
       success: true,

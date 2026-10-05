@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { post } from '../../utils/api';
+import { isValidEmail, suggestEmail } from '../../utils/email';
 
 export default function CheckoutShippingIsland({ squareApplicationId, squareLocationId }) {
   const [checkoutData, setCheckoutData] = useState(null);
@@ -16,6 +17,8 @@ export default function CheckoutShippingIsland({ squareApplicationId, squareLoca
     phone: '',
   });
   const [errors, setErrors] = useState({});
+  // A likely correction for a mistyped email, e.g. gmial.com -> gmail.com.
+  const [emailSuggestion, setEmailSuggestion] = useState(null);
 
   // Load checkout data from previous step
   useEffect(() => {
@@ -99,16 +102,30 @@ export default function CheckoutShippingIsland({ squareApplicationId, squareLoca
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
+    if (name === 'email') setEmailSuggestion(null);
+  };
+
+  const handleEmailBlur = () => {
+    setEmailSuggestion(suggestEmail(formData.email));
+  };
+
+  const applySuggestedEmail = () => {
+    setFormData(prev => ({ ...prev, email: emailSuggestion }));
+    setErrors(prev => ({ ...prev, email: '' }));
+    setEmailSuggestion(null);
   };
 
   // Validate form
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.email) {
+    // Same rule the Worker applies before charging. HubSpot refuses an address
+    // like name@site.cpm, and an order it can't file never reaches the shop.
+    if (!(formData.email || '').trim()) {
       newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email is invalid';
+    } else if (!isValidEmail(formData.email)) {
+      newErrors.email = "That email address doesn't look right. Check the spelling.";
+      setEmailSuggestion(suggestEmail(formData.email));
     }
 
     if (!formData.firstName) newErrors.firstName = 'First name is required';
@@ -135,7 +152,7 @@ export default function CheckoutShippingIsland({ squareApplicationId, squareLoca
     // Save shipping info and proceed to payment
     const updatedData = {
       ...checkoutData,
-      shippingInfo: formData,
+      shippingInfo: { ...formData, email: (formData.email || '').trim() },
     };
     localStorage.setItem('checkoutData', JSON.stringify(updatedData));
     window.location.href = '/checkout-payment';
@@ -224,11 +241,24 @@ export default function CheckoutShippingIsland({ squareApplicationId, squareLoca
                       name="email"
                       value={formData.email}
                       onChange={handleChange}
+                      onBlur={handleEmailBlur}
                       className={`w-full px-4 py-3 border ${errors.email ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent`}
                       placeholder="your@email.com"
                     />
                     {errors.email && (
                       <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+                    )}
+                    {emailSuggestion && (
+                      <p className="text-sm text-gray-700 mt-1">
+                        Did you mean <strong>{emailSuggestion}</strong>?{' '}
+                        <button
+                          type="button"
+                          onClick={applySuggestedEmail}
+                          className="text-primary font-medium underline hover:no-underline"
+                        >
+                          Use this
+                        </button>
+                      </p>
                     )}
                   </div>
                 </div>

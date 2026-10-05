@@ -107,6 +107,11 @@ export default function CheckoutPaymentIsland({ squareApplicationId, squareLocat
         const token = result.token;
         console.log('[Checkout] Payment token received');
 
+        // The order number the customer sees. The HubSpot deal, the order
+        // confirmation email and the account's order history all use it, so a
+        // customer who quotes it can be found.
+        const orderReference = `ORD-${Date.now()}`;
+
         // 2. Call our API to process payment
         const paymentResponse = await fetch(`${API_BASE_URL}/process-payment`, {
           method: 'POST',
@@ -117,7 +122,7 @@ export default function CheckoutPaymentIsland({ squareApplicationId, squareLocat
             sourceId: token,
             amount: checkoutData.total,
             currency: 'USD',
-            orderId: `ORD-${Date.now()}`,
+            orderId: orderReference,
             buyerEmail: checkoutData.shippingInfo.email,
             cartItems: checkoutData.cartItems,
             squareApplicationId,
@@ -155,7 +160,8 @@ export default function CheckoutPaymentIsland({ squareApplicationId, squareLocat
         const orderData = {
           ...checkoutData,
           paymentId: paymentResult.paymentId,
-          orderId: paymentResult.orderId || `ORD-${Date.now()}`,
+          orderId: orderReference,
+          squareOrderId: paymentResult.orderId,
           orderDate: new Date().toISOString(),
           receiptUrl: paymentResult.receiptUrl,
           cardDetails: paymentResult.cardDetails,
@@ -269,6 +275,15 @@ export default function CheckoutPaymentIsland({ squareApplicationId, squareLocat
                     Your payment is processed securely by Square. We do not store your card details.
                   </p>
                 </div>
+
+                {/* One last look at the address, since a typo here can't be fixed by the shopper later. */}
+                <p className="mb-6 text-sm text-gray-700">
+                  Your order confirmation will go to{' '}
+                  <strong className="text-gray-900 break-all">{checkoutData.shippingInfo.email}</strong>.{' '}
+                  <a href="/checkout-shipping" className="text-primary hover:text-primary-600 font-medium">
+                    Not right? Change it
+                  </a>
+                </p>
 
                 {/* Action Buttons */}
                 <div className="flex gap-4">

@@ -51,6 +51,12 @@ email; that is a platform behaviour, not a defect.
 Dashboard. If they are not, the customer currently gets nothing, and that is a
 setting change rather than code.
 
+> **Correction, 2026-10-02:** the receipt assumption was wrong. Square sends no
+> automatic receipt for payments made through the Payments API, whatever the
+> Dashboard says; only its hosted Checkout API does. A test order confirmed the
+> customer got nothing. The Worker now sends its own confirmation through Resend
+> (`workers/src/email.js`); see "Order notification" in `workers/README.md`.
+
 ### Data model
 
 The customer's identity and location go on the **Contact**, using HubSpot's

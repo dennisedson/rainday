@@ -1,8 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { requestMagicLink, verifyMagicLink, verifySession } from '../../utils/auth';
+import { isValidEmail, suggestEmail } from '../../utils/email';
 
 export default function LoginIsland() {
   const [email, setEmail] = useState('');
+  // A likely correction for a mistyped email, e.g. gmial.com -> gmail.com.
+  const [emailSuggestion, setEmailSuggestion] = useState(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -68,8 +71,9 @@ export default function LoginIsland() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!email || !email.includes('@')) {
-      setError('Please enter a valid email address');
+    if (!isValidEmail(email)) {
+      setError("That email address doesn't look right. Check the spelling and try again.");
+      setEmailSuggestion(suggestEmail(email));
       return;
     }
 
@@ -155,11 +159,31 @@ export default function LoginIsland() {
               autoComplete="email"
               required
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setEmailSuggestion(null);
+              }}
+              onBlur={() => setEmailSuggestion(suggestEmail(email))}
               disabled={linkSent || loading}
               className="appearance-none rounded-lg relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-primary focus:border-primary focus:z-10 sm:text-sm"
               placeholder="Enter your email address"
             />
+            {emailSuggestion && !linkSent && (
+              <p className="text-sm text-gray-700 mt-2">
+                Did you mean <strong>{emailSuggestion}</strong>?{' '}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail(emailSuggestion);
+                    setEmailSuggestion(null);
+                    setError('');
+                  }}
+                  className="text-primary font-medium underline hover:no-underline"
+                >
+                  Use this
+                </button>
+              </p>
+            )}
           </div>
 
           <div>

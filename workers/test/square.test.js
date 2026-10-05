@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { isShippingItem } from '../src/square.js';
+import { handleProcessPayment, isShippingItem } from '../src/square.js';
 
 const itemWithVariation = (id) => ({ item_data: { name: 'Whatever', variations: [{ id }] } });
 const itemNamed = (name) => ({ item_data: { name, variations: [{ id: 'SOME_OTHER_ID' }] } });
@@ -41,4 +41,34 @@ test('tolerates missing item_data or variations without throwing', () => {
   assert.equal(isShippingItem({}, 'SHIP_VAR'), false);
   assert.equal(isShippingItem({ item_data: {} }, 'SHIP_VAR'), false);
   assert.equal(isShippingItem({ item_data: { variations: [] } }, 'SHIP_VAR'), false);
+});
+
+test('payment with an address HubSpot would refuse is stopped before any call to Square', async () => {
+  const calls = [];
+  const real = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    calls.push(String(url));
+    return new Response('{}', { status: 500 });
+  };
+  try {
+    const request = new Request('https://example.com/api/process-payment', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sourceId: 'cnon:card-nonce-ok',
+        amount: 10,
+        buyerEmail: 'dennis@dennisedson.cpm',
+        cartItems: [{ variationId: 'VARIATION1234', name: 'Keychain', quantity: 1, price: 10 }],
+      }),
+    });
+    const response = await handleProcessPayment(request, {
+      SQUARE_ENVIRONMENT: 'sandbox', SQUARE_SANDBOX_ACCESS_TOKEN: 't', SQUARE_SANDBOX_LOCATION_ID: 'L1',
+    });
+
+    assert.equal(response.status, 400);
+    assert.match((await response.json()).message, /email address/i);
+    assert.deepEqual(calls, []);
+  } finally {
+    globalThis.fetch = real;
+  }
 });
