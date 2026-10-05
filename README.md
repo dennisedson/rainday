@@ -166,12 +166,13 @@ change spanning both deploys both.
 security fix once sat on `dev` for seven weeks because deploying was a separate
 manual act.
 
-> **Known issue (October 2026):** the theme upload to the test portal has
-> failed on every `dev` push since 1 September, with "refresh token was
-> malformed". The `HUBSPOT_PERSONAL_ACCESS_KEY` secret in the GitHub `sandbox`
-> environment needs replacing with a fresh CLI personal access key from the
-> test portal. Until then, staging runs the theme as of 1 September; the
-> sandbox Worker deploys normally.
+> **If the theme job fails with "refresh token was malformed",** that
+> environment's `HUBSPOT_PERSONAL_ACCESS_KEY` isn't a valid CLI personal access
+> key (a private app token, or a value with stray quotes or spaces). Generate a
+> fresh one in that portal and set it with
+> `gh secret set HUBSPOT_PERSONAL_ACCESS_KEY --env <environment>`. This stopped
+> every theme upload to the test portal from 1 September to 5 October 2026,
+> while the sandbox Worker kept deploying.
 
 ### Which backend the theme talks to
 
@@ -245,14 +246,16 @@ something skips or breaks that path:
   checked out, whether or not the Worker it needs has been deployed. This is
   what happened on 2 October 2026.
 - **A failed theme job.** The Worker deploys and the theme doesn't, as on
-  staging since 1 September.
+  staging from 1 September to 5 October 2026.
 - **A fix that stays on `dev`.** It looks done in the repo but isn't live.
 
 An API change that tightens what it accepts (for example requiring cart items
 to carry a catalog `variationId`) breaks checkout for anyone running the older
 theme until the theme upload lands, so ship both halves together.
 
-Verify a deploy from the outside rather than trusting the dashboard:
+Verify a deploy from the outside rather than trusting the dashboard. A theme
+upload can report success several minutes before the site serves the new
+build, so give it a few minutes before concluding it didn't land.
 
 ```bash
 curl -s https://hsecommerce-api.dennis-544.workers.dev/api/health

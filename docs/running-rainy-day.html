@@ -366,7 +366,31 @@
 <!-- ───────────── WHAT CHANGED ───────────── -->
 <section id="changes" role="tabpanel" aria-labelledby="t-changes" hidden>
   <h2>What changed</h2>
-  <p class="lede">Each update to the shop, newest first. The 5 October update to this guide rewrote its instructions and didn't change the shop.</p>
+  <p class="lede">Each update to the shop, newest first.</p>
+
+  <h3 class="release"><time datetime="2026-10-05">5 October 2026</time></h3>
+  <p class="lede">Order confirmation emails, and mistyped email addresses caught before payment.</p>
+  <div class="log">
+    <div class="entry"><span class="badge new">New</span><div>
+      <h4>Order confirmation emails</h4>
+      <p>Customers get an email right after they pay, listing what they bought, the total, where it's shipping, and a link to their Square receipt. When they reply, it comes to rainydaymerchandise@gmail.com.</p>
+    </div></div>
+
+    <div class="entry"><span class="badge fixed">Fixed</span><div>
+      <h4>Mistyped email addresses</h4>
+      <p>An address like name@gmail.con used to go through checkout, and HubSpot then refused it, so the order never reached you. The site now catches it before payment, and at sign-in, and suggests a fix for common slips like gmial.com.</p>
+    </div></div>
+
+    <div class="entry"><span class="badge new">New</span><div>
+      <h4>Order numbers that match</h4>
+      <p>The order number customers see now matches the one in HubSpot and in their email, so you can search for it. The Orders tab also has steps for fixing an order placed with the wrong email address.</p>
+    </div></div>
+
+    <div class="entry"><span class="badge fixed">Fixed</span><div>
+      <h4>Favorites and the cart</h4>
+      <p>The account page shows favorites by name and photo instead of a product code, and the cart no longer says "uncategorized" under items.</p>
+    </div></div>
+  </div>
 
   <h3 class="release"><time datetime="2026-10-02">2 October 2026</time></h3>
   <p class="lede">Order history for customers, safer favorites, and an About page.</p>
