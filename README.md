@@ -1,100 +1,111 @@
 # HubSpot E-commerce Project
 
-A modern e-commerce storefront built with HubSpot CMS React and Square payments, with serverless functions hosted on Cloudflare Workers.
+The Rainy Day Merchandise storefront: a HubSpot CMS React theme with Square payments, backed by an API on Cloudflare Workers.
+
+## 🌐 Environments
+
+Two branches, two of everything else.
+
+| | Production | Staging |
+| :--- | :--- | :--- |
+| Git branch | `mom` | `dev` |
+| Site | https://www.rainydaymerchandise.com | https://51953677.hs-sites.com |
+| HubSpot portal | `50683682` | `51953677` (test portal) |
+| Square | Production | Sandbox |
+| Worker | `hsecommerce-api` | `hsecommerce-api-sandbox` |
+| Worker URL | https://hsecommerce-api.dennis-544.workers.dev/api | https://hsecommerce-api-sandbox.dennis-544.workers.dev/api |
+
+Staging takes orders against Square sandbox, so no money moves. Pay with
+Square's sandbox test card `4111 1111 1111 1111`, any future expiry date, and
+any CVV and ZIP. Staging sends email only if the sandbox Worker has its own
+`RESEND_API_KEY` (see `workers/README.md`).
+
+HubSpot preview URLs from the test portal also count as staging: any hostname
+that isn't a production domain gets the sandbox Worker (see "Which backend the
+theme talks to" below).
 
 ## 📁 Project Structure
 
 ```
-hsecommerce-project/
-├── hubspot-theme/      # HubSpot CMS React Theme + App
-│   ├── src/
-│   │   ├── theme/      # CMS Theme
-│   │   │   └── rainy-day-merch/
-│   │   │       ├── components/      # Shared React components
-│   │   │       ├── modules/         # CMS editable modules
-│   │   │       └── templates/       # Page templates
-│   │   └── app/        # HubSpot App (API authentication)
-│   │       └── app-hsmeta.json
+rainday/
+├── hubspot-theme/          # HubSpot CMS React theme + app
 │   ├── hsproject.json
-│   └── package.json
+│   └── src/
+│       ├── app/            # HubSpot app (API authentication)
+│       └── theme/rainy-day-merch/
+│           ├── components/ # islands/, modules/, shared/
+│           ├── templates/  # HubL page templates
+│           ├── utils/      # client helpers; config.js picks the API host
+│           └── styles/
 │
-├── workers/            # Cloudflare Worker (the API) — see workers/README.md
-│   ├── src/            # Router, Square, HubSpot, auth
-│   ├── test/           # Unit tests (npm test, no credentials needed)
-│   └── wrangler.toml   # Worker config; secrets set via `wrangler secret put`
+├── workers/                # Cloudflare Worker (the API), see workers/README.md
+│   ├── src/                # Router, Square, HubSpot, auth, email
+│   ├── test/               # Unit tests (npm test, no credentials needed)
+│   └── wrangler.toml       # Worker config; secrets set via `wrangler secret put`
 │
-├── api/                # LEGACY Vercel functions — delete after cutover
-├── vercel.json         # LEGACY Vercel configuration — delete after cutover
-├── package.json        # Project dependencies & scripts
-├── keep-alive.js       # Local keep-alive script
-└── .env                # Local environment variables (not tracked)
+├── docs/                   # Owner handbook, owner setup guide, design specs and plans
+├── scripts/                # One-off setup (HubSpot custom properties)
+├── .github/workflows/      # CI: tests on every PR, deploys on push to dev or mom
+│
+├── api/, vercel.json       # LEGACY Vercel API, unused since the 1 Sep 2026 cutover
+├── package.json            # LEGACY: scripts run the Vercel API (vercel dev, vercel --prod)
+└── keep-alive.js, keep-alive.sh  # LEGACY: kept Vercel warm; Workers don't need it
 ```
 
 ## 🚀 Quick Start
 
-### 1. HubSpot Theme Setup
+### The API (Cloudflare Worker)
+
+```bash
+cd workers
+npm install
+npm test        # unit tests, no network or credentials needed
+npm run dev     # wrangler dev, a local Worker
+```
+
+Secrets, deploys and smoke tests are in `workers/README.md`.
+
+### The theme
+
+```bash
+cd hubspot-theme/src/theme/rainy-day-merch
+npm install
+npm run start   # local HubSpot dev server
+```
+
+To try a theme change on the test portal before merging:
 
 ```bash
 cd hubspot-theme
-
-# Install dependencies
-npm install
-
-# Upload to HubSpot
-hs project upload
-
-# Preview site
-hs project open
+hs project upload --account=51953677
 ```
 
-### 2. Vercel API Setup
-
-```bash
-# Install dependencies
-npm install
-
-# Copy environment template
-cp env.example .env
-
-# Add your credentials to .env:
-# - SQUARE_ACCESS_TOKEN
-# - SQUARE_LOCATION_ID
-# - SQUARE_APPLICATION_ID
-# - HUBSPOT_ACCESS_TOKEN
-
-# Deploy to Vercel
-vercel
-
-# Keep functions warm (optional)
-npm run keep-alive
-```
+> **Never run a bare `hs project upload`.** It uploads to whichever account is
+> the CLI's default, and on at least one machine that's production. On
+> 2 October 2026 a bare upload put `dev`'s theme on the live site a day before
+> the Worker changes it depended on, which broke order history and favorites
+> until the merge. Production gets the theme from CI when a change merges to
+> `mom`. If the test portal isn't in your CLI config yet, add it with
+> `hs account auth`.
 
 ## 🔑 Required Credentials
 
-### Square Developer Account
-1. Go to https://developer.squareup.com/apps
-2. Create a new application
-3. Get your credentials from the "Credentials" tab:
-   - Access Token (Sandbox or Production)
-   - Application ID
-   - Location ID
+### Square
+1. Go to https://developer.squareup.com/apps.
+2. Open the application, then its **Credentials** tab.
+3. Copy the access token, application ID and location ID, for sandbox and production separately.
 
-### HubSpot Authentication
-**Option 1: Personal Access Key (Recommended)**
-1. Go to HubSpot → Development → Keys → Personal Access Key
-2. Generate a new key (if needed)
-3. Select required scopes:
-   - `crm.objects.contacts.read`
-   - `crm.objects.contacts.write`
-   - `crm.objects.deals.read`
-   - `crm.objects.deals.write`
-4. Copy the Access Token
+### HubSpot
+Each portal needs **two** HubSpot credentials, and they aren't
+interchangeable: a CLI personal access key for `hs project upload` (stored as a
+GitHub secret), and a private app token for the Worker's CRM calls (stored as a
+Cloudflare secret). `workers/README.md` explains how to tell them apart and
+which scopes each needs.
 
-**Option 2: HubSpot App (New Platform) ✅ Recommended**
-1. Upload project: `cd hubspot-theme && hs project upload` (includes both theme and app)
-2. Get static token: `hs project open` → Find "Rainy Day Merch API" app → Auth tab → Copy token
-3. Install app in your HubSpot account (one-time)
-4. Add token to Vercel as `HUBSPOT_ACCESS_TOKEN`
+### Resend
+One Resend API key sends both sign-in links and order confirmation emails. It's
+a Cloudflare secret on each Worker. Give sandbox its own sending-only key rather
+than a copy of production's.
 
 ## 🛠 Tech Stack
 
@@ -106,52 +117,39 @@ npm run keep-alive
 
 ### Backend (Cloudflare Worker)
 - **Cloudflare Workers** - API endpoints, no cold starts
-- **Square Connect API** - Product catalog & payment processing
-- **HubSpot CRM API** - Order logging
+- **Square Connect API** - Product catalog, stock, and payment processing
+- **HubSpot CRM API** - Customers, orders (deals), favorites
+- **Resend** - Sign-in links and order confirmation emails
 - **jose** - Session tokens for magic-link auth
 
 ## 📚 Documentation
 
-- [Square Setup Guide](./hubspot-theme/SQUARE_SETUP_GUIDE.md) - Detailed Square integration guide
-- [HubSpot Project README](./hubspot-theme/README.md) - Theme development guide
-- [Marketer Handoff Guide](./MARKETER_HANDOFF_GUIDE.md) - Day-to-day guide for non-developers (copy, banners, inventory, emails)
+- [Worker README](./workers/README.md) - API setup, secrets, HubSpot portal setup, order notification, inventory, tax, shipping, deploys, smoke tests
+- [Checkout Flow](./CHECKOUT_FLOW.md) - How the cart and checkout pages are built (November 2025)
+- [Category Banner Guide](./CATEGORY_BANNER_GUIDE.md) - Editing the text on category banners
+- [Rollback](./ROLLBACK.md) - Rolling back the Cloudflare cutover, or a bad Worker deploy
+- [Owner handbook](./docs/running-rainy-day.html) - Day-to-day instructions for the shop owner: products, orders, refunds, the website. Shared with her as a published page
+- [Owner setup guide](./docs/dani-setup-guide.html) - One-time HubSpot setup for the shop owner, including the new-order alert
+- [Marketer Handoff Guide](./MARKETER_HANDOFF_GUIDE.md) - Older guide for non-developers (January 2026). It predates the Cloudflare move and still refers to Vercel; the owner handbook supersedes it
 
 ## 🔒 Security Notes
 
-- **Never commit `.env` files** - These are gitignored
-- **Square Access Tokens** are only stored in Vercel environment variables
-- **All payment processing happens server-side** via Vercel functions
-- **Client-side only receives payment tokens** (not sensitive card data)
+- **Never commit `.env` files.** They are gitignored.
+- **Square, HubSpot and Resend secrets live in Cloudflare** as Worker secrets, set with `wrangler secret put`. The repo holds only non-secret settings in `wrangler.toml`.
+- **All payment processing happens server-side** in the Worker. Square prices every order from the catalog; the browser's total is only compared, never charged.
+- **The browser only handles Square payment tokens**, never card data.
 
 ## 📝 Development Workflow
 
-1.  **Branching Strategy:**
-    *   `mom`: **Production** branch. Only merge here when ready to go live.
-    *   `dev`: **Development** branch. All daily production and new features happen here.
+1. Work on `dev`.
+2. Push to `dev`. CI runs the tests, deploys the sandbox Worker if `workers/**` changed, and uploads the theme to the test portal if `hubspot-theme/**` changed.
+3. Check the change on staging: https://51953677.hs-sites.com.
+4. Open a pull request from `dev` to `mom`. Merging deploys production the same way.
 
-2.  **Theme Development:**
-    *   Checkout the `dev` branch: `git checkout dev`
-    *   Edit components in `hubspot-theme/src/theme/rainy-day-merch/`
-    *   Upload to **Test Portal**: `hs project upload --portal=test-account` (see below)
-    *   Preview: `hs project open --portal=test-account`
+Before assuming something is live, check `git log origin/mom..origin/dev`: a
+fix that's only on `dev` is only on staging.
 
-3.  **API Development:**
-    *   Edit functions in `api/`
-    *   Test locally: `vercel dev`
-    *   Deploy to **Preview**: `git push origin dev` (Vercel automatically deploys dev branch to preview)
-    *   Deploy to **Production**: Merge `dev` into `mom` and `git push origin mom`
-
-## 🌐 CI/CD & Environments
-
-Two branches, two of everything else.
-
-| | Production | Sandbox / Dev |
-| :--- | :--- | :--- |
-| Git branch | `mom` | `dev` |
-| HubSpot portal | Main | Test account |
-| Square | Production | Sandbox |
-| Worker | `hsecommerce-api` | `hsecommerce-api-sandbox` |
-| Storefront | `rainydaymerchandise.com` | HubSpot preview URL |
+## ⚙️ CI/CD
 
 `.github/workflows/ci.yml` runs the Worker tests and a bundle check on every
 pull request, then on a push to `dev` or `mom` deploys whichever halves changed:
@@ -162,11 +160,18 @@ pull request, then on a push to `dev` or `mom` deploys whichever halves changed:
 - `hubspot-theme/**` changed → `hs project upload` to that branch's portal.
 
 Path filtering means a Worker-only change does not reupload the theme, and a
-change spanning both deploys both — which is the case that used to drift.
+change spanning both deploys both.
 
 **Deploying on merge is the point.** A merged fix cannot sit unreleased; a July
 security fix once sat on `dev` for seven weeks because deploying was a separate
 manual act.
+
+> **Known issue (October 2026):** the theme upload to the test portal has
+> failed on every `dev` push since 1 September, with "refresh token was
+> malformed". The `HUBSPOT_PERSONAL_ACCESS_KEY` secret in the GitHub `sandbox`
+> environment needs replacing with a fresh CLI personal access key from the
+> test portal. Until then, staging runs the theme as of 1 September; the
+> sandbox Worker deploys normally.
 
 ### Which backend the theme talks to
 
@@ -187,12 +192,12 @@ to the live one:
 | :--- | :--- |
 | `CLOUDFLARE_API_TOKEN` | Scope: *Edit Cloudflare Workers* |
 | `CLOUDFLARE_ACCOUNT_ID` | |
-| `HUBSPOT_ACCOUNT_ID` | Differs per portal |
-| `HUBSPOT_PERSONAL_ACCESS_KEY` | Differs per portal |
+| `HUBSPOT_ACCOUNT_ID` | `50683682` for production, `51953677` for sandbox |
+| `HUBSPOT_PERSONAL_ACCESS_KEY` | A CLI personal access key, not a private app token. Differs per portal |
 
-The Worker's own secrets (Square tokens, `JWT_SECRET`, HubSpot token) live in
-Cloudflare, not GitHub — `wrangler deploy` does not need them. Set them per
-environment with `wrangler secret put NAME --env sandbox`.
+The Worker's own secrets (Square tokens, `JWT_SECRET`, HubSpot token, Resend
+key) live in Cloudflare, not GitHub — `wrangler deploy` does not need them. Set
+them per environment with `wrangler secret put NAME --env sandbox`.
 
 Bootstrap them with the `gh` CLI rather than pasting into the web UI. Create the
 two environments, then load a dotenv file into each:
@@ -231,40 +236,28 @@ A custom domain (`api.rainydaymerchandise.com`) would reduce this to a DNS
 change, but it requires moving the whole zone to Cloudflare DNS. That is
 deliberately deferred — see `workers/README.md`.
 
-### ⚠️ Theme and API deploy separately
+### Keeping the theme and the Worker in step
 
-Pushing to `mom` deploys **only the API** — Vercel watches the branch, the
-HubSpot theme does not. The theme ships when someone runs:
+CI deploys both halves from the same commit, so they only drift apart when
+something skips or breaks that path:
 
-```bash
-cd hubspot-theme && hs project upload
-```
+- **A manual upload.** `hs project upload` from a laptop ships whatever is
+  checked out, whether or not the Worker it needs has been deployed. This is
+  what happened on 2 October 2026.
+- **A failed theme job.** The Worker deploys and the theme doesn't, as on
+  staging since 1 September.
+- **A fix that stays on `dev`.** It looks done in the repo but isn't live.
 
-So a commit touching both halves is only half-live after a push. When a change
-spans `api/` and `hubspot-theme/`, deploy both and verify both, or the deployed
-API and the deployed theme will disagree about the contract between them.
+An API change that tightens what it accepts (for example requiring cart items
+to carry a catalog `variationId`) breaks checkout for anyone running the older
+theme until the theme upload lands, so ship both halves together.
 
-Two failure modes this has actually caused:
-
-- A fix merged to `dev` and never merged to `mom` stays undeployed indefinitely
-  while looking done in the repo. Check `git log origin/mom..origin/dev` before
-  assuming something is live.
-- An API change that tightens what it accepts (for example requiring cart items
-  to carry a catalog `variationId`) breaks checkout for anyone running the older
-  theme until the theme upload lands.
-
-Verify a production API deploy from the outside rather than trusting the
-dashboard:
+Verify a deploy from the outside rather than trusting the dashboard:
 
 ```bash
-curl -s https://hsecommerce-api.vercel.app/api/health
+curl -s https://hsecommerce-api.dennis-544.workers.dev/api/health
+curl -s https://hsecommerce-api-sandbox.dennis-544.workers.dev/api/health
 ```
-
-### Vercel Setup:
-In Vercel Project Settings, set these Environment Variables:
-*   `HUBSPOT_ACCESS_TOKEN`: Set a specific value for **Production** (Real Portal) and **Preview/Development** (Dev Portal).
-*   `SQUARE_ENVIRONMENT`: Set to `production` for Production and `sandbox` for Preview.
-*   `BASE_URL`: Set to your live domain for Production and your preview/dev portal URL for Preview.
 
 ## 🎨 Design
 
@@ -276,11 +269,14 @@ Design based on provided Figma file with custom Tailwind configuration for:
 
 ## 📦 Features
 
-- ✅ Product catalog from Square
+- ✅ Product catalog, categories and photos from Square
+- ✅ Stock enforced at purchase for items with tracking on
+- ✅ Kansas sales tax and a flat shipping fee, both set in Square
 - ✅ Shopping cart with localStorage persistence
-- ✅ Secure checkout with Square Web Payments SDK
-- ✅ Order tracking in HubSpot CRM (Deals)
-- ✅ CMS-editable content (Hero, Text, Images, Product Showcases)
+- ✅ Secure checkout with Square Web Payments SDK, priced server-side
+- ✅ Orders recorded as HubSpot deals, with a new-order alert to the owner
+- ✅ Magic-link sign-in, order history, and saved favorites
+- ✅ CMS-editable content (Hero, Text, Images, Product Showcases, cover photos)
 - ✅ Responsive design (mobile, tablet, desktop)
 
 ## 🤝 Contributing
@@ -290,4 +286,3 @@ This is a private e-commerce project. Contact the repository owner for access.
 ## 📄 License
 
 Proprietary - All Rights Reserved
-

@@ -122,7 +122,7 @@ fails the theme upload; a CLI key in the Worker fails every CRM call.
 | `crm.objects.contacts.read` | contact search, session lookup |
 | `crm.objects.contacts.write` | contact create, magic-link token, favorites |
 | `crm.objects.deals.write` | deal creation on checkout |
-| `crm.objects.deals.read` | not called directly; pairs with write |
+| `crm.objects.deals.read` | order history (`/api/orders` reads a contact's deals) |
 | `crm.schemas.contacts.write` | only to create the properties below via API |
 | `crm.schemas.deals.write` | same |
 
