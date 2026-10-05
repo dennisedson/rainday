@@ -3,6 +3,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
+  /* Layout: one reading column, task tabs first (Products, Orders), reference tabs after. */
   :root {
     --ground:#FAF7F2; --surface:#FFFFFF; --sunken:#F2ECE4;
     --ink:#2B2622; --ink-soft:#6B615A; --muted:#8A7F76; --rule:#E4DCD3;
@@ -20,6 +21,7 @@
       --accent:#FF8B5C; --accent-soft:#34211A;
       --flag:#E8B764; --flag-soft:#2E2415;
       --good:#8FC095; --good-soft:#1C2A1E;
+      color-scheme:dark;
     }
   }
   :root[data-theme="dark"] {
@@ -28,20 +30,26 @@
     --accent:#FF8B5C; --accent-soft:#34211A;
     --flag:#E8B764; --flag-soft:#2E2415;
     --good:#8FC095; --good-soft:#1C2A1E;
+    color-scheme:dark;
   }
 
   * { box-sizing:border-box; }
   body {
     background:var(--ground); color:var(--ink); font-family:var(--body);
-    font-size:16.5px; line-height:1.65; margin:0; padding:0 1.5rem 6rem;
+    font-size:16.5px; line-height:1.65; margin:0; padding-inline:1.5rem; padding-block:0 6rem;
     -webkit-font-smoothing:antialiased;
   }
+  @media (max-width:30rem) { body { padding-inline:1rem; } }
   .wrap { max-width:50rem; margin:0 auto; }
 
   header.masthead { padding:4rem 0 1.75rem; }
   .eyebrow { font-size:.7rem; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); margin:0 0 .9rem; }
   h1 { font-family:var(--display); font-weight:600; font-size:clamp(2.1rem,5.5vw,2.9rem); line-height:1.08; margin:0 0 .85rem; letter-spacing:-.01em; text-wrap:balance; }
   .standfirst { font-size:1.05rem; color:var(--ink-soft); margin:0; max-width:36rem; }
+  .dateline { font-size:.8rem; font-weight:500; letter-spacing:.04em; color:var(--muted); font-variant-numeric:tabular-nums; margin:.9rem 0 0; }
+  /* One heading per release in the changelog, newest first. */
+  .release { font-family:var(--display); font-weight:600; font-size:1.2rem; margin:2.75rem 0 .2rem; font-variant-numeric:tabular-nums; }
+  .release + .lede { margin-top:0; }
 
   /* Tabs */
   .tabs { display:flex; gap:.25rem; border-bottom:2px solid var(--ink); margin-bottom:2.75rem; flex-wrap:wrap; }
@@ -66,8 +74,27 @@
     background:var(--sunken); color:var(--ink); padding:.5rem .8rem;
     border-radius:4px; display:inline-block; margin:.5rem 0;
   }
-  kbd { font-family:var(--body); font-size:.93em; font-weight:500; background:var(--sunken); padding:.08em .42em; border-radius:3px; white-space:nowrap; }
+  kbd { font-family:var(--body); font-size:.93em; font-weight:500; background:var(--sunken); color:var(--ink); padding:.08em .42em; border-radius:3px; white-space:nowrap; }
   code { font-family:var(--mono); font-size:.86em; background:var(--accent-soft); color:var(--accent); padding:.1em .4em; border-radius:3px; }
+
+  /* Numbered steps: used only where the order of actions matters. */
+  ol.steps { list-style:none; counter-reset:step; padding:0; margin:1.1rem 0 1.4rem; max-width:40rem; display:flex; flex-direction:column; gap:.9rem; }
+  ol.steps > li { counter-increment:step; position:relative; padding-left:2.75rem; min-height:1.9rem; }
+  ol.steps > li::before {
+    content:counter(step); position:absolute; left:0; top:.05rem;
+    width:1.9rem; height:1.9rem; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--display); font-weight:600; font-size:.95rem; line-height:1;
+    background:var(--accent-soft); color:var(--accent);
+    font-variant-numeric:tabular-nums;
+  }
+  ol.steps .hint { display:block; color:var(--ink-soft); font-size:.92rem; margin-top:.2rem; }
+
+  /* Two side-by-side choices that stack on a phone. */
+  .choices { display:grid; grid-template-columns:repeat(auto-fit,minmax(15rem,1fr)); gap:1rem; margin:1.1rem 0; max-width:42rem; }
+  .choice { background:var(--surface); border:1px solid var(--rule); border-radius:6px; padding:1rem 1.1rem; min-width:0; }
+  .choice h3 { margin:0 0 .35rem; }
+  .choice p { margin:0; font-size:.95rem; }
 
   .scroll { overflow-x:auto; margin:1.1rem 0; }
   table { border-collapse:collapse; width:100%; font-size:.9rem; }
@@ -75,13 +102,14 @@
   th { font-size:.67rem; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); border-bottom:1px solid var(--ink); white-space:nowrap; }
   td:first-child { font-weight:500; white-space:nowrap; }
 
-  .note { border-left:3px solid var(--flag); background:var(--flag-soft); padding:.85rem 1.05rem; margin:1.3rem 0; border-radius:0 4px 4px 0; font-size:.92rem; }
+  .note { border-left:3px solid var(--flag); background:var(--flag-soft); padding:.85rem 1.05rem; margin:1.3rem 0; border-radius:0 4px 4px 0; font-size:.92rem; max-width:42rem; }
   .note strong { color:var(--flag); }
   .note p { margin:.4rem 0; } .note p:first-child { margin-top:0; } .note p:last-child { margin-bottom:0; }
 
   /* Changelog */
   .log { display:flex; flex-direction:column; gap:1.6rem; margin-top:1.5rem; }
   .entry { display:grid; grid-template-columns:5.5rem 1fr; gap:1.25rem; align-items:start; }
+  .entry > div { min-width:0; }
   @media (max-width:36rem) { .entry { grid-template-columns:1fr; gap:.4rem; } }
   .badge {
     font-size:.63rem; font-weight:600; letter-spacing:.09em; text-transform:uppercase;
@@ -102,35 +130,150 @@
 <header class="masthead">
   <p class="eyebrow">Rainy Day Merchandise</p>
   <h1>Running your shop</h1>
-  <p class="standfirst">Where everything lives, and which of the two systems to open when you want to change something.</p>
+  <p class="standfirst">Step-by-step instructions for adding products, handling orders, and changing the website.</p>
+  <p class="dateline">Guide updated <time datetime="2026-10-05">5 October 2026</time></p>
 </header>
 
 <div class="tabs" role="tablist">
-  <button class="tab" role="tab" id="t1" aria-controls="p1" aria-selected="true">The website</button>
-  <button class="tab" role="tab" id="t2" aria-controls="p2" aria-selected="false">Square</button>
-  <button class="tab" role="tab" id="t3" aria-controls="p3" aria-selected="false">What changed</button>
+  <button class="tab" role="tab" id="t-products" aria-controls="products" aria-selected="true">Products</button>
+  <button class="tab" role="tab" id="t-orders" aria-controls="orders" aria-selected="false">Orders</button>
+  <button class="tab" role="tab" id="t-website" aria-controls="website" aria-selected="false">The website</button>
+  <button class="tab" role="tab" id="t-settings" aria-controls="settings" aria-selected="false">Tax &amp; shipping</button>
+  <button class="tab" role="tab" id="t-changes" aria-controls="changes" aria-selected="false">What changed</button>
 </div>
 
-<!-- ───────────── TAB 1 ───────────── -->
-<section id="p1" role="tabpanel" aria-labelledby="t1">
+<!-- ───────────── PRODUCTS ───────────── -->
+<section id="products" role="tabpanel" aria-labelledby="t-products">
 
-  <h2>The one rule worth knowing</h2>
+  <h2>Add a product</h2>
+  <p class="lede">Products are added in Square, never in HubSpot. The website picks them up by itself within about five minutes.</p>
+  <ol class="steps">
+    <li>Sign in to your Square Dashboard on a computer and open <kbd>Items &amp; inventory</kbd>, then <kbd>Items</kbd>.
+      <span class="hint">Depending on your account, that first menu may be called <kbd>Items &amp; services</kbd> or <kbd>Items &amp; menus</kbd> instead.</span></li>
+    <li>Click <kbd>Create item</kbd>.</li>
+    <li>Type the name, price and description.
+      <span class="hint">The website shows them exactly as you type them, so check the spelling.</span></li>
+    <li>Add photos.
+      <span class="hint">The first photo is the one shoppers see in the shop. The product page shows up to four.</span></li>
+    <li>Choose a category: Bracelets, Charm Bracelets, Earrings, Keychains or Necklaces.
+      <span class="hint">The category decides which shop page the item appears on. An item with no category only shows up under Shop All. If you pick more than one, Square asks for a <strong>reporting category</strong>, and that's the one the website uses.</span></li>
+    <li>If you only have a few of it, switch on stock tracking and enter how many you have.
+      <span class="hint">See <em>Keep stock counts right</em> below.</span></li>
+    <li>Click <kbd>Save</kbd>.</li>
+    <li>Wait about five minutes, then find the item on the website to check it looks right.</li>
+  </ol>
+  <div class="note">
+    <p><strong>One price per item.</strong> Square lets you add sizes or options to an item (it calls them <em>variations</em>), but the website only ever sells the first one. If something comes in two sizes, create two separate items.</p>
+  </div>
+
+  <h2>Change a product</h2>
+  <p>Open the item in Square, change what you need, and click <kbd>Save</kbd>. New prices, names, descriptions and photos reach the website within about five minutes.</p>
+  <p>A category's photo in Square doubles as the banner on that category's page. The <em>Cover photos</em> section on the website tab explains the exceptions.</p>
+
+  <h2>Keep stock counts right</h2>
+  <p class="lede">Stock tracking is what stops the website selling something you've run out of.</p>
+  <ol class="steps">
+    <li>Open the item in Square.</li>
+    <li>In its stock section, switch tracking on and enter how many you have.</li>
+    <li>Click <kbd>Save</kbd>.</li>
+  </ol>
+  <p>Every sale takes one off the count. At zero the website shows <strong>Out of Stock</strong> and won't let anyone buy it, even someone who already had the page open. When you make more, open the item and raise the count.</p>
+  <div class="note">
+    <p><strong>Items without tracking can be bought again and again.</strong> On 5 October, 17 of your 178 items had tracking switched on. Switch it on for anything you only have one or a few of.</p>
+    <p>Very rarely, two people buy the last one at the same moment and both orders go through. If that happens, refund one of them. The <em>Orders</em> tab shows how.</p>
+  </div>
+
+  <h2>Stop selling a product</h2>
+  <div class="choices">
+    <div class="choice">
+      <h3>For now</h3>
+      <p>If you'll make more, switch on stock tracking and set the count to 0. The website shows it as Out of Stock until you raise the count.</p>
+    </div>
+    <div class="choice">
+      <h3>For good</h3>
+      <p>Delete the item in Square. It disappears from the website within about five minutes.</p>
+    </div>
+  </div>
+  <div class="note">
+    <p><strong>Don't use Archive or the Online channel switch to hide an item.</strong> The website doesn't reliably follow those settings, so the item can stay for sale.</p>
+  </div>
+
+  <h2>The item called Shipping</h2>
+  <p>You'll see an item called <strong>Shipping</strong> in your item list. Leave it there: its price is your shipping fee, and the website keeps it out of the shop. The <em>Tax &amp; shipping</em> tab has the details.</p>
+</section>
+
+<!-- ───────────── ORDERS ───────────── -->
+<section id="orders" role="tabpanel" aria-labelledby="t-orders" hidden>
+
+  <h2>When an order comes in</h2>
+  <p class="lede">HubSpot emails you. Everything you need to ship the order is in HubSpot, where each order is called a <strong>deal</strong>.</p>
+  <ol class="steps">
+    <li>Open the new-order email from HubSpot and click through to the deal.
+      <span class="hint">You can also find it under <kbd>CRM</kbd> → <kbd>Deals</kbd>. New orders are in the first column, named <em>Order</em> followed by a number.</span></li>
+    <li>Read what to send.
+      <span class="hint"><strong>Order Items</strong> lists what they bought. <strong>Shipping Address</strong> is where it goes. <strong>Amount</strong> is what they paid, including tax and shipping. The customer's email and phone number are on the contact in the right-hand panel.</span></li>
+    <li>Pack the order and ship it.</li>
+    <li>Mark the order shipped in Square. The steps are in the next section.</li>
+    <li>Email the customer their tracking number from <strong>rainydaymerchandise@gmail.com</strong>.
+      <span class="hint">The website tells customers to expect a tracking number by email, and nothing sends it automatically.</span></li>
+    <li>Optional: in HubSpot, drag the deal into the <strong>Closed won</strong> column.
+      <span class="hint">That way the first column only holds orders you still need to ship.</span></li>
+  </ol>
+  <div class="note">
+    <p><strong>New orders land in a column HubSpot calls "Appointment scheduled".</strong> That's HubSpot's default name and means nothing for your shop. You can rename it, for example to "New order", without breaking anything:</p>
+    <p><span class="path">HubSpot → Settings → Objects → Deals → Pipelines → click the first stage's name</span></p>
+  </div>
+
+  <h2>Mark an order shipped in Square</h2>
+  <ol class="steps">
+    <li>In your Square Dashboard, open <kbd>Orders &amp; payments</kbd>, then <kbd>Orders</kbd>, then <kbd>Shipments</kbd>.
+      <span class="hint">On some accounts the first menu is called <kbd>Payments</kbd> or <kbd>Invoices &amp; payments</kbd>.</span></li>
+    <li>Click <kbd>To-do</kbd> and open the order.</li>
+    <li>Click <kbd>Actions</kbd>, then <kbd>Mark as shipped</kbd>.</li>
+    <li>Enter the tracking number, choose the carrier, and click <kbd>Mark as shipped</kbd>.</li>
+  </ol>
+  <div class="note">
+    <p><strong>Type the tracking number before you confirm.</strong> Once an order is marked shipped, Square won't let you change its tracking number, carrier or address.</p>
+  </div>
+
+  <h2>Questions from customers</h2>
+  <h3>Finding their order</h3>
+  <p>The order number a customer sees on the website doesn't match the numbers in HubSpot. Search HubSpot for the customer's name or email instead, then open the deal on their contact.</p>
+
+  <h3>"I didn't get a confirmation email"</h3>
+  <p>That's expected for now. After paying, customers see a confirmation page with a link to their Square receipt, but no email is sent yet, even though that page says one was. An automatic confirmation email is being added. Until it's ready, a short thank-you email from you covers it.</p>
+
+  <h2>Refund an order</h2>
+  <ol class="steps">
+    <li>In your Square Dashboard, open <kbd>Transactions</kbd> and click the customer's payment.</li>
+    <li>Click <kbd>•••</kbd>, then <kbd>Issue Refund</kbd>.</li>
+    <li>Tick the items you're refunding, or click <kbd>Refund Amount</kbd> to refund part of the total. Choose a reason.</li>
+    <li>Click <kbd>Issue Refund</kbd>.</li>
+  </ol>
+  <p>The money usually reaches the customer within a week, though it can take up to two. Square keeps its card fee on refunded payments.</p>
+  <p>If the item comes back and you track its stock, check its count afterwards and add it back if Square hasn't.</p>
+</section>
+
+<!-- ───────────── THE WEBSITE ───────────── -->
+<section id="website" role="tabpanel" aria-labelledby="t-website" hidden>
+
+  <h2>Which system to open</h2>
   <p class="lede">Your shop runs on two systems, and almost every question comes down to which one owns the thing you want to change.</p>
   <div class="scroll">
     <table>
       <thead><tr><th>Square owns</th><th>HubSpot owns</th></tr></thead>
       <tbody>
         <tr>
-          <td>Products, prices, photos<br>Stock levels<br>Sales tax<br>Shipping fee</td>
-          <td>Page layouts and text<br>Banners and hero images<br>Customer records and orders</td>
+          <td>Products, prices, photos<br>Stock levels<br>Sales tax<br>Shipping fee<br>Payments and refunds</td>
+          <td>Page layouts and text<br>Banners and hero images<br>Customer records<br>Order records (deals)</td>
         </tr>
       </tbody>
     </table>
   </div>
-  <p>If it is a <strong>thing you sell</strong>, change it in Square. If it is <strong>how the site looks</strong>, change it in HubSpot. Products never get created in HubSpot — the website reads them from Square automatically.</p>
+  <p>If it's a <strong>thing you sell</strong> or <strong>money</strong>, change it in Square. If it's <strong>how the site looks</strong>, change it in HubSpot.</p>
 
   <h2>Editing a page</h2>
-  <p>Every page is built from blocks called <em>modules</em>. Open the page in HubSpot, click a module, change its fields, publish.</p>
+  <p>Every page is built from blocks HubSpot calls <em>modules</em>. Open the page in HubSpot, click a module, change its fields, and publish.</p>
   <span class="path">HubSpot → Content → Website Pages → open a page → click a module → Publish</span>
 
   <div class="scroll">
@@ -139,7 +282,7 @@
       <tbody>
         <tr><td>Home</td><td>Hero image and headline, category tiles, your story section, testimonials</td></tr>
         <tr><td>Shop</td><td>Cover photos, section title, how many columns, sort order</td></tr>
-        <tr><td>Product</td><td>Layout only — the product itself comes from Square</td></tr>
+        <tr><td>Product</td><td>Layout only. The product itself comes from Square</td></tr>
         <tr><td>Cart &amp; checkout</td><td>Layout only. Avoid editing these; they handle payments</td></tr>
         <tr><td>Footer</td><td>Shop name, logo, tagline</td></tr>
       </tbody>
@@ -147,84 +290,86 @@
   </div>
 
   <h2>Cover photos</h2>
-  <p>Banner images work differently depending on the page, which is why the Shop All page felt broken.</p>
+  <p>Banner images work differently depending on the page.</p>
 
   <h3>The Shop All page</h3>
-  <p>Open the Shop page, click the <strong>Category Banner</strong> module, and use the <strong>Shop All Cover Photo</strong> field.</p>
-  <div class="note">
-    <p><strong>This is the one that wouldn't change before.</strong> Shop All isn't a Square category, so it has no category photo to inherit — changing anything in Square will never affect it. It now has its own field, which is the only place that image comes from.</p>
-  </div>
+  <p>Open the Shop page, click the <strong>Category Banner</strong> module, and use the <strong>Shop All Cover Photo</strong> field. Shop All isn't a Square category, so nothing you change in Square affects it.</p>
 
-  <h3>A category page — Bracelets, Earrings, and so on</h3>
-  <p>Set the <strong>category image in Square</strong>. The banner picks it up on its own, and this is the normal way to change one.</p>
-  <p>To override Square for a single category, add an entry under <strong>Category Custom Content</strong> and match the Category Name exactly — <code>Bracelets</code>, not <code>bracelets</code>.</p>
+  <h3>A category page, such as Bracelets or Earrings</h3>
+  <p>Set the <strong>category image in Square</strong>. The banner picks it up by itself, and this is the normal way to change one.</p>
+  <p>To override Square for a single category, add an entry under <strong>Category Custom Content</strong> and type the Category Name exactly as it is in Square: <code>Bracelets</code>, not <code>bracelets</code>.</p>
 
   <h3>A category with no photo in Square</h3>
-  <p>Use the <strong>Fallback Cover Photo</strong> field. Without it those banners render empty. Keychains has no Square photo today.</p>
+  <p>Use the <strong>Fallback Cover Photo</strong> field, or the banner stays empty. Keychains has no Square photo today.</p>
 
   <h2>Emails</h2>
-  <p class="lede">Three different emails, sent by three different systems.</p>
+  <p class="lede">Who gets an email, and what sends it.</p>
   <div class="scroll">
     <table>
-      <thead><tr><th>Email</th><th>Goes to</th><th>Comes from</th></tr></thead>
+      <thead><tr><th>Email</th><th>Goes to</th><th>Sent by</th></tr></thead>
       <tbody>
-        <tr><td>Payment receipt</td><td>Customer</td><td>Square, automatically — check receipts are on in Square settings</td></tr>
-        <tr><td>New order alert</td><td>You</td><td>HubSpot, when a deal is created</td></tr>
-        <tr><td>Sign-in link</td><td>Customer</td><td>The website, when someone logs in</td></tr>
+        <tr><td>New order alert</td><td>You</td><td>HubSpot, when an order arrives</td></tr>
+        <tr><td>Sign-in link</td><td>Customer</td><td>The website, when they sign in</td></tr>
+        <tr><td>Order confirmation</td><td>Customer</td><td>Nothing yet. It's being added; see <em>Questions from customers</em> on the Orders tab</td></tr>
+        <tr><td>Tracking number</td><td>Customer</td><td>You, from rainydaymerchandise@gmail.com</td></tr>
       </tbody>
     </table>
   </div>
-  <p>To set up your new-order alert: <span class="path">HubSpot → Settings → Objects → Deals → Pipelines → Automate → first stage → Send internal email notification</span></p>
+  <p>If the new-order alert ever stops arriving, this is where it's set up:</p>
+  <span class="path">HubSpot → Settings → Objects → Deals → Pipelines → Automate → first stage → Send internal email notification</span>
 
   <h2>Theme settings</h2>
   <p>Under <kbd>Design</kbd> → <kbd>Themes</kbd> you'll find <strong>Brand Color</strong>, which you can change freely, and <strong>Square Environment</strong>.</p>
   <div class="note">
-    <p><strong>Leave Square Environment set to "production".</strong> Switching it to sandbox points your live shop at Square's test system — orders would look successful and no money would arrive.</p>
+    <p><strong>Leave Square Environment set to "production".</strong> Switching it to sandbox points your live shop at Square's test system. Orders would look successful and no money would arrive.</p>
   </div>
 </section>
 
-<!-- ───────────── TAB 2 ───────────── -->
-<section id="p2" role="tabpanel" aria-labelledby="t2" hidden>
-
-  <h2>Products and photos</h2>
-  <p class="lede">Everything you sell lives in Square. The website reads it and updates within about five minutes.</p>
-  <span class="path">Square → Items &amp; Orders → Items</span>
-  <p>An item's name, description, price, and photo all flow straight to the website. To hide something without deleting it, mark it unavailable — the site respects that immediately.</p>
-  <p>A <strong>category's</strong> photo becomes the banner on that category's page, which is how you change those cover images.</p>
-
-  <h2>Stock</h2>
-  <p>Turn on stock tracking for anything you make in limited numbers, and the shop counts down as things sell.</p>
-  <span class="path">Square → Items &amp; Orders → Items → open an item → Track inventory → enter your count</span>
-  <p>When a tracked item hits zero, the website shows <strong>Sold Out</strong>, disables the Add to Cart button, and refuses the purchase even if someone had the page open beforehand. People can still favourite it.</p>
-  <div class="note">
-    <p><strong>Items without tracking stay buyable forever.</strong> That's deliberate — turning this on can't accidentally empty your shop. It only applies to items you switch it on for, so try one first.</p>
-  </div>
+<!-- ───────────── TAX & SHIPPING ───────────── -->
+<section id="settings" role="tabpanel" aria-labelledby="t-settings" hidden>
 
   <h2>Sales tax</h2>
   <p>Kansas customers are charged tax. Customers in other states are not, because you don't owe tax elsewhere until you sell a great deal into that state.</p>
   <span class="path">Square → Settings → Account &amp; Settings → Payments → Sales taxes</span>
-  <p>Your rule is called <strong>Kansas Jewelry</strong>. Change the percentage there and the website uses the new rate immediately — nothing needs redeploying.</p>
+  <p>Your rule is called <strong>Kansas Jewelry</strong>. Change the percentage there and the website uses the new rate straight away.</p>
   <div class="note">
-    <p><strong>The rate is currently 6.5%, which is the Kansas state rate on its own.</strong> Your county and city add more on top, so at 6.5% you collect less than you owe and make up the difference at filing time. Worth confirming your full combined rate with whoever does your taxes, then updating it here.</p>
+    <p><strong>The rate is currently 6.5%, which is the Kansas state rate on its own.</strong> Your county and city add more on top, so at 6.5% you collect less than you owe and make up the difference at filing time. Confirm your full combined rate with whoever does your taxes, then update it here.</p>
   </div>
 
   <h2>Shipping</h2>
-  <p>The shipping fee is stored as the price of an item called <strong>Shipping</strong> in your catalog.</p>
-  <span class="path">Square → Items &amp; Orders → Items → Shipping → set the price</span>
-  <p>Customers never see it as a product — the website hides it and shows the amount as "Shipping" on the receipt instead. It's one flat charge per order, not per item, so a two-bracelet order pays it once.</p>
+  <p>The shipping fee is the price of the item called <strong>Shipping</strong> in your Square item list. Change that price to change the fee.</p>
+  <p>Customers never see it as a product. The website hides it and shows the amount as "Shipping" at checkout. It's one flat charge per order, not per item, so a two-bracelet order pays it once.</p>
   <div class="note">
-    <p><strong>Don't delete the Shipping item.</strong> It looks like a stray product in your list, but it's where the fee is stored. Deleting it silently makes shipping free. It's priced at $0 right now, so nothing is charged until you set an amount.</p>
+    <p><strong>Don't delete the Shipping item.</strong> It looks like a stray product in your list, but it's where the fee is stored. Deleting it quietly makes shipping free.</p>
   </div>
-
-  <h2>Receipts</h2>
-  <p>Square emails a receipt to every customer automatically, and it's their only confirmation. Check it's switched on under <kbd>Settings</kbd> → <kbd>Payments</kbd> → <kbd>Receipts</kbd>.</p>
 </section>
 
-<!-- ───────────── TAB 3 ───────────── -->
-<section id="p3" role="tabpanel" aria-labelledby="t3" hidden>
+<!-- ───────────── WHAT CHANGED ───────────── -->
+<section id="changes" role="tabpanel" aria-labelledby="t-changes" hidden>
   <h2>What changed</h2>
-  <p class="lede">The shop moved to new hosting, four things that were quietly broken got fixed, and five features were added.</p>
+  <p class="lede">Each update to the shop, newest first. The 5 October update to this guide rewrote its instructions and didn't change the shop.</p>
 
+  <h3 class="release"><time datetime="2026-10-02">2 October 2026</time></h3>
+  <p class="lede">Order history for customers, safer favorites, and an About page.</p>
+  <div class="log">
+    <div class="entry"><span class="badge new">New</span><div>
+      <h4>Order history</h4>
+      <p>Signed-in customers can see their past orders on their account page: what they bought, the total, where it shipped, and a link to the receipt.</p>
+    </div></div>
+
+    <div class="entry"><span class="badge fixed">Fixed</span><div>
+      <h4>Favorites belong to the customer who saved them</h4>
+      <p>Anyone who knew a customer's email address could see or change that customer's saved favorites. Now favorites are tied to the signed-in customer. Visitors who aren't signed in still have favorites, kept in their own browser.</p>
+    </div></div>
+
+    <div class="entry"><span class="badge new">New</span><div>
+      <h4>About page</h4>
+      <p>A new About page with sections for your story, testimonials, and a newsletter sign-up.</p>
+    </div></div>
+  </div>
+
+  <h3 class="release"><time datetime="2026-08-31">31 August</time> – <time datetime="2026-09-01">1 September 2026</time></h3>
+  <p class="lede">The shop moved to new hosting, four things that were quietly broken got fixed, and five features were added.</p>
   <div class="log">
     <div class="entry"><span class="badge fixed">Fixed</span><div>
       <h4>Orders never reached HubSpot</h4>
@@ -243,7 +388,7 @@
 
     <div class="entry"><span class="badge fixed">Fixed</span><div>
       <h4>The Shop All cover photo</h4>
-      <p>The page you told us about. It had no way to be changed — see the website tab for where its field now lives.</p>
+      <p>The page you told us about. It had no way to be changed. The website tab shows where its field now lives.</p>
     </div></div>
 
     <div class="entry"><span class="badge new">New</span><div>
@@ -253,37 +398,37 @@
 
     <div class="entry"><span class="badge new">New</span><div>
       <h4>Shipping fee</h4>
-      <p>A flat charge per order, set by you in Square, currently $0 until you choose an amount.</p>
+      <p>A flat charge per order, set by you in Square.</p>
     </div></div>
 
     <div class="entry"><span class="badge new">New</span><div>
       <h4>Sold out actually means sold out</h4>
-      <p>Out-of-stock items can no longer be bought — not from a stale page, not by anyone poking at the site directly. Works on items where you've turned tracking on.</p>
+      <p>Out-of-stock items can no longer be bought, not from a stale page and not by anyone poking at the site directly. Works on items where you've switched tracking on.</p>
     </div></div>
 
     <div class="entry"><span class="badge new">New</span><div>
       <h4>Shipping addresses in Square</h4>
-      <p>Orders now carry the delivery address, so Square's Orders tab shows you where each one is going.</p>
+      <p>Orders now carry the delivery address, so Square's Shipments list shows you where each one is going.</p>
     </div></div>
 
     <div class="entry"><span class="badge new">New</span><div>
       <h4>Order details in HubSpot</h4>
-      <p>Each sale creates a record listing the items, the shipping address, and the total, assigned to you so HubSpot can alert you.</p>
+      <p>Each sale creates a deal listing the items, the shipping address, and the total, and HubSpot emails you when one arrives.</p>
     </div></div>
 
     <div class="entry"><span class="badge under">Under the hood</span><div>
       <h4>New hosting</h4>
-      <p>The part of the shop that talks to Square moved to Cloudflare — faster, no cold starts, and on a plan that permits selling. The old host stays available for a short while as a safety net.</p>
+      <p>The part of the shop that talks to Square moved to Cloudflare. It's faster, has no slow first load, and is on a plan that permits selling.</p>
     </div></div>
 
     <div class="entry"><span class="badge under">Under the hood</span><div>
       <h4>Automatic checks</h4>
-      <p>75 automated tests now run on every change, and updates deploy themselves once they pass. Any change can be undone in about two minutes.</p>
+      <p>Automated tests run on every change, and updates deploy themselves once they pass. Any change can be undone in about two minutes.</p>
     </div></div>
   </div>
 
   <footer>
-    <p><strong>Still to do:</strong> set your real combined tax rate, choose a shipping amount, switch on your new-order email in HubSpot, and turn on stock tracking for the items you make in limited numbers.</p>
+    <p><strong>Still to do:</strong> set your real combined tax rate, set a shipping fee if you haven't yet, and switch on stock tracking for the items you only have one or a few of.</p>
   </footer>
 </section>
 
@@ -295,6 +440,7 @@
   function select(i) {
     tabs.forEach((t, n) => {
       t.setAttribute('aria-selected', n === i ? 'true' : 'false');
+      t.tabIndex = n === i ? 0 : -1;
       panels[n].hidden = n !== i;
     });
   }
@@ -309,4 +455,12 @@
       select(n);
     });
   });
+  // A link ending in #orders (or #products, #website, #settings, #changes) opens that tab.
+  function fromHash() {
+    const i = panels.findIndex(p => '#' + p.id === location.hash);
+    if (i > -1) select(i);
+  }
+  window.addEventListener('hashchange', fromHash);
+  select(0);
+  fromHash();
 </script>
