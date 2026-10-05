@@ -161,11 +161,11 @@ const INVALID_EMAIL_REPLY = {
   },
 };
 
-test('an address HubSpot refuses, like a .cpm typo, gets a 400 asking the customer to check it', async () => {
+test('if HubSpot still refuses an address our check passed, the customer is asked to check it', async () => {
   const response = await withHubSpot([
     NO_SUCH_CONTACT,
     [{ method: 'POST', path: '/crm/v3/objects/contacts' }, INVALID_EMAIL_REPLY],
-  ], () => handleMagicLinkRequest(magicLinkRequest('dennis@dennisedson.cpm'), HUBSPOT_ENV));
+  ], () => handleMagicLinkRequest(magicLinkRequest('pat@example.com'), HUBSPOT_ENV));
 
   assert.equal(response.status, 400);
   const body = await response.json();
@@ -194,4 +194,21 @@ test('a valid new address still gets the usual success response', async () => {
 
   assert.equal(response.status, 200);
   assert.equal((await response.json()).success, true);
+});
+
+test('a .cpm typo is refused before any call to HubSpot', async () => {
+  const calls = [];
+  const real = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    calls.push(String(url));
+    return new Response('{}', { status: 500 });
+  };
+  try {
+    const response = await handleMagicLinkRequest(magicLinkRequest('dennis@dennisedson.cpm'), HUBSPOT_ENV);
+    assert.equal(response.status, 400);
+    assert.match((await response.json()).error, /check the spelling/i);
+    assert.deepEqual(calls, []);
+  } finally {
+    globalThis.fetch = real;
+  }
 });

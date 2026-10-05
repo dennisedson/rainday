@@ -9,6 +9,7 @@ import { SignJWT, jwtVerify } from 'jose';
 import { json, randomHex, readParams, resolveBaseUrl, timingSafeEqual } from './lib.js';
 import { requireSession, secretKey } from './session.js';
 import { findContactByEmail, getContact, createContact, updateContact } from './hubspot.js';
+import { isValidEmailAddress } from './email-address.js';
 
 const MAGIC_LINK_TOKEN_PROPERTY = 'magic_link_token';
 const MAGIC_LINK_EXPIRES_PROPERTY = 'magic_link_expires';
@@ -41,8 +42,11 @@ async function sendMagicLinkEmail(env, { to, magicLink }) {
 /** POST /api/auth/magic-link */
 export async function handleMagicLinkRequest(request, env) {
   const { email } = await readParams(request);
-  if (!email || !email.includes('@')) {
-    return json({ error: 'Valid email address is required' }, { status: 400 });
+  if (!isValidEmailAddress(email)) {
+    return json(
+      { error: "That email address doesn't look right. Check the spelling and try again." },
+      { status: 400 }
+    );
   }
 
   try {
@@ -89,9 +93,9 @@ export async function handleMagicLinkRequest(request, env) {
 }
 
 /**
- * True when HubSpot refused the address itself. HubSpot only accepts an email
- * whose domain ends in a real top-level domain, so a typo like ".cpm" passes
- * the '@' check above and fails here, on contact creation.
+ * True when HubSpot refused the address itself. isValidEmailAddress runs the
+ * same top-level-domain rule first, so this only catches a rule HubSpot adds
+ * that we don't check, or a list that has gone stale.
  */
 function isInvalidEmailError(error) {
   if (error?.status !== 400) return false;

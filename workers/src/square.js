@@ -12,6 +12,7 @@ import { fetchInventoryLevelsSafely, fetchVariationsById, findInsufficientStock,
 import { buildOrderTaxes, buildServiceCharges, fetchShippingCents } from './pricing.js';
 import { createOrderDeal } from './hubspot.js';
 import { sendOrderConfirmationEmail } from './email.js';
+import { isValidEmailAddress } from './email-address.js';
 
 const DEFAULT_PRODUCT_IMAGE =
   'https://images.unsplash.com/photo-1560393464-5c69a73c5770?w=800&auto=format&fit=crop&q=80';
@@ -413,6 +414,18 @@ export async function handleProcessPayment(request, env, ctx) {
   if (!sourceId) return json({ error: 'sourceId is required' }, { status: 400 });
   if (!Array.isArray(cartItems) || cartItems.length === 0) {
     return json({ error: 'cartItems are required' }, { status: 400 });
+  }
+  // Checked before anything is charged. HubSpot refuses an address like
+  // "name@site.cpm", and without a contact there is no deal, so the shop owner
+  // would never be told about an order that had already been paid for.
+  if (!isValidEmailAddress(buyerEmail)) {
+    return json(
+      {
+        error: 'Invalid email',
+        message: "That email address doesn't look right. Go back to your shipping details and check the spelling.",
+      },
+      { status: 400 }
+    );
   }
 
   try {
