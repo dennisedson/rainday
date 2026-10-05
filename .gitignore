@@ -55,3 +55,6 @@ Thumbs.db
 
 # HubSpot CLI credentials — contains a personal access key once `hs init` runs
 hubspot.config.yml
+
+# Stock spreadsheets from scripts/track-inventory.mjs list the whole catalog
+untracked-items*.csv
