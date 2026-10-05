@@ -194,6 +194,23 @@ export async function syncCategories(env) {
 }
 
 /**
+ * The contact's saved favorites as a list of catalog ids.
+ *
+ * The property is a comma-separated string. Some contacts hold a literal "[]"
+ * from older code, which a plain split turned into one favorite named "[]":
+ * the account page showed it as a product and the header counted it. Square
+ * catalog ids are letters and digits only, so anything else is dropped. The
+ * cleaned list is what a toggle writes back, so the junk clears itself.
+ */
+export function parseFavorites(value) {
+  const ids = String(value ?? '')
+    .split(',')
+    .map((id) => id.trim())
+    .filter((id) => /^[A-Za-z0-9]+$/.test(id));
+  return [...new Set(ids)];
+}
+
+/**
  * GET/POST /api/favorites
  *
  * The contact comes from the session. This used to resolve whoever the client
@@ -220,7 +237,7 @@ export async function handleFavorites(request, env) {
     }
 
     const contact = await getContact(env, resolvedId, ['favorite_products']);
-    let favorites = (contact.properties.favorite_products || '').split(',').filter(Boolean);
+    let favorites = parseFavorites(contact.properties.favorite_products);
 
     if (isWrite) {
       if (!productId || !action) {
