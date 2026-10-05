@@ -33,6 +33,11 @@ SQUARE_SHIPPING_VARIATION_ID_SANDBOX = "FTI6NZQXSUZ5CVNBDDL45ALJ"
 # HubSpot notification. Without it deals are created unassigned and silent.
 HUBSPOT_OWNER_ID = "86679095"
 
+# Where customers' replies to their order confirmation email land. Not a
+# secret, so it lives here rather than in `wrangler secret`. The confirmation
+# itself is sent only when RESEND_API_KEY is set on this Worker.
+ORDER_EMAIL_REPLY_TO = "rainydaymerchandise@gmail.com"
+
 # Replaces the nightly Vercel cron. Workers have no cold starts, so the
 # keep-alive job that existed only to keep Vercel warm is gone.
 [triggers]
@@ -69,3 +74,6 @@ SQUARE_SHIPPING_VARIATION_ID_SANDBOX = "FTI6NZQXSUZ5CVNBDDL45ALJ"
 # owner ID is known — the deal is still created when it's unset, just
 # unassigned, so an unknown owner never fails a deal.
 HUBSPOT_OWNER_ID = "11176268"
+# Same inbox as production: a tester replying to a sandbox confirmation reaches
+# the shop, which is the behaviour being tested.
+ORDER_EMAIL_REPLY_TO = "rainydaymerchandise@gmail.com"

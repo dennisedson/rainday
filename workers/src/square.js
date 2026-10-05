@@ -11,6 +11,7 @@ import { squareConfig, squareFetch } from './square-client.js';
 import { fetchInventoryLevelsSafely, fetchVariationsById, findInsufficientStock, resolveStockLevel } from './inventory.js';
 import { buildOrderTaxes, buildServiceCharges, fetchShippingCents } from './pricing.js';
 import { createOrderDeal } from './hubspot.js';
+import { sendOrderConfirmationEmail } from './email.js';
 
 const DEFAULT_PRODUCT_IMAGE =
   'https://images.unsplash.com/photo-1560393464-5c69a73c5770?w=800&auto=format&fit=crop&q=80';
@@ -600,6 +601,19 @@ export async function handleProcessPayment(request, env, ctx) {
       console.error('[Order] HubSpot deal creation failed:', error.message, 'payment:', p.id);
     });
     if (ctx?.waitUntil) ctx.waitUntil(dealWork);
+
+    // Square sends no receipt for Payments API orders, so this is the
+    // customer's only confirmation. Like the deal, it must never fail a charge
+    // that already succeeded.
+    const emailWork = sendOrderConfirmationEmail(env, {
+      to: buyerEmail,
+      firstName: billingDetails?.firstName,
+      order: squareOrder,
+      payment: p,
+    }).catch((error) => {
+      console.error('[Order] Confirmation email failed:', error.message, 'payment:', p.id);
+    });
+    if (ctx?.waitUntil) ctx.waitUntil(emailWork);
 
     return json({
       success: true,
