@@ -85,41 +85,56 @@ function money(cents) {
 }
 
 /**
- * A readable order summary for the deal's order_items property.
+ * The order's money as rows, for both the deal's order_items text and the
+ * customer's confirmation email, so the two always show the same numbers.
  *
  * Line totals use `gross_sales_money` — quantity x unit price, BEFORE tax.
  * Square's `total_money` per line folds in that line's apportioned tax, which
  * made the block impossible to reconcile against the order total. Shipping is
- * a service charge rather than a line item, so it is appended explicitly, as
+ * a service charge rather than a line item, so it is listed separately, as
  * are tax and the total.
  */
+export function orderSummaryRows(order) {
+  return {
+    items: (order?.line_items ?? []).map((li) => ({
+      name: li.name ?? 'Item',
+      quantity: li.quantity ?? '1',
+      cents: li.gross_sales_money?.amount ?? 0,
+    })),
+    charges: (order?.service_charges ?? []).map((charge) => ({
+      name: charge.name ?? 'Service charge',
+      cents: charge.amount_money?.amount ?? 0,
+    })),
+    taxCents: order?.total_tax_money?.amount ?? 0,
+    totalCents: order?.total_money?.amount ?? 0,
+  };
+}
+
+/** A readable order summary for the deal's order_items property. */
 export function formatOrderSummary(order) {
-  const lineItems = order?.line_items ?? [];
-  if (lineItems.length === 0) return '';
+  const { items, charges, taxCents, totalCents } = orderSummaryRows(order);
+  if (items.length === 0) return '';
 
-  const lines = lineItems.map(
-    (li) => `${li.name ?? 'Item'} x${li.quantity ?? '1'} - ${money(li.gross_sales_money?.amount)}`
-  );
-
-  for (const charge of order?.service_charges ?? []) {
-    lines.push(`${charge.name ?? 'Service charge'} - ${money(charge.amount_money?.amount)}`);
-  }
-
-  const tax = order?.total_tax_money?.amount ?? 0;
-  if (tax > 0) lines.push(`Tax - ${money(tax)}`);
-
-  lines.push(`Total - ${money(order?.total_money?.amount)}`);
+  const lines = items.map((item) => `${item.name} x${item.quantity} - ${money(item.cents)}`);
+  for (const charge of charges) lines.push(`${charge.name} - ${money(charge.cents)}`);
+  if (taxCents > 0) lines.push(`Tax - ${money(taxCents)}`);
+  lines.push(`Total - ${money(totalCents)}`);
   return lines.join('\n');
+}
+
+/** The recipient's name and postal address as lines, without the phone number. */
+export function addressLines(recipient) {
+  if (!recipient) return [];
+  const a = recipient.address ?? {};
+  const cityLine = [a.locality, [a.administrative_district_level_1, a.postal_code]
+    .filter(Boolean).join(' ')].filter(Boolean).join(', ');
+  return [recipient.display_name, a.address_line_1, a.address_line_2, cityLine].filter(Boolean);
 }
 
 /** A mailing label, for the deal's shipping_address property. */
 export function formatShippingAddress(recipient) {
   if (!recipient) return '';
-  const a = recipient.address ?? {};
-  const cityLine = [a.locality, [a.administrative_district_level_1, a.postal_code]
-    .filter(Boolean).join(' ')].filter(Boolean).join(', ');
-  return [recipient.display_name, a.address_line_1, a.address_line_2, cityLine,
-    recipient.phone_number].filter(Boolean).join('\n');
+  return [...addressLines(recipient), recipient.phone_number].filter(Boolean).join('\n');
 }
 
 /**
