@@ -92,9 +92,6 @@ export default function OrderConfirmationIsland() {
                   </div>
                   <div className="flex-1">
                     <h4 className="font-semibold text-gray-900">{item.name}</h4>
-                    {item.category && (
-                      <p className="text-sm text-gray-500">{item.category}</p>
-                    )}
                     <p className="text-sm text-gray-600 mt-1">Quantity: {item.quantity}</p>
                   </div>
                   <div className="text-right">

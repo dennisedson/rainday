@@ -256,9 +256,6 @@ export default function ShoppingCartIsland({ squareApplicationId, squareLocation
                       <div className="flex justify-between items-start mb-2">
                         <div>
                           <h3 className="font-semibold text-gray-900">{item.name}</h3>
-                          {item.category && (
-                            <p className="text-sm text-gray-500">{item.category}</p>
-                          )}
                         </div>
                         <button
                           onClick={() => removeItem(item.id)}
